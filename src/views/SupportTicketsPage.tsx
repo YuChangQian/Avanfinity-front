@@ -5,6 +5,7 @@ import { Navigate } from "@tanstack/react-router";
 import { LifeBuoy, MessageSquarePlus, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataSkeleton, PageShell } from "../components/PageShell";
 import { createSupportTicket, getCards, getSupportTicket, getSupportTickets, replySupportTicket, type SupportTicket, type SupportTicketCategory } from "../api";
@@ -74,7 +75,7 @@ export function SupportTicketsPage() {
         </Select></label>
         <label>{t("supportSubject")}<input value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={120} required /></label>
         <label>{t("supportProblemDescription")}<textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={5000} rows={4} required /></label>
-        <Button type="submit" disabled={createTicket.isPending}>{createTicket.isPending ? t("processing") : t("submitSupportTicket")}</Button>
+        <Button type="submit" disabled={createTicket.isPending}><StableSwap state={createTicket.isPending ? "busy" : "idle"} labels={{ idle: t("submitSupportTicket"), busy: t("processing") }} /></Button>
         {createTicket.isError && <p className="error" role="alert">{createTicket.error instanceof Error ? createTicket.error.message : t("supportActionFailed")}</p>}
       </form>
     </section>
@@ -103,7 +104,7 @@ export function SupportTicketsPage() {
           </div>)}</div>
           {selected.ticket.status === "closed" ? <p className="support-closed-notice">{t("supportTicketClosed")}</p> : <form className="support-reply-form" onSubmit={(event) => { event.preventDefault(); sendReply.mutate(); }}>
             <label>{t("supportReply")}<textarea value={reply} onChange={(event) => setReply(event.target.value)} maxLength={5000} rows={3} required /></label>
-            <Button type="submit" disabled={sendReply.isPending}><Send />{sendReply.isPending ? t("processing") : t("sendReply")}</Button>
+            <Button type="submit" disabled={sendReply.isPending}><Send /><StableSwap state={sendReply.isPending ? "busy" : "idle"} labels={{ idle: t("sendReply"), busy: t("processing") }} /></Button>
             {selected.ticket.status === "resolved" && <small>{t("supportReplyReopens")}</small>}
             {sendReply.isError && <p className="error" role="alert">{sendReply.error instanceof Error ? sendReply.error.message : t("supportActionFailed")}</p>}
           </form>}

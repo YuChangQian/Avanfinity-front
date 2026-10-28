@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "./StableSwap";
 import { BrandIcon } from "@/components/BrandIcon";
 import { ApiError, getDashboard, getSupportTickets, getUnreadAnnouncements, logout, markAnnouncementRead } from "../api";
 import { useFeatures } from "../features";
@@ -207,7 +208,7 @@ export function AppShell() {
               if (currentAnnouncement) setDismissedAnnouncementIds((current) => current.includes(currentAnnouncement.id) ? current : [...current, currentAnnouncement.id]);
               readAnnouncement.reset();
             }}>{t("remindNextLogin")}</Button>
-            <Button onClick={() => currentAnnouncement && readAnnouncement.mutate(currentAnnouncement.id)} disabled={readAnnouncement.isPending}>{readAnnouncement.isPending ? t("processing") : t("acknowledgeAnnouncement")}</Button>
+            <Button onClick={() => currentAnnouncement && readAnnouncement.mutate(currentAnnouncement.id)} disabled={readAnnouncement.isPending}><StableSwap state={readAnnouncement.isPending ? "busy" : "idle"} labels={{ idle: t("acknowledgeAnnouncement"), busy: t("processing") }} /></Button>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

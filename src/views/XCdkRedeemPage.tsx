@@ -5,6 +5,7 @@ import { KeyRound, ShieldCheck } from "lucide-react";
 import { publicXCdkPreflight, publicXCdkPreview, publicXCdkRedeem, publicXCdkResult, type PublicXCdkResult } from "../api";
 import { sessionAtom } from "../state";
 import { Button } from "../components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { BrandIcon } from "../components/BrandIcon";
 
 const planLabels: Record<string, string> = { premium_3m: "Premium · 3 个月", premium_6m: "Premium · 6 个月", premium_12m: "Premium · 1 年", premium_plus_3m: "Premium+ · 3 个月", premium_plus_6m: "Premium+ · 6 个月", premium_plus_12m: "Premium+ · 1 年" };
@@ -84,7 +85,7 @@ export function XCdkRedeemPage() {
       {(!result || recovering) && <form className="grid gap-6" onSubmit={submit}>
         {recovering && <p>检测到之前的兑换请求。请重新输入原兑换码查询；不会自动重新提交支付。</p>}
         <label>X CDK 兑换码<input value={code} onChange={event => setCode(event.target.value)} autoComplete="off" spellCheck={false} maxLength={256} disabled={busy} required /></label>
-        <Button disabled={busy || !code.trim()}>{busy ? "正在处理…" : recovering ? "查询原兑换状态" : "检查兑换码"}</Button>
+        <Button disabled={busy || !code.trim()}><StableSwap state={busy ? "busy" : recovering ? "alt" : "idle"} labels={{ idle: "检查兑换码", alt: "查询原兑换状态", busy: "正在处理…" }} /></Button>
       </form>}
       {result && !recovering && <>
         <h2>{planLabels[result.plan] ?? "X 会员"}</h2>
@@ -95,11 +96,11 @@ export function XCdkRedeemPage() {
         {result.status === "ineligible" && <p role="alert">72小时内没有改过资料、个人信息、密码，以及陌生设备登录，才可以进行充值，您提供的账号暂不满足此条件。</p>}
         {result.status === "unused" && <form className="grid gap-6" onSubmit={event => { event.preventDefault(); void run("preflight"); }}>
           <label>X 用户名<input value={recipient} onChange={event => setRecipient(event.target.value)} readOnly={Boolean(intent)} disabled={busy} maxLength={16} pattern="@?[A-Za-z0-9_]{1,15}" autoComplete="off" required /></label>
-          <Button disabled={busy}>{busy ? "正在预检…" : intent ? "重试预检" : "检查资格并获取报价"}</Button>
+          <Button disabled={busy}><StableSwap state={busy ? "busy" : intent ? "alt" : "idle"} labels={{ idle: "检查资格并获取报价", alt: "重试预检", busy: "正在预检…" }} /></Button>
         </form>}
         {(result.recipient || intent?.recipient) && <p>X 账号：@{result.recipient ?? intent?.recipient}</p>}
         {result.amountMinor != null && result.currency && <div className="cdk-confirm"><ShieldCheck /><div><strong>官方金额</strong><p>{result.currency.toUpperCase()} {(result.amountMinor / 100).toFixed(2)}</p><p>服务费由发行者承担，兑换者无需付款。</p></div></div>}
-        {canConfirm && <Button disabled={busy} onClick={() => void run("redeem")}>{busy ? "正在提交…" : intent?.submitted || result.status === "funded" ? "继续兑换" : "确认兑换"}</Button>}
+        {canConfirm && <Button disabled={busy} onClick={() => void run("redeem")}><StableSwap state={busy ? "busy" : intent?.submitted || result.status === "funded" ? "alt" : "idle"} labels={{ idle: "确认兑换", alt: "继续兑换", busy: "正在提交…" }} /></Button>}
         {["prepared", "funded"].includes(result.status) && intent && <Button variant="outline" disabled={busy} onClick={() => void run("preflight")}>刷新官方报价</Button>}
         {intent && <Button variant="outline" disabled={busy} onClick={() => void run("result")}>查询原兑换状态</Button>}
         {["ineligible", "failed_precharge"].includes(result.status) && intent && result.canRetryPreflight === true && <Button variant="outline" disabled={busy} onClick={() => { sessionStorage.removeItem("xCdkIntent"); setIntent(null); setResult({ ...result, status: "unused" }); setError(""); setRecoveryChecked(false); }}>重新核对账号并预检</Button>}

@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { createHmac } from "node:crypto";
 import { createServer } from "node:http";
@@ -4012,7 +4012,17 @@ test("cards fill wide screens without cramped columns", async ({ page }) => {
   expect(1920 - (pageBox!.x + pageBox!.width)).toBeLessThanOrEqual(16);
   expect(Math.abs(firstCard!.y - secondCard!.y)).toBeLessThanOrEqual(1);
   expect(secondCard!.x - firstCard!.x - firstCard!.width).toBeGreaterThanOrEqual(20);
-  expect(secondCard!.height - firstCard!.height).toBeGreaterThan(30);
+  const purposeLines = (card: Locator) => card.locator(".product-purpose-more summary").evaluate((el) => el.clientHeight / parseFloat(getComputedStyle(el).lineHeight));
+  expect(await purposeLines(cards.first())).toBeGreaterThanOrEqual(1.9);
+  expect(await purposeLines(cards.first())).toBeLessThanOrEqual(2.15);
+  const longPurpose = cards.nth(1).locator(".product-purpose-more");
+  await expect(longPurpose.getByText("更多", { exact: true })).toBeVisible();
+  expect(await purposeLines(cards.nth(1))).toBeGreaterThanOrEqual(1.9);
+  expect(await purposeLines(cards.nth(1))).toBeLessThanOrEqual(2.15);
+  await longPurpose.locator("summary").click();
+  await expect(longPurpose.getByText("收起", { exact: true })).toBeVisible();
+  await expect(longPurpose).toContainText("Long product description. Long product description.");
+  expect(await longPurpose.locator("summary").evaluate((el) => el.clientHeight / parseFloat(getComputedStyle(el).lineHeight))).toBeGreaterThan(2.5);
 });
 
 test("single card product keeps a normal width and still fits mobile", async ({ page }) => {

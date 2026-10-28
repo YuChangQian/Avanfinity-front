@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { BrandIcon } from "@/components/BrandIcon";
 import { DataSkeleton } from "../components/PageShell";
 import { confirmMfaEnrollment, getMfaStatus, startMfaEnrollment } from "../api";
@@ -53,7 +54,7 @@ export function MfaSetupPage() {
       {status.isError && <p role="alert" className="error">{t("mfaStatusFailed")}</p>}
       {status.data?.data.state === "pending" && !enrollment && <p role="alert" className="security-warning"><KeyRound />{t("mfaSecretNotRepeated")}</p>}
       {status.data?.data.state === "enabled" && <p className="success-note">{t("mfaAlreadyEnabled")}</p>}
-      {status.data?.data.state === "not_enrolled" && !enrollment && <Button size="lg" onClick={() => enroll.mutate()} disabled={enroll.isPending}>{enroll.isPending ? t("processing") : t("startMfaSetup")}</Button>}
+      {status.data?.data.state === "not_enrolled" && !enrollment && <Button size="lg" onClick={() => enroll.mutate()} disabled={enroll.isPending}><StableSwap state={enroll.isPending ? "busy" : "idle"} labels={{ idle: t("startMfaSetup"), busy: t("processing") }} /></Button>}
       {enroll.isError && <p role="alert" className="error">{enroll.error.message}</p>}
       {enrollment && <section className="mfa-enrollment" aria-live="polite">
         <p>{t("mfaAddAuthenticator")}</p>
@@ -62,7 +63,7 @@ export function MfaSetupPage() {
         <form className="stacked-form" onSubmit={submit}>
           <label>{t("mfaConfirmCode")}<input name="credential" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required /></label>
           {confirm.isError && <p role="alert" className="error">{confirm.error.message}</p>}
-          <Button size="lg" disabled={confirm.isPending}>{confirm.isPending ? t("processing") : t("enableMfa")}</Button>
+          <Button size="lg" disabled={confirm.isPending}><StableSwap state={confirm.isPending ? "busy" : "idle"} labels={{ idle: t("enableMfa"), busy: t("processing") }} /></Button>
         </form>
       </section>}
     </>}

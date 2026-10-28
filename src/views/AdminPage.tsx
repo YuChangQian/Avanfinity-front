@@ -31,6 +31,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminProductsPanel } from "../components/AdminProductsPanel";
 import { AdminCustomersPanel } from "../components/AdminCustomersPanel";
@@ -295,7 +296,7 @@ function ReferralPolicyEditor({ token, policy, onApplied }: { token: string; pol
     <form className="pricing-form referral-policy-form" onSubmit={(event) => { event.preventDefault(); previewMutation.mutate(policyInput(percentage, displayMode, policy.version)); }}>
       <label>{t("referralProfitShareRate")}<input aria-describedby="referral-policy-rule" type="number" min="0" max="100" step="0.0001" value={percentage} onChange={(event) => { setPercentage(event.target.value); resetPreview(); }} required /></label>
       <label>{t("referralDisplayMode")}<select aria-label={t("referralDisplayMode")} value={displayMode} onChange={(event) => { setDisplayMode(event.target.value as ReferralPolicy["displayMode"]); resetPreview(); }}><option value="profit_share">{t("referralDisplayProfitShare")}</option><option value="equivalent">{t("referralDisplayEquivalent")}</option></select></label>
-      <Button type="submit" variant="outline" disabled={previewMutation.isPending}>{previewMutation.isPending ? t("processing") : t("previewReferralPolicy")}</Button>
+      <Button type="submit" variant="outline" disabled={previewMutation.isPending}><StableSwap state={previewMutation.isPending ? "busy" : "idle"} labels={{ idle: t("previewReferralPolicy"), busy: t("processing") }} /></Button>
       <p id="referral-policy-rule" className="pricing-formula-hint">{t("referralPolicySettlementRule")}</p>
     </form>
     {previewMutation.isError && <p className="admin-alert is-error" role="alert">{previewMutation.error instanceof Error ? previewMutation.error.message : t("updateFailed")}</p>}
@@ -307,7 +308,7 @@ function ReferralPolicyEditor({ token, policy, onApplied }: { token: string; pol
         <small>{t("referralRechargeEstimate", { value: displayEstimate(tier.rechargeRewardRate, true) ?? t("referralEstimateUnavailable") })}</small>
       </div>)}</div>
       {shown.tiers.length === 0 && <AdminState>{t("referralEstimateUnavailable")}</AdminState>}
-      {preview && <div className="admin-card-actions"><Button onClick={() => applyMutation.mutate()} disabled={applyMutation.isPending}>{applyMutation.isPending ? t("processing") : t("saveReferralPolicy")}</Button></div>}
+      {preview && <div className="admin-card-actions"><Button onClick={() => applyMutation.mutate()} disabled={applyMutation.isPending}><StableSwap state={applyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveReferralPolicy"), busy: t("processing") }} /></Button></div>}
     </div>
     {applyMutation.isError && <p className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</p>}
     {notice && <p className="admin-alert is-success" role="status">{notice}</p>}
@@ -392,7 +393,7 @@ function PricingTierEditor({ token, tier, onApplied }: { token: string; tier: Ad
       <label>{t("tierDescriptionZh")}<textarea value={profile.descriptionZh} maxLength={500} onChange={(event) => setProfile((current) => ({ ...current, descriptionZh: event.target.value }))} required /></label>
       <label>{t("tierDescriptionEn")}<textarea value={profile.descriptionEn} maxLength={500} onChange={(event) => setProfile((current) => ({ ...current, descriptionEn: event.target.value }))} required /></label>
       <label>{t("tierThreshold")}<input type="number" min="0" step="0.0001" value={profile.thresholdAmount} onChange={(event) => setProfile((current) => ({ ...current, thresholdAmount: event.target.value }))} required /></label>
-      <Button disabled={profileMutation.isPending}>{profileMutation.isPending ? t("processing") : t("saveTierProfile")}</Button>
+      <Button disabled={profileMutation.isPending}><StableSwap state={profileMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierProfile"), busy: t("processing") }} /></Button>
     </form>
     {profileMutation.isError && <p className="admin-alert is-error" role="alert">{profileMutation.error instanceof Error ? profileMutation.error.message : t("updateFailed")}</p>}
     <form className="tier-profile-form" data-testid={`tier-decline-policy-${tier.code}`} onSubmit={(event) => { event.preventDefault(); setNotice(""); declinePolicyMutation.mutate(); }}>
@@ -405,7 +406,7 @@ function PricingTierEditor({ token, tier, onApplied }: { token: string; tier: Ad
       <label>{t("authDeclineAmount3")}<input type="number" min="0" step="0.0001" value={declinePolicy.feeAmount3} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeAmount3: event.target.value }))} required /></label>
       <label>{t("authDeclineFreezeRate")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.freezeRate} onChange={(event) => setDeclinePolicy((current) => ({ ...current, freezeRate: event.target.value }))} required /></label>
       <label>{t("authDeclineFreezeMargin")}<input type="number" min="0" step="0.0001" value={declinePolicy.freezeMargin} onChange={(event) => setDeclinePolicy((current) => ({ ...current, freezeMargin: event.target.value }))} required /></label>
-      <Button disabled={declinePolicyMutation.isPending}>{declinePolicyMutation.isPending ? t("processing") : t("saveTierDeclinePolicy")}</Button>
+      <Button disabled={declinePolicyMutation.isPending}><StableSwap state={declinePolicyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierDeclinePolicy"), busy: t("processing") }} /></Button>
     </form>
     {declinePolicyMutation.isError && <p className="admin-alert is-error" role="alert">{declinePolicyMutation.error instanceof Error ? declinePolicyMutation.error.message : t("updateFailed")}</p>}
     <AdminXDirectFees token={token} tierCode={tier.code} />
@@ -419,7 +420,7 @@ function PricingTierEditor({ token, tier, onApplied }: { token: string; tier: Ad
       <label>{t("refundMultiplier")}<input type="number" min="1" max="100" step="0.000001" value={draft.refundMultiplier} onChange={(event) => update("refundMultiplier", event.target.value)} required /></label>
       <label>{t("gptDirectMultiplier")}<input type="number" min="1" max="100" step="0.000001" value={draft.gptDirectMultiplier} onChange={(event) => update("gptDirectMultiplier", event.target.value)} required /></label>
       <label>{t("gptDirectMinimumFee")}<input type="number" min="0" max="1000000" step="0.0001" value={draft.gptDirectMinimumFee} onChange={(event) => update("gptDirectMinimumFee", event.target.value)} required /></label>
-      <Button type="submit" variant="outline" disabled={previewMutation.isPending}>{previewMutation.isPending ? t("processing") : t("previewPricing")}</Button>
+      <Button type="submit" variant="outline" disabled={previewMutation.isPending}><StableSwap state={previewMutation.isPending ? "busy" : "idle"} labels={{ idle: t("previewPricing"), busy: t("processing") }} /></Button>
       <p className="pricing-formula-hint">{t("rechargePricingFormula")}</p>
       <p className="pricing-formula-hint">{t("refundPricingFormula")}</p>
       <p className="pricing-formula-hint">{t("gptDirectPricingFormula")}</p>
@@ -440,7 +441,7 @@ function PricingTierEditor({ token, tier, onApplied }: { token: string; tier: Ad
       {preview.gptDirectPlans && preview.gptDirectPlans.length > 0 && <div className="admin-alert is-neutral" data-testid="gpt-direct-fee-preview"><ShieldCheck /><span>{t("gptDirectPlansPreview")}：{preview.gptDirectPlans.map((item) => `${t(`gptPlan.${item.plan}`, { defaultValue: item.plan })} $${formatDecimal(item.saleFee)}`).join(" · ")}</span></div>}
       {invalidMargin && <p className="admin-alert is-error" role="alert">{t("negativeMarginBlocked")}</p>}
       {hasFreeRecharge && <p className="admin-alert" role="status">{t("zeroRechargeRateWarning")}</p>}
-      <div className="admin-card-actions"><Button onClick={() => applyMutation.mutate()} disabled={applyMutation.isPending || invalidMargin || preview.products.length === 0}>{applyMutation.isPending ? t("processing") : t("applyPricing")}</Button></div>
+      <div className="admin-card-actions"><Button onClick={() => applyMutation.mutate()} disabled={applyMutation.isPending || invalidMargin || preview.products.length === 0}><StableSwap state={applyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("applyPricing"), busy: t("processing") }} /></Button></div>
     </div>}
     {applyMutation.isError && <p className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</p>}
     {notice && <p className="admin-alert is-success" role="status">{notice}</p>}
@@ -778,7 +779,7 @@ export function AdminPage() {
         <form className="admin-upstream-settings" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); upstreamUpdate.mutate({ code: provider.code, enabled: data.get("enabled") === "on", priority: Number(data.get("priority")), version: provider.version }); }}>
           <label className="admin-check"><input name="enabled" type="checkbox" defaultChecked={provider.enabled} /><span>{t("providerEnabled")}</span></label>
           <label>{t("providerPriority")}<input name="priority" type="number" min="-1000" max="1000" defaultValue={provider.priority} required /></label>
-          <Button size="sm" variant="outline" type="submit" disabled={upstreamUpdate.isPending}>{upstreamUpdate.isPending ? t("processing") : t("saveProvider")}</Button>
+          <Button size="sm" variant="outline" type="submit" disabled={upstreamUpdate.isPending}><StableSwap state={upstreamUpdate.isPending ? "busy" : "idle"} labels={{ idle: t("saveProvider"), busy: t("processing") }} /></Button>
         </form>
         <div className="admin-card-actions">
           <Button size="sm" variant="outline" aria-pressed={upstreamCode === provider.code} onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); }}>{t("selectProvider")}</Button>
@@ -833,7 +834,7 @@ export function AdminPage() {
             <small>{t("adminCardDeleteRefundHint", { amount: formatDecimal(cardDeleteRequest.card.balance), email: adminAccountLabel(cardDeleteRequest.card.email) })}</small>
           </div>
           <div className="admin-card-actions">
-            <Button type="button" size="xs" variant="destructive" disabled={adminCardDelete.isPending} onClick={() => adminCardDelete.mutate(cardDeleteRequest)}>{adminCardDelete.isPending ? t("processing") : t("confirmDeleteCard")}</Button>
+            <Button type="button" size="xs" variant="destructive" disabled={adminCardDelete.isPending} onClick={() => adminCardDelete.mutate(cardDeleteRequest)}><StableSwap state={adminCardDelete.isPending ? "busy" : "idle"} labels={{ idle: t("confirmDeleteCard"), busy: t("processing") }} /></Button>
             <Button type="button" size="xs" variant="outline" disabled={adminCardDelete.isPending} onClick={() => { setCardDeleteRequest(null); setActionMessage(""); }}>{t("cancel")}</Button>
           </div>
         </div>}
@@ -918,7 +919,7 @@ export function AdminPage() {
                 if (!window.confirm(t("manualDepositConfirmPrompt", { amount: formatDecimal(order.expectedAmount ?? "—"), customer: adminAccountLabel(order.email, order.userId) }))) return;
                 setActionMessage("");
                 manualConfirmDeposit.mutate(order.gatewayRef);
-              }}>{manualConfirmDeposit.isPending && manualConfirmDeposit.variables === order.gatewayRef ? t("processing") : t("manualDepositConfirm")}</Button>}</td>
+              }}><StableSwap state={manualConfirmDeposit.isPending && manualConfirmDeposit.variables === order.gatewayRef ? "busy" : "idle"} labels={{ idle: t("manualDepositConfirm"), busy: t("processing") }} /></Button>}</td>
             </tr>;
           })}</tbody>
         </table></div>}
@@ -1070,7 +1071,7 @@ export function AdminPage() {
           <label>{t("announcementContent")}<textarea value={announcementDraft.content} onChange={(event) => changeAnnouncementDraft({ content: event.target.value })} maxLength={10_000} required /></label>
           <label className="admin-settings-toggle"><input type="checkbox" checked={announcementDraft.sendTelegram} onChange={(event) => changeAnnouncementDraft({ sendTelegram: event.target.checked })} disabled={announcementGroups.length === 0} /><span><strong>{t("announcementTelegramSend")}</strong><small>{t("announcementTelegramSendHint")}</small></span></label>
           {announcementDraft.sendTelegram && <label>{t("announcementTelegramGroup")}<Select value={selectedAnnouncementGroupId} onValueChange={(telegramChatId) => changeAnnouncementDraft({ telegramChatId })}><SelectTrigger aria-label={t("announcementTelegramGroup")}><SelectValue placeholder={t("selectTelegramGroup")} /></SelectTrigger><SelectContent>{announcementGroups.map((group) => <SelectItem key={group.chatId} value={group.chatId}>{group.title}</SelectItem>)}</SelectContent></Select></label>}
-          <div className="admin-form-actions"><Button type="submit" disabled={announcementAction.isPending || (announcementDraft.sendTelegram && !selectedAnnouncementGroupId)}>{announcementAction.isPending ? t("sendingAnnouncement") : t("sendAnnouncement")}</Button></div>
+          <div className="admin-form-actions"><Button type="submit" disabled={announcementAction.isPending || (announcementDraft.sendTelegram && !selectedAnnouncementGroupId)}><StableSwap state={announcementAction.isPending ? "busy" : "idle"} labels={{ idle: t("sendAnnouncement"), busy: t("sendingAnnouncement") }} /></Button></div>
         </form>
       </section>
       <section className="admin-surface">

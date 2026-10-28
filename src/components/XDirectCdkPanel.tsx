@@ -5,6 +5,7 @@ import { Copy, Download, KeyRound } from "lucide-react";
 import { ApiError, exportXDirectCdk, generateXDirectCdks, getProducts, getXDirectCdks, revokeXDirectCdk, type Card, type XDirectCdk, type XDirectPlan } from "../api";
 import { formatDecimal, shiftDecimal } from "../decimal";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 const statuses: Record<string, string> = { unused: "未使用", preparing: "正在预检", prepared: "等待确认", funding: "正在准备支付卡", funded: "支付卡已就绪", paying: "正在付款", review_required: "待核对", completed: "已完成", failed: "支付失败", failed_precharge: "兑换未完成", ineligible: "账号不符合条件", revoked: "已撤销", paid_pending_delivery: "已付款，等待到账" };
@@ -95,7 +96,7 @@ export function XDirectCdkPanel({ token, plans, cards }: { token: string; plans:
       {product && mode === "new" && <p>当前开卡费 USD {formatDecimal(product.openFee)}；充值费率 {formatDecimal(shiftDecimal(product.rechargeRate, 2))}%。执行前以后台核验的实际费用为准，超出授权上限即停止。</p>}
       {products.isError && mode === "new" && <p role="alert">开卡产品加载失败，请稍后重试。</p>}
       <p className="admin-settings-note">固定充值金额在兑换时执行，不自动追加充值。新开卡或充值后的剩余余额留在发行者卡内。钱包上限需覆盖全部钱包扣款；官方金额上限单独以 BDT 授权，不把美元汇率估算当作扣款授权。</p>
-      <Button type="submit" disabled={busy || !plans.find(item => item.key === plan)?.enabled || (mode === "existing" ? !cardId : !productCode || products.isError)}>{busy ? "处理中…" : "免费生成 CDK"}</Button>
+      <Button type="submit" disabled={busy || !plans.find(item => item.key === plan)?.enabled || (mode === "existing" ? !cardId : !productCode || products.isError)}><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: "免费生成 CDK", busy: "处理中…" }} /></Button>
     </form>
     {error && <p className="admin-alert is-error" role="alert">{error}</p>}{notice && <p className="admin-alert is-success" role="status">{notice}</p>}
     {issued.length > 0 && <div className="gpt-cdk-purchase-result"><div className="gpt-cdk-code-list">{issued.map(item => <div key={item.id}><code>{item.code ?? item.codePrefix}</code><Button size="xs" variant="outline" disabled={busy} onClick={() => void copy(item.id)}><Copy />复制</Button></div>)}</div></div>}

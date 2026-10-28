@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { BrandIcon } from "@/components/BrandIcon";
 import { resetPassword } from "../api";
 
@@ -52,7 +53,7 @@ export function ResetPasswordPage() {
         <label>{t("newPassword")}<input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={72} required /></label>
         <label>{t("confirmPassword")}<input name="confirmation" type="password" autoComplete="new-password" minLength={12} maxLength={72} required /></label>
         {message && <p role="alert" className="error">{message}</p>}
-        <Button size="lg" className="primary" disabled={submitting}>{submitting ? t("processing") : t("resetPasswordAction")}</Button>
+        <Button size="lg" className="primary" disabled={submitting}><StableSwap state={submitting ? "busy" : "idle"} labels={{ idle: t("resetPasswordAction"), busy: t("processing") }} /></Button>
       </form>}
       {success && <p role="status" className="success-note">{message}</p>}
       <Button asChild variant={success ? "default" : "ghost"}><Link to="/login">{success ? t("continueToLogin") : t("backToLogin")}</Link></Button>

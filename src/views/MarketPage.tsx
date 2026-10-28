@@ -5,6 +5,7 @@ import { Navigate } from "@tanstack/react-router";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock3, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataSkeleton, PageShell } from "../components/PageShell";
+import { StableSwap } from "../components/StableSwap";
 import { PaymentPerformance } from "../components/PaymentPerformance";
 import { getOpenAiPrices } from "../api";
 import { sessionAtom } from "../state";
@@ -18,7 +19,7 @@ export function MarketPage() {
   const { flags } = featureAccess;
   const query = useQuery({ queryKey: ["openai-prices"], queryFn: () => getOpenAiPrices(session!.token), enabled: Boolean(session && featureAccess.data?.data.market) });
   if (!session) return <Navigate to="/login" />;
-  const loadingPage = <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")}>
+  const loadingPage = <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")} className="market-page">
     <div aria-busy="true">
       <section className="market-context-panel"><div><BarChart3 /><span>{t("marketReferenceCount")}</span><strong><DataSkeleton /></strong><small>{t("marketVerifiedSource")}</small></div><div><Clock3 /><span>{t("marketObservedAt")}</span><strong><DataSkeleton /></strong><small>{t("marketLatestSuccess")}</small></div><Button variant="outline" disabled><RefreshCw />{t("refresh")}</Button></section>
       <section className="transaction-panel market-performance"><div className="section-title"><div><h2>{t("paymentPerformanceByBin")}</h2><p>{t("paymentPerformanceBinHint")}</p></div></div><div className="market-performance-grid">{[0, 1, 2].map((item) => <article key={item}><h3><DataSkeleton /></h3><DataSkeleton /><DataSkeleton /></article>)}</div></section>
@@ -27,10 +28,10 @@ export function MarketPage() {
     </div>
   </PageShell>;
   if (featureAccess.isPending) return loadingPage;
-  if (featureAccess.isError || !flags.market) return <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")}>
+  if (featureAccess.isError || !flags.market) return <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")} className="market-page">
     <section className="deposit-panel feature-disabled"><BarChart3 /><p>{t("featureUnavailable")}</p></section>
   </PageShell>;
-  if (query.isError) return <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")}>
+  if (query.isError) return <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")} className="market-page">
     <section className="deposit-panel query-error" role="alert">
       <strong>{t("marketLoadFailed")}</strong>
       {flags.market && <Button variant="outline" onClick={() => void query.refetch()}><RefreshCw />{t("retry")}</Button>}
@@ -63,12 +64,12 @@ export function MarketPage() {
     return `${formatPrice(amount, currency)}${estimate ? ` · ${estimate}` : ""}`;
   };
 
-  return <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")}>
+  return <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")} className="market-page">
     <section className="market-context-panel">
       <div><BarChart3 /><span>{t("marketReferenceCount")}</span><strong>{references.length}</strong><small>{t("marketVerifiedSource")}</small></div>
       <div><Clock3 /><span>{t("marketObservedAt")}</span><strong>{formatTime(references[0]?.completedAt)}</strong><small>{t("marketLatestSuccess")}</small></div>
       {flags.market && <Button variant="outline" onClick={() => void query.refetch()} disabled={query.isFetching}>
-        <RefreshCw className={query.isFetching ? "is-spinning" : ""} />{query.isFetching ? t("refreshing") : t("refresh")}
+        <RefreshCw className={query.isFetching ? "is-spinning" : ""} /><StableSwap state={query.isFetching ? "busy" : "idle"} labels={{ idle: t("refresh"), busy: t("refreshing") }} />
       </Button>}
     </section>
     <section className="transaction-panel market-performance" data-testid="market-payment-performance">

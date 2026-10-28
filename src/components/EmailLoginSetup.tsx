@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { setupEmailLogin } from "../api";
 import { saveEmailVerificationState } from "../emailVerificationState";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 
 export function EmailLoginSetup({ token, verificationPending, initialEmail, onComplete }: {
   token: string;
@@ -52,7 +53,7 @@ export function EmailLoginSetup({ token, verificationPending, initialEmail, onCo
         <label>{t("newPassword")}<input name="password" type="password" autoComplete="new-password" minLength={12} required /></label>
         <label>{t("confirmPassword")}<input name="confirmPassword" type="password" autoComplete="new-password" minLength={12} required /></label>
         {error && <p role="alert" className="error">{error}</p>}
-        <Button disabled={mutation.isPending}>{mutation.isPending ? t("processing") : t(verificationPending ? "updateEmailLoginAction" : "setupEmailLoginAction")}</Button>
+        <Button disabled={mutation.isPending}><StableSwap state={mutation.isPending ? "busy" : verificationPending ? "alt" : "idle"} labels={{ idle: t("setupEmailLoginAction"), alt: t("updateEmailLoginAction"), busy: t("processing") }} /></Button>
         <p className="secure-note">{t("emailDeliveryCheckSpamHint")}</p>
       </form>
   </article>;

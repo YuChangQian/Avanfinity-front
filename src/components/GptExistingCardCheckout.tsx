@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { ApiError, PendingOperationError, getCardDetail, getCardOperation, getCardRechargeQuote, getWallet, runCardAction, syncCard, type CardRechargeQuote } from "../api";
 import { formatDecimal } from "../decimal";
 import { fundingAmount, fundingCovered, fundingTotal } from "../gptCardFunding";
@@ -181,7 +182,7 @@ export function GptExistingCardCheckout({ token, userKey, cardId, estimateUsd, s
     {error && <p role="alert" className="error">{error} <Link to="/cards/$cardId" params={{ cardId: String(cardId) }}>{t("gptFundingViewCard")}</Link></p>}
     {pending && <p role="status">{t("gptFundingPending")} <Link to="/cards/$cardId" params={{ cardId: String(cardId) }}>{t("gptFundingViewCard")}</Link></p>}
     <Button size="lg" disabled={disabled && !pending || running.current || Boolean(review && !pending && !fundingCovered(review.wallet, review.total))} onClick={() => void execute(Boolean(review))}>
-      {running.current ? t("processing") : pending ? t("gptFundingCheck") : review ? t("gptFundingConfirm") : t(submitLabel ?? "gptSubmitOrder")}
+      <StableSwap state={running.current ? "busy" : pending ? "check" : review ? "confirm" : "idle"} labels={{ idle: t(submitLabel ?? "gptSubmitOrder"), check: t("gptFundingCheck"), confirm: t("gptFundingConfirm"), busy: t("processing") }} />
     </Button>
     {review && !pending && <Button variant="outline" disabled={running.current} onClick={() => { setReview(null); setError(""); }}>{t("cancel")}</Button>}
   </div>;

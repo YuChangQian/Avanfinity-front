@@ -6,6 +6,7 @@ import { ArrowLeft, Globe2, LockKeyhole, RefreshCw, ShieldCheck } from "lucide-r
 import { Link, Navigate, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { CardNetworkBrand } from "../components/CardNetworkBrand";
 import { DataSkeleton, PageShell } from "../components/PageShell";
 import { PaymentPerformance } from "../components/PaymentPerformance";
@@ -242,7 +243,7 @@ export function OpenCardPage() {
             {pendingOperation.operationId && <><p>{t("openCardOperationReference", { id: pendingOperation.operationId })}</p><Button type="button" variant="outline" onClick={() => mutation.mutate({ ...mutation.variables!, operationId: pendingOperation.operationId })}>{t("openCardCheckAgain")}</Button></>}
             <Button asChild variant="ghost"><Link to="/cards/owned">{t("openCardViewOwned")}</Link></Button>
           </div>}
-          <Button type="submit" size="lg" disabled={mutation.isPending || Boolean(pendingOperation)}>{mutation.isPending ? t("opening") : t("confirmOpen")}</Button>
+          <Button type="submit" size="lg" disabled={mutation.isPending || Boolean(pendingOperation)}><StableSwap state={mutation.isPending ? "busy" : "idle"} labels={{ idle: t("confirmOpen"), busy: t("opening") }} /></Button>
           <p className="open-card-next"><ShieldCheck aria-hidden="true" /><span>{t("openCardNext")}</span></p>
         </form>
       </section>

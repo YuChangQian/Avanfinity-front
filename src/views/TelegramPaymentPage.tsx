@@ -6,6 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, Clock3, ShieldCheck, XCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { DataSkeleton } from "../components/PageShell";
 import { ApiError, confirmTelegramCardRecharge, resolveTelegramPayment } from "../api";
 import { sessionAtom } from "../state";
@@ -102,7 +103,7 @@ export function TelegramPaymentPage() {
     </dl>
     {confirm.error ? <p role="alert" className="error">{confirm.error instanceof Error ? confirm.error.message : t("telegramPaymentFailed")}</p> : null}
     <Button type="button" onClick={() => confirm.mutate()} disabled={confirm.isPending || intent.state !== "awaiting_web"}>
-      {confirm.isPending ? t("processing") : t("telegramPaymentConfirm")}
+      <StableSwap state={confirm.isPending ? "busy" : "idle"} labels={{ idle: t("telegramPaymentConfirm"), busy: t("processing") }} />
     </Button>
     <p className="muted">{t("telegramPaymentSensitiveGuard")}</p>
   </section></main>;

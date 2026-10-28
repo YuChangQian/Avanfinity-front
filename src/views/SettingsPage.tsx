@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate, useNavigate } from "@tanstack/react-router";
 import { KeyRound, Send, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { DataSkeleton, PageShell } from "../components/PageShell";
 import { EmailLoginSetup } from "../components/EmailLoginSetup";
 import { changePassword, getSettings, getTelegram, issueTelegramBindCode, requestTelegramUnbindCode, unbindTelegram, updateAvatar } from "../api";
@@ -158,7 +159,7 @@ export function SettingsPage() {
                 <div className="inline-action">
                   <Button type="submit" variant="destructive" disabled={unbind.isPending || clock >= activeTelegramUnbind.expiresAt}>{t("confirmTelegramUnbind")}</Button>
                   <Button type="button" variant="outline" disabled={issueUnbindCode.isPending || clock < activeTelegramUnbind.resendAt} onClick={() => issueUnbindCode.mutate()}>
-                    {clock < activeTelegramUnbind.resendAt ? t("resendTelegramUnbindCountdown", { seconds: Math.ceil((activeTelegramUnbind.resendAt - clock) / 1_000) }) : t("resendTelegramUnbindCode")}
+                    <StableSwap state={clock < activeTelegramUnbind.resendAt ? "wait" : "idle"} labels={{ idle: t("resendTelegramUnbindCode"), wait: t("resendTelegramUnbindCountdown", { seconds: Math.max(0, Math.ceil((activeTelegramUnbind.resendAt - clock) / 1_000)) }), reserve: t("resendTelegramUnbindCountdown", { seconds: 60 }) }} />
                   </Button>
                 </div>
               </form>}
@@ -175,7 +176,7 @@ export function SettingsPage() {
               <Button asChild variant="outline"><a href={`https://t.me/${telegram.data.data.botName}?start=${telegramBindCode}`} target="_blank" rel="noreferrer">{t("openTelegramBot")}</a></Button>
             </>}
             <Button variant="outline" disabled={issueBindCode.isPending} onClick={() => issueBindCode.mutate()}>
-              {t(telegramBindCode ? "regenerateTelegramBindCode" : "generateTelegramBindCode")}
+              <StableSwap state={telegramBindCode ? "alt" : "idle"} labels={{ idle: t("generateTelegramBindCode"), alt: t("regenerateTelegramBindCode") }} />
             </Button>
           </div>}
       </section>

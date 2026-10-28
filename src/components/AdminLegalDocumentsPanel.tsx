@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Save } from "lucide-react";
 import { getLegalDocuments, updateAdminLegalDocuments, type LegalDocuments } from "../api";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 
 export function AdminLegalDocumentsPanel({ token }: { token: string }) {
   const documents = useQuery({ queryKey: ["legal-documents"], queryFn: getLegalDocuments, retry: false });
@@ -35,7 +36,7 @@ function LegalDocumentsForm({ token, initial }: { token: string; initial: LegalD
     <form onSubmit={submit}>
       <label>服务条款<textarea value={terms} onChange={(event) => setTerms(event.target.value)} rows={20} minLength={100} required /></label>
       <label>用户协议<textarea value={userAgreement} onChange={(event) => setUserAgreement(event.target.value)} rows={16} minLength={100} required /></label>
-      <div className="admin-form-actions"><Button disabled={save.isPending || terms.trim().length < 100 || userAgreement.trim().length < 100}><Save />{save.isPending ? "保存中…" : "保存协议"}</Button><span>版本 {version}</span></div>
+      <div className="admin-form-actions"><Button disabled={save.isPending || terms.trim().length < 100 || userAgreement.trim().length < 100}><Save /><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: "保存协议", busy: "保存中…" }} /></Button><span>版本 {version}</span></div>
       {notice && <p className={`admin-alert ${save.isError ? "is-error" : "is-success"}`} role={save.isError ? "alert" : "status"}>{notice}</p>}
     </form>
   </section>;

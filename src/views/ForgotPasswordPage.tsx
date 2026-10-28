@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { KeyRound, RefreshCw, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { BrandIcon } from "@/components/BrandIcon";
 import { createLoginCaptcha, requestPasswordReset } from "../api";
 
@@ -65,7 +66,7 @@ export function ForgotPasswordPage() {
       {captcha.isError && <div className="captcha-load-error" role="alert"><span>{t("captchaLoadFailed")}</span><Button type="button" size="sm" variant="outline" onClick={() => void captcha.refetch()}>{t("retry")}</Button></div>}
       {message && <p role="status" className="success-note">{message}</p>}
       {error && <p role="alert" className="error">{error}</p>}
-      <Button size="lg" className="primary" disabled={sending || remaining > 0 || captcha.isLoading || captcha.isError}>{sending ? t("sending") : remaining > 0 ? t("passwordResetCountdown", { seconds: remaining }) : t("sendPasswordReset")}</Button>
+      <Button size="lg" className="primary" disabled={sending || remaining > 0 || captcha.isLoading || captcha.isError}><StableSwap state={sending ? "busy" : remaining > 0 ? "wait" : "idle"} labels={{ idle: t("sendPasswordReset"), busy: t("sending"), wait: t("passwordResetCountdown", { seconds: remaining }), reserve: t("passwordResetCountdown", { seconds: 60 }) }} /></Button>
       <p className="secure-note"><ShieldCheck size={14} /> {t("emailDeliveryCheckSpamHint")}</p>
       <Button asChild variant="ghost"><Link to="/login">{t("backToLogin")}</Link></Button>
       <p className="secure-note"><ShieldCheck size={14} /> {t("passwordResetPrivacy")}</p>

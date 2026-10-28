@@ -5,6 +5,7 @@ import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageShell } from "../components/PageShell";
 import { DirectOrderFilters, type DirectOrderQuery } from "../components/DirectOrderFilters";
@@ -163,7 +164,7 @@ export function XDirectPage() {
         {plans.isError && <p role="alert">X 服务暂不可用，请稍后重试。</p>}
         {cards.isError && <p role="alert">卡片加载失败，请刷新页面。</p>}
         {plans.data && !plans.data.data.paymentsEnabled && <p role="status">付款暂未开启，可以预检已开放套餐。</p>}
-        <Button type="submit" disabled={action.isPending || !cardId || !planList.find(item => item.key === plan)?.enabled}>{action.isPending ? "处理中…" : "检查资格并获取报价"}</Button>
+        <Button type="submit" disabled={action.isPending || !cardId || !planList.find(item => item.key === plan)?.enabled}><StableSwap state={action.isPending ? "busy" : "idle"} labels={{ idle: "检查资格并获取报价", busy: "处理中…" }} /></Button>
       </form></section>
       <section className="gpt-direct-panel"><div className="gpt-order-content" aria-live="polite">
         <h2>{preview ? "报价预览" : "充值确认"}</h2>

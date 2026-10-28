@@ -28,6 +28,7 @@ import {
   type WalletPolicy,
 } from "../api";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { DataSkeleton } from "./PageShell";
 
@@ -332,8 +333,8 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
         </dl>
         {smtpNotice && <p className={`admin-alert ${smtpNoticeError ? "is-error" : "is-success"}`} role={smtpNoticeError ? "alert" : "status"}>{smtpNotice}</p>}
         <div className="admin-form-actions">
-          <Button type="button" variant="outline" disabled={!savedSmtpComplete || saveSmtp.isPending || testSmtp.isPending} onClick={() => { setSmtpNotice(""); testSmtp.mutate(); }}><Send />{testSmtp.isPending ? t("sending") : t("sendSmtpTest")}</Button>
-          <Button type="submit" disabled={(smtp.enabled && !smtpComplete) || saveSmtp.isPending || testSmtp.isPending}><Save />{saveSmtp.isPending ? t("processing") : t("save")}</Button>
+          <Button type="button" variant="outline" disabled={!savedSmtpComplete || saveSmtp.isPending || testSmtp.isPending} onClick={() => { setSmtpNotice(""); testSmtp.mutate(); }}><Send /><StableSwap state={testSmtp.isPending ? "busy" : "idle"} labels={{ idle: t("sendSmtpTest"), busy: t("sending") }} /></Button>
+          <Button type="submit" disabled={(smtp.enabled && !smtpComplete) || saveSmtp.isPending || testSmtp.isPending}><Save /><StableSwap state={saveSmtp.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button>
         </div>
       </form>
     </section>
@@ -412,8 +413,8 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
         {deposit.lastError && <p className="admin-alert is-error" role="alert"><span><strong>{t("depositLastError")}</strong>{deposit.lastErrorAt ? ` · ${new Date(deposit.lastErrorAt).toLocaleString()}` : ""}<br />{deposit.lastError}</span></p>}
         {depositNotice && <p className={`admin-alert ${depositNoticeError ? "is-error" : "is-success"}`} role={depositNoticeError ? "alert" : "status"}>{depositNotice}</p>}
         <div className="admin-form-actions">
-          <Button type="button" variant="outline" disabled={!savedDepositComplete || saveDeposits.isPending || testDeposits.isPending} onClick={() => { setDepositNotice(""); testDeposits.mutate(); }}><RefreshCw />{testDeposits.isPending ? t("depositTesting") : t("testDepositMonitor")}</Button>
-          <Button type="submit" disabled={!depositComplete || saveDeposits.isPending || testDeposits.isPending}><Save />{saveDeposits.isPending ? t("processing") : t("save")}</Button>
+          <Button type="button" variant="outline" disabled={!savedDepositComplete || saveDeposits.isPending || testDeposits.isPending} onClick={() => { setDepositNotice(""); testDeposits.mutate(); }}><RefreshCw /><StableSwap state={testDeposits.isPending ? "busy" : "idle"} labels={{ idle: t("testDepositMonitor"), busy: t("depositTesting") }} /></Button>
+          <Button type="submit" disabled={!depositComplete || saveDeposits.isPending || testDeposits.isPending}><Save /><StableSwap state={saveDeposits.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button>
         </div>
       </form>
     </section>
@@ -437,7 +438,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
         </div>
         <p className="admin-settings-note">{t("paymentRiskCurrentPolicy", { days: paymentRisk.windowDays, attempts: paymentRisk.minAttempts, lock: formatDecimal((paymentRisk.lockThresholdBps / 100).toFixed(2)), release: formatDecimal((paymentRisk.releaseThresholdBps / 100).toFixed(2)), reserve: formatDecimal((paymentRisk.reserveBps / 100).toFixed(2)) })}</p>
         {paymentRiskNotice && <p className={`admin-alert ${savePaymentRisk.isError ? "is-error" : "is-success"}`} role={savePaymentRisk.isError ? "alert" : "status"}><span>{paymentRiskNotice}</span>{paymentRiskRecentAuthRequired && <Button type="button" size="xs" variant="outline" onClick={requestPaymentRiskRecentAuth}>{t("verifyAgain")}</Button>}</p>}
-        <div className="admin-form-actions"><Button type="submit" disabled={savePaymentRisk.isPending || paymentRiskInvalid}><Save />{savePaymentRisk.isPending ? t("processing") : t("save")}</Button></div>
+        <div className="admin-form-actions"><Button type="submit" disabled={savePaymentRisk.isPending || paymentRiskInvalid}><Save /><StableSwap state={savePaymentRisk.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button></div>
       </form>
     </section>}
 
@@ -487,7 +488,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           </label>)}
         </div>
         {gptProtocolNotice && <p className={`admin-alert ${saveGptProtocol.isError ? "is-error" : "is-success"}`} role={saveGptProtocol.isError ? "alert" : "status"}>{gptProtocolNotice}</p>}
-        <div className="admin-form-actions"><Button type="submit" disabled={saveGptProtocol.isPending}><Save />{saveGptProtocol.isPending ? t("processing") : t("save")}</Button></div>
+        <div className="admin-form-actions"><Button type="submit" disabled={saveGptProtocol.isPending}><Save /><StableSwap state={saveGptProtocol.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button></div>
       </form>
     </section>}
 
@@ -511,7 +512,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           </label>
         </div>
         {walletPolicyNotice && <p className={`admin-alert ${saveWalletPolicy.isError ? "is-error" : "is-success"}`} role={saveWalletPolicy.isError ? "alert" : "status"}>{walletPolicyNotice}</p>}
-        <div className="admin-form-actions"><Button type="submit" disabled={saveWalletPolicy.isPending || walletPolicyInvalid}><Save />{saveWalletPolicy.isPending ? t("processing") : t("saveWalletPolicy")}</Button></div>
+        <div className="admin-form-actions"><Button type="submit" disabled={saveWalletPolicy.isPending || walletPolicyInvalid}><Save /><StableSwap state={saveWalletPolicy.isPending ? "busy" : "idle"} labels={{ idle: t("saveWalletPolicy"), busy: t("processing") }} /></Button></div>
       </form>
     </section>
 
@@ -558,7 +559,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
         </div>
         <p className="admin-settings-note">{t("declineThresholdCurrentPolicy", { attempts: declineThreshold.minAttempts, reversal: declineThreshold.reversalFeeRate, autoDelete: declineThreshold.autoDeleteDeclines })}</p>
         {declineThresholdNotice && <p className={`admin-alert ${saveDeclineThreshold.isError ? "is-error" : "is-success"}`} role={saveDeclineThreshold.isError ? "alert" : "status"}>{declineThresholdNotice}</p>}
-        <div className="admin-form-actions"><Button type="submit" disabled={saveDeclineThreshold.isPending || declineThresholdInvalid}><Save />{saveDeclineThreshold.isPending ? t("processing") : t("save")}</Button></div>
+        <div className="admin-form-actions"><Button type="submit" disabled={saveDeclineThreshold.isPending || declineThresholdInvalid}><Save /><StableSwap state={saveDeclineThreshold.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button></div>
       </form>
     </section>}
 
@@ -578,7 +579,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           })}
         </div>
         {featureNotice && <p className={`admin-alert ${saveFeatures.isError ? "is-error" : "is-success"}`} role={saveFeatures.isError ? "alert" : "status"}>{featureNotice}</p>}
-        <div className="admin-form-actions"><Button type="submit" disabled={saveFeatures.isPending}><Save />{saveFeatures.isPending ? t("processing") : t("saveFeatureSettings")}</Button></div>
+        <div className="admin-form-actions"><Button type="submit" disabled={saveFeatures.isPending}><Save /><StableSwap state={saveFeatures.isPending ? "busy" : "idle"} labels={{ idle: t("saveFeatureSettings"), busy: t("processing") }} /></Button></div>
       </form>
     </section>
   </div>;

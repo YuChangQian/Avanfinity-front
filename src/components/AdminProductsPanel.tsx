@@ -14,6 +14,7 @@ import {
   type PricingOverride,
 } from "../api";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 
 function productFields(product: AdminProduct, active = product.active) {
   const { issuer, network, issuingArea, cardType, openFee, rechargeRate, minAmount, maxAmount } = product;
@@ -54,7 +55,7 @@ function PricingOverrideEditor({ token, product, onClose }: { token: string; pro
       <label>{t("customerTier")}<select value={selectedTier} onChange={(event) => { setTierCode(event.target.value); setNotice(""); }}>{pricing.data.data.tiers.map((tier) => <option key={tier.code} value={tier.code}>{tier.nameZh} / {tier.nameEn}</option>)}</select></label>
       <label>{t("saleOpenFee")}<input name="saleOpenFee" type="number" min={product.costOpenFee ?? "0"} step="0.0001" defaultValue={formatDecimal(current?.saleOpenFee ?? "")} placeholder={t("useTierDefault")} /></label>
       <label>{t("saleRechargeRate")}<input name="saleRechargeRate" type="number" min={product.costRechargeRate ?? "0"} max="1" step="0.000001" defaultValue={current?.saleRechargeRate ?? ""} placeholder={t("useTierDefault")} /></label>
-      <div className="admin-card-actions"><Button type="submit" disabled={save.isPending}>{save.isPending ? t("processing") : t("saveOverride")}</Button>{current && <Button type="button" variant="outline" onClick={() => remove.mutate(current)} disabled={remove.isPending}><Trash2 />{t("removeOverride")}</Button>}</div>
+      <div className="admin-card-actions"><Button type="submit" disabled={save.isPending}><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: t("saveOverride"), busy: t("processing") }} /></Button>{current && <Button type="button" variant="outline" onClick={() => remove.mutate(current)} disabled={remove.isPending}><Trash2 />{t("removeOverride")}</Button>}</div>
     </form>}
     {pricing.data?.data.tiers.length === 0 && <div className="admin-state">{t("noMembershipTiers")}</div>}
     {error && <p className="admin-alert is-error" role="alert">{error instanceof Error ? error.message : t("updateFailed")}</p>}
@@ -89,7 +90,7 @@ function ProductPresentationEditor({ token, product, onClose }: { token: string;
       <label>{t("upstreamCategory")}<input readOnly value={product.upstreamCategory ?? t("noUpstreamCategory")} /></label>
       <label>{t("localDescriptionOverride")}<textarea name="descriptionOverride" defaultValue={product.descriptionOverride ?? ""} maxLength={2000} placeholder={t("productDescriptionFallback")} /></label>
       <label>{t("localCategoryOverride")}<input name="categoryOverride" defaultValue={product.categoryOverride ?? ""} maxLength={128} placeholder={t("categoryPlaceholder")} /></label>
-      <div className="admin-card-actions"><Button type="submit" disabled={save.isPending}>{save.isPending ? t("processing") : t("savePresentation")}</Button><Button type="button" variant="outline" disabled={save.isPending || (product.descriptionOverride === null && product.categoryOverride === null)} onClick={() => save.mutate({ descriptionOverride: null, categoryOverride: null })}>{t("restoreUpstreamPresentation")}</Button></div>
+      <div className="admin-card-actions"><Button type="submit" disabled={save.isPending}><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: t("savePresentation"), busy: t("processing") }} /></Button><Button type="button" variant="outline" disabled={save.isPending || (product.descriptionOverride === null && product.categoryOverride === null)} onClick={() => save.mutate({ descriptionOverride: null, categoryOverride: null })}>{t("restoreUpstreamPresentation")}</Button></div>
     </form>
     {save.error && <p className="admin-alert is-error" role="alert">{save.error instanceof Error ? save.error.message : t("updateFailed")}</p>}
   </section>;

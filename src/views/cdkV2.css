@@ -122,3 +122,32 @@
   .cdkv2-redeem .cdkv2-header .cdkv2-badge { display: none; }
   .cdkv2-pagination .cdkv2-button { padding-inline: 10px; }
 }
+
+.cdkv2-manage .cdkv2-header p { max-width: 42rem; color: #444; font-size: 15px; line-height: 1.55; }
+.cdkv2-manage .cdkv2-eyebrow { font-size: 12px; color: #555; }
+.cdkv2-manage .cdkv2-guide { align-items: center; background: #171717; border-color: #171717; color: #fff; }
+.cdkv2-manage .cdkv2-guide li > span { color: #171717; background: #fff; font-size: 14px; }
+.cdkv2-manage .cdkv2-guide strong { color: #fff; font-size: 15px; }
+.cdkv2-manage .cdkv2-guide small { color: #d0d0d0; font-size: 13px; }
+.cdkv2-manage .cdkv2-nav button { font-size: 15px; }
+.cdkv2-manage .cdkv2-nav button[aria-current] { font-size: 15px; }
+.cdkv2-manage .cdkv2-section-heading p,
+.cdkv2-manage .cdkv2-summary p,
+.cdkv2-manage .cdkv2-help p,
+.cdkv2-manage .cdkv2-help li,
+.cdkv2-manage .cdkv2-details,
+.cdkv2-manage .cdkv2-code p,
+.cdkv2-manage .cdkv2-pagination,
+.cdkv2-manage .cdkv2-hint { color: #444; font-size: 14px; line-height: 1.55; }
+.cdkv2-manage .cdkv2-alert,
+.cdkv2-manage .cdkv2-warning,
+.cdkv2-manage .cdkv2-notice { font-size: 14px; line-height: 1.55; }
+.cdkv2-manage .cdkv2-help { background: #f7f7f5; }
+.cdkv2-manage .cdkv2-badge { font-size: 13px; color: #333; }
+.cdkv2-manage .cdk-v2 label,
+.cdkv2-manage label { font-size: 14px; }
+.cdkv2-manage .cdkv2-code strong { font-size: 16px; }
+.cdkv2-manage .cdkv2-summary-list dt { font-size: 13px; color: #555; }
+.cdkv2-manage .cdkv2-summary-list dd { font-size: 16px; font-weight: 700; }
+.cdkv2-manage .cdkv2-button { font-size: 15px; }
+.cdkv2-manage .cdkv2-panel > form > .cdkv2-button { min-width: 180px; }

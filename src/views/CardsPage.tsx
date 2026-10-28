@@ -6,6 +6,7 @@ import { Link, Navigate, useLocation, useNavigate, useSearch } from "@tanstack/r
 import { ChevronLeft, ChevronRight, CreditCard, Plus } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { CardClosurePanel } from "../components/CardClosurePanel";
 import { CardNetworkBrand } from "../components/CardNetworkBrand";
 import { CardRechargeQuoteSummary, rechargeDebitExceedsSpendable, useCardRechargeQuote } from "../components/CardRechargeQuote";
@@ -146,12 +147,18 @@ export function CardsPage() {
     </header>
     {!showingOwnedCards ? <section className="product-grid">
       {[0, 1, 2].map((item) => <article className="product-card" key={item}>
-        <div className="product-card-art interactive-card is-loading" aria-hidden="true" {...interactiveCardMotion}><div><span>AVANFINITY</span><DataSkeleton /></div><strong>{t("virtualStoredValueCard")}</strong><b><DataSkeleton /></b><div><small><DataSkeleton /></small><small>VIRTUAL</small></div></div>
-        <div className="product-card-copy"><span>{t("virtualStoredValueCard")}</span><h2><DataSkeleton /></h2><p><DataSkeleton /></p></div>
-        <p className="product-purpose"><DataSkeleton /></p>
-        <div className="product-categories"><DataSkeleton /><DataSkeleton /></div>
-        <dl>{["cardType", "openFee", "rechargeRate", "initialAmount"].map((label) => <div key={label}><dt>{t(label)}</dt><dd><DataSkeleton /></dd></div>)}</dl>
-        <Button disabled><Plus /> {t("viewAndOpen")}</Button>
+        <div className="product-card-hero">
+          <div className="product-card-art interactive-card is-loading" aria-hidden="true" {...interactiveCardMotion}><div><span>AVANFINITY</span><DataSkeleton /></div><strong>{t("virtualStoredValueCard")}</strong><b><DataSkeleton /></b><div><small><DataSkeleton /></small><small>VIRTUAL</small></div></div>
+          <div className="product-card-intro">
+            <div className="product-card-copy"><span>{t("virtualStoredValueCard")}</span><h2><DataSkeleton /></h2><p><DataSkeleton /></p></div>
+            <p className="product-purpose"><DataSkeleton /></p>
+            <div className="product-categories"><DataSkeleton /><DataSkeleton /></div>
+          </div>
+        </div>
+        <div className="product-card-decision">
+          <dl className="product-card-facts">{["cardType", "openFee", "rechargeRate", "initialAmount"].map((label) => <div key={label}><dt>{t(label)}</dt><dd><DataSkeleton /></dd></div>)}</dl>
+          <Button disabled><Plus /> {t("viewAndOpen")}</Button>
+        </div>
       </article>)}
     </section> : <section className="owned-cards">
       <div className="section-title"><h2>{t("cardList")}</h2><DataSkeleton /></div>
@@ -207,36 +214,51 @@ export function CardsPage() {
         const bins = productBins(product);
         const binPerformance = new Map((paymentReferences.data?.data.binStats ?? []).map((item) => [item.bin6, item]));
         return <article className="product-card" data-testid={`product-${product.productCode}`} key={product.productCode}>
-        <div className="product-card-art interactive-card" aria-hidden="true" {...interactiveCardMotion}>
-          <div><span>AVANFINITY</span><CardNetworkBrand network={product.network} /></div>
-          <strong>{product.cardType.toLowerCase() === "save" ? t("virtualStoredValueCard") : product.cardType}</strong>
-          <b className={bins.length > 1 ? "is-multiple" : undefined}>{bins.length === 1 ? `${bins[0]} •••• •••• ••••` : bins.length > 1 ? bins.join(" / ") : t("cardBinUnavailable")}</b>
-          <div><small>{product.issuingArea}</small><small>VIRTUAL</small></div>
+        <div className="product-card-hero">
+          <div className="product-card-art interactive-card" aria-hidden="true" {...interactiveCardMotion}>
+            <div><span>AVANFINITY</span><CardNetworkBrand network={product.network} /></div>
+            <strong>{product.cardType.toLowerCase() === "save" ? t("virtualStoredValueCard") : product.cardType}</strong>
+            <b className={bins.length > 1 ? "is-multiple" : undefined}>{bins.length === 1 ? `${bins[0]} •••• •••• ••••` : bins.length > 1 ? bins.join(" / ") : t("cardBinUnavailable")}</b>
+            <div><small>{product.issuingArea}</small><small>VIRTUAL</small></div>
+          </div>
+          <div className="product-card-intro">
+            <div className="product-card-copy"><span>{t("virtualStoredValueCard")}</span><h2>{product.network}</h2><p>{product.issuer} · <code>{product.productCode}</code></p></div>
+            <details className="product-purpose-more">
+              <summary>
+                <span className="product-purpose-toggle"><span className="is-more">{t("purposeExpand")}</span><span className="is-less">{t("purposeCollapse")}</span></span>
+                <span className="product-purpose">{product.description ?? t("productDescriptionFallback")}</span>
+              </summary>
+            </details>
+            <div className="product-categories" aria-label={t("productCategory")}>{categoryChips(product.category).length ? categoryChips(product.category).map((category) => <span key={category}>{category}</span>) : <span>{t("noProductCategory")}</span>}</div>
+          </div>
         </div>
-        <div className="product-card-copy"><span>{t("virtualStoredValueCard")}</span><h2>{product.network}</h2><p>{product.issuer} · <code>{product.productCode}</code></p></div>
-        <p className="product-purpose">{product.description ?? t("productDescriptionFallback")}</p>
-        {bins.map((bin) => {
-          const item = binPerformance.get(bin);
-          return <div className="product-payment-performance" data-testid="product-openai-success" key={bin}><strong>{t("paymentBinLabel", { bin })}</strong>{item ? <PaymentPerformance overall={item.overall} plans={item.plans} /> : <span className="payment-performance-empty">{t("paymentNoSample")}</span>}</div>;
-        })}
-        <div className="product-categories" aria-label={t("productCategory")}>{categoryChips(product.category).length ? categoryChips(product.category).map((category) => <span key={category}>{category}</span>) : <span>{t("noProductCategory")}</span>}</div>
-        <dl><div><dt>{t("cardType")}</dt><dd>{product.cardType.toLowerCase() === "save" ? t("virtualStoredValueCard") : product.cardType}</dd></div><div><dt>{t("openFee")}</dt><dd>${formatDecimal(product.openFee)}</dd></div><div><dt>{t("rechargeRate")}</dt><dd>{rate(product.rechargeRate)}</dd></div><div><dt>{t("initialAmount")}</dt><dd>${formatDecimal(product.minAmount)}–${formatDecimal(product.maxAmount)}</dd></div></dl>
-        <ProductFeeDetails product={product} />
-        {flags.cardOpening && <Button asChild><Link to="/cards/open/$productCode" params={{ productCode: product.productCode }} search={{ gptRetry: search.gptRetry }}><Plus /> {t("viewAndOpen")}</Link></Button>}
+        <div className="product-card-decision">
+          <dl className="product-card-facts"><div><dt>{t("cardType")}</dt><dd>{product.cardType.toLowerCase() === "save" ? t("virtualStoredValueCard") : product.cardType}</dd></div><div><dt>{t("openFee")}</dt><dd>${formatDecimal(product.openFee)}</dd></div><div><dt>{t("rechargeRate")}</dt><dd>{rate(product.rechargeRate)}</dd></div><div className="product-fact-amount"><dt>{t("initialAmount")}</dt><dd>${formatDecimal(product.minAmount)}–${formatDecimal(product.maxAmount)}</dd></div></dl>
+          {flags.cardOpening && <Button asChild><Link to="/cards/open/$productCode" params={{ productCode: product.productCode }} search={{ gptRetry: search.gptRetry }}><Plus /> {t("viewAndOpen")}</Link></Button>}
+        </div>
+        <div className="product-card-reference">
+          {bins.map((bin) => {
+            const item = binPerformance.get(bin);
+            return <div className="product-payment-performance" data-testid="product-openai-success" key={bin}><strong>{t("paymentBinLabel", { bin })}</strong>{item ? <PaymentPerformance overall={item.overall} plans={item.plans} /> : <span className="payment-performance-empty">{t("paymentNoSample")}</span>}</div>;
+          })}
+          <ProductFeeDetails product={product} />
+        </div>
       </article>;
       })}
     </section>}
-    {showingOwnedCards && <>
+    {showingOwnedCards && <div className="owned-card-tools">
       <form className="card-tools-search" onSubmit={event => { event.preventDefault(); setCardPage(1); setCardSearch(searchInput.trim()); }}>
         <label htmlFor="owned-card-search">{t("cardTools.searchLabel")}</label>
         <input id="owned-card-search" type="text" inputMode="numeric" pattern="[0-9]{0,6}" maxLength={6} placeholder={t("cardTools.searchPlaceholder")} value={searchInput} onChange={event => setSearchInput(event.target.value)} />
-        <Button type="submit">{t("cardTools.search")}</Button>
-        {(searchInput || cardSearch) && <Button type="button" variant="outline" onClick={() => { setSearchInput(""); setCardSearch(""); setCardPage(1); }}>{t("cardTools.clearSearch")}</Button>}
+        <div className="card-tools-actions">
+          <Button type="submit">{t("cardTools.search")}</Button>
+          {(searchInput || cardSearch) && <Button type="button" variant="outline" onClick={() => { setSearchInput(""); setCardSearch(""); setCardPage(1); }}>{t("cardTools.clearSearch")}</Button>}
+        </div>
         <p>{t("cardTools.searchHint")}</p>
       </form>
       <CardClosurePanel key={String(sessionIdentity(session))} owner={String(sessionIdentity(session))} token={session.token} enabled={flags.cardDelete} />
       {cards.isError && <p role="alert">{t("cardTools.searchError")} <Button variant="outline" onClick={() => void cards.refetch()}>{t("cardTools.refresh")}</Button></p>}
-    </>}
+    </div>}
     {showingOwnedCards && cards.data && <section className="owned-cards">
       <div className="section-title"><h2>{t("cardList")}</h2><span>{t("cardCountLabel", { count: cards.data.data.total })}</span></div>
       {cards.data.data.list.length === 0 ? <div className="empty-state">{t(cardSearch ? "cardTools.noMatches" : "noCards")}</div> :
@@ -296,7 +318,7 @@ export function CardsPage() {
             {cardAction?.action === "recharge" && <CardRechargeQuoteSummary amount={actionAmount} amountIsValid={rechargeQuote.amountIsValid} isFetching={rechargeQuote.isFetching} isError={rechargeQuote.isError} quote={rechargeQuote.currentQuote} error={rechargeQuote.error} spendableBalance={spendableBalance} onRetry={() => { void rechargeQuote.refetch(); }} />}
             {error && <p role="alert" className="error">{error}</p>}
             <Button type="submit" size="lg" disabled={actionMutation.isPending || (cardAction?.action === "recharge" && (!rechargeQuote.currentQuote || rechargeQuote.isFetching || rechargeQuote.isError || rechargeDebitExceedsSpendable(rechargeQuote.currentQuote.totalDebit, spendableBalance)))}>
-              {actionMutation.isPending ? t("processing") : t("confirmAction")}
+              <StableSwap state={actionMutation.isPending ? "busy" : "idle"} labels={{ idle: t("confirmAction"), busy: t("processing") }} />
             </Button>
           </form>
         </Dialog.Content>

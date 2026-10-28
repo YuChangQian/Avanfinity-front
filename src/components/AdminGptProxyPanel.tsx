@@ -10,6 +10,7 @@ import {
   type AdminGptProxy,
 } from "../api";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 
 function proxyStateClass(state: AdminGptProxy["state"]) {
   if (state === "healthy") return "is-active";
@@ -84,7 +85,7 @@ export function AdminGptProxyPanel({ token }: { token: string }) {
       </div>
       <div className="admin-heading-actions">
         <Button type="button" size="sm" variant="outline" disabled={pending} onClick={() => { setActionError(""); probeAll.mutate(); }}>
-          <RefreshCw />{probeAll.isPending ? t("gptProxyProbing") : t("gptProxyProbeAll")}
+          <RefreshCw /><StableSwap state={probeAll.isPending ? "busy" : "idle"} labels={{ idle: t("gptProxyProbeAll"), busy: t("gptProxyProbing") }} />
         </Button>
       </div>
     </div>
@@ -169,7 +170,7 @@ export function AdminGptProxyPanel({ token }: { token: string }) {
             <td>{item.exitIp ? <code>{item.exitIp}</code> : "—"}</td>
             <td>{item.lastCheckedAt ? new Date(item.lastCheckedAt).toLocaleString(locale) : t("gptProxyNeverChecked")}</td>
             <td className="admin-row-actions">
-              <Button type="button" size="xs" variant="outline" disabled={pending} onClick={() => void runCommand(item.id, "probe")}>{rowBusy && busyId.endsWith(":probe") ? t("gptProxyProbing") : t("gptProxyProbe")}</Button>
+              <Button type="button" size="xs" variant="outline" disabled={pending} onClick={() => void runCommand(item.id, "probe")}><StableSwap state={rowBusy && busyId.endsWith(":probe") ? "busy" : "idle"} labels={{ idle: t("gptProxyProbe"), busy: t("gptProxyProbing") }} /></Button>
               {item.enabled
                 ? <Button type="button" size="xs" variant="outline" disabled={pending} onClick={() => void runCommand(item.id, "disable")}>{t("disable")}</Button>
                 : <Button type="button" size="xs" variant="outline" disabled={pending} onClick={() => void runCommand(item.id, "enable")}>{t("enable")}</Button>}

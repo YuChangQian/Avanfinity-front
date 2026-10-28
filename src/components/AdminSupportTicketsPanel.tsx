@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LifeBuoy, Search, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "./StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   getAdminSupportTicket,
@@ -86,7 +87,7 @@ export function AdminSupportTicketsPanel({ token }: { token: string }) {
           </div>)}</div>
           {selected.ticket.status === "closed" ? <p className="support-closed-notice">{t("supportTicketClosedAdmin")}</p> : <form className="support-reply-form" onSubmit={(event) => { event.preventDefault(); sendReply.mutate(); }}>
             <label>{t("supportAdminReply")}<textarea value={reply} onChange={(event) => setReply(event.target.value)} maxLength={5000} rows={3} required /></label>
-            <Button type="submit" disabled={sendReply.isPending}><Send />{sendReply.isPending ? t("processing") : t("sendReply")}</Button>
+            <Button type="submit" disabled={sendReply.isPending}><Send /><StableSwap state={sendReply.isPending ? "busy" : "idle"} labels={{ idle: t("sendReply"), busy: t("processing") }} /></Button>
             {sendReply.isError && <p className="error" role="alert">{sendReply.error instanceof Error ? sendReply.error.message : t("supportActionFailed")}</p>}
           </form>}
         </>}

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { MailCheck, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { BrandIcon } from "@/components/BrandIcon";
 import { ApiError, resendVerificationEmail, verifyEmail } from "../api";
 import { clearEmailVerificationState, loadEmailVerificationState, saveEmailVerificationState } from "../emailVerificationState";
@@ -72,7 +73,7 @@ export function VerifyEmailPage() {
       {status === "success" && token && <Button asChild size="lg"><Link to="/login">{t("continueToLogin")}</Link></Button>}
       {(!token || status === "error") && <form className="stacked-form" onSubmit={resend}>
         <label>{t("email")}<input name="email" type="email" autoComplete="email" value={pending.email} onChange={(event) => setPending({ email: event.target.value, resendAt: pending.resendAt })} required /></label>
-        <Button disabled={resending || remaining > 0 || !pending.email.trim()}>{resending ? t("sending") : remaining > 0 ? t("resendVerificationCountdown", { seconds: remaining }) : t("resendVerification")}</Button>
+        <Button disabled={resending || remaining > 0 || !pending.email.trim()}><StableSwap state={resending ? "busy" : remaining > 0 ? "wait" : "idle"} labels={{ idle: t("resendVerification"), busy: t("sending"), wait: t("resendVerificationCountdown", { seconds: remaining }), reserve: t("resendVerificationCountdown", { seconds: 60 }) }} /></Button>
       </form>}
       <Button asChild variant="ghost"><Link to="/login">{t("haveAccount")}</Link></Button>
     </section>

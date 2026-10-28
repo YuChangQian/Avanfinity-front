@@ -7,6 +7,7 @@ import { Check, Clock3, Copy, CreditCard, Eye, EyeOff, ReceiptText, RefreshCw, S
 import { Dialog } from "radix-ui";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { CardNetworkBrand } from "../components/CardNetworkBrand";
 import { CardRechargeQuoteSummary, rechargeDebitExceedsSpendable, useCardRechargeQuote } from "../components/CardRechargeQuote";
 import { PaymentPerformance } from "../components/PaymentPerformance";
@@ -373,7 +374,7 @@ export function CardDetailPage() {
         <div><span>{holderName}</span><b>${formatDecimal(loadedDetail.availableAmount)}</b></div>
       </article>
       <section className="deposit-panel card-security-panel">
-        <div className="section-title"><h2><ShieldCheck /> {t("cardSecurityDetails")}</h2><div className="card-detail-actions"><Button variant="outline" onClick={() => { setSyncNotice(null); sync.mutate(); }} disabled={sync.isPending}><RefreshCw className={sync.isPending ? "is-spinning" : undefined} /> {sync.isPending ? t("refreshing") : t("refreshCardData")}</Button>{!readOnlyCard && <Button variant="outline" onClick={toggleSensitive}>{visible ? <EyeOff /> : <Eye />} {visible ? t("hideDetails") : t("showDetails")}</Button>}</div></div>
+        <div className="section-title"><h2><ShieldCheck /> {t("cardSecurityDetails")}</h2><div className="card-detail-actions"><Button variant="outline" onClick={() => { setSyncNotice(null); sync.mutate(); }} disabled={sync.isPending}><RefreshCw className={sync.isPending ? "is-spinning" : undefined} /><StableSwap state={sync.isPending ? "busy" : "idle"} labels={{ idle: t("refreshCardData"), busy: t("refreshing") }} /></Button>{!readOnlyCard && <Button variant="outline" onClick={toggleSensitive}>{visible ? <EyeOff /> : <Eye />}<StableSwap state={visible ? "alt" : "idle"} labels={{ idle: t("showDetails"), alt: t("hideDetails") }} /></Button>}</div></div>
         <p>{t(cardClosing ? "cardClosingHint" : cardClosed ? "cardClosedHint" : "sensitiveCardHint")}</p>
         {syncNotice && <p role={syncNotice.kind === "error" ? "alert" : "status"} className={syncNotice.kind === "error" ? "error" : "card-sync-status"}>{syncNotice.message}</p>}
         <div className="card-holder-summary"><UserRound /><div><span>{t("cardholder")}</span><strong>{holderName}</strong></div><div><span>{t("cardOpenedAt")}</span><strong>{new Date(loadedDetail.createdAt).toLocaleDateString()}</strong></div></div>
@@ -387,8 +388,8 @@ export function CardDetailPage() {
         {revealed && <div className="developer-secret-reveal" data-testid="card-billing-address">
           <p>{t("billingAddress")}</p>
           {fullBillingAddress ? <>
-            <div data-testid="billing-address-full"><span>{t("billingAddressFull")}</span><code>{fullBillingAddress}</code><Button type="button" size="xs" variant="outline" aria-label={t("copyFullBillingAddress")} onClick={() => copyBillingAddress(fullBillingAddress, "full")}>{copiedAddress === "full" ? <Check /> : <Copy />}{copiedAddress === "full" ? t("copied") : t("copy")}</Button></div>
-            {billingAddressFields.map((field) => <div key={field.key} data-testid={`billing-address-${field.key}`}><span>{field.label}</span><code>{field.value || "—"}</code><Button type="button" size="xs" variant="outline" aria-label={t("copyBillingAddressField", { field: field.label })} disabled={!field.value} onClick={() => copyBillingAddress(field.value, field.key)}>{copiedAddress === field.key ? <Check /> : <Copy />}{copiedAddress === field.key ? t("copied") : t("copy")}</Button></div>)}
+            <div data-testid="billing-address-full"><span>{t("billingAddressFull")}</span><code>{fullBillingAddress}</code><Button type="button" size="xs" variant="outline" aria-label={t("copyFullBillingAddress")} onClick={() => copyBillingAddress(fullBillingAddress, "full")}>{copiedAddress === "full" ? <Check /> : <Copy />}<StableSwap state={copiedAddress === "full" ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} /></Button></div>
+            {billingAddressFields.map((field) => <div key={field.key} data-testid={`billing-address-${field.key}`}><span>{field.label}</span><code>{field.value || "—"}</code><Button type="button" size="xs" variant="outline" aria-label={t("copyBillingAddressField", { field: field.label })} disabled={!field.value} onClick={() => copyBillingAddress(field.value, field.key)}>{copiedAddress === field.key ? <Check /> : <Copy />}<StableSwap state={copiedAddress === field.key ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} /></Button></div>)}
           </> : <div><span>{t("billingAddress")}</span><code>{t("noBillingAddress")}</code></div>}
           {sensitiveCopyError && <p role="alert" className="error">{sensitiveCopyError}</p>}
         </div>}
@@ -492,13 +493,13 @@ export function CardDetailPage() {
           {dialogAction === "delete" ? <div className="card-delete-confirmation">
             <p>{t("deleteCardWarning")}</p>
             {actionError && <p role="alert" className="error">{actionError}</p>}
-            <div><Dialog.Close asChild><Button type="button" variant="outline" disabled={action.isPending}>{t("cancel")}</Button></Dialog.Close><Button type="button" variant="destructive" onClick={() => runAction("delete")} disabled={action.isPending}>{action.isPending ? t("processing") : t("confirmDeleteCard")}</Button></div>
+            <div><Dialog.Close asChild><Button type="button" variant="outline" disabled={action.isPending}>{t("cancel")}</Button></Dialog.Close><Button type="button" variant="destructive" onClick={() => runAction("delete")} disabled={action.isPending}><StableSwap state={action.isPending ? "busy" : "idle"} labels={{ idle: t("confirmDeleteCard"), busy: t("processing") }} /></Button></div>
           </div> : <form onSubmit={submitCardAction}>
             {dialogAction === "refund" && <p>{t("refundBalanceSyncHint")}</p>}
             <label>{t("amountUsd")}<input name="amount" type="number" inputMode="decimal" step="0.0001" min={dialogAction === "recharge" ? loadedDetail.minAmount : "1"} max={dialogAction === "recharge" ? loadedDetail.maxAmount : maximumRefund} placeholder={dialogAction === "recharge" ? loadedDetail.minAmount : maximumRefund} value={actionAmount} onChange={(event) => { setActionAmount(event.target.value); setActionError(""); }} disabled={action.isPending} required /><small>{dialogAction === "recharge" ? t("rechargeAmountRange", { min: formatDecimal(loadedDetail.minAmount), max: formatDecimal(loadedDetail.maxAmount) }) : t("refundAmountRange", { max: formatDecimal(maximumRefund), minimum: formatDecimal(loadedDetail.refundKeepMinimum) })}</small></label>
             {dialogAction === "recharge" && <CardRechargeQuoteSummary amount={actionAmount} amountIsValid={rechargeQuote.amountIsValid} isFetching={rechargeQuote.isFetching} isError={rechargeQuote.isError} quote={rechargeQuote.currentQuote} error={rechargeQuote.error} spendableBalance={spendableBalance} onRetry={() => { void rechargeQuote.refetch(); }} />}
             {actionError && <p role="alert" className="error">{actionError}</p>}
-            <div className="card-action-dialog-buttons"><Dialog.Close asChild><Button type="button" variant="outline" disabled={action.isPending}>{t("cancel")}</Button></Dialog.Close><Button type="submit" disabled={action.isPending || (dialogAction === "recharge" && (!rechargeQuote.currentQuote || rechargeQuote.isFetching || rechargeQuote.isError || rechargeDebitExceedsSpendable(rechargeQuote.currentQuote.totalDebit, spendableBalance)))}>{action.isPending ? t("processing") : t("confirmAction")}</Button></div>
+            <div className="card-action-dialog-buttons"><Dialog.Close asChild><Button type="button" variant="outline" disabled={action.isPending}>{t("cancel")}</Button></Dialog.Close><Button type="submit" disabled={action.isPending || (dialogAction === "recharge" && (!rechargeQuote.currentQuote || rechargeQuote.isFetching || rechargeQuote.isError || rechargeDebitExceedsSpendable(rechargeQuote.currentQuote.totalDebit, spendableBalance)))}><StableSwap state={action.isPending ? "busy" : "idle"} labels={{ idle: t("confirmAction"), busy: t("processing") }} /></Button></div>
           </form>}
         </Dialog.Content>
       </Dialog.Portal>

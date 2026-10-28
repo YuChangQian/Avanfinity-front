@@ -3,6 +3,7 @@ import { Copy, Network } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Referral } from "../api";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 
 type InviteLinkKind = "path" | "query" | "bot";
 
@@ -32,7 +33,7 @@ export function InviteLinksPanel({ referral }: { referral: Referral }) {
           await navigator.clipboard.writeText(selected.value);
           setCopied(selected.kind);
           window.setTimeout(() => setCopied((current) => current === selected.kind ? null : current), 1500);
-        }}><Copy />{copied === selected.kind ? t("copied") : t("copyInviteLink")}</Button>
+        }}><Copy /><StableSwap state={copied === selected.kind ? "busy" : "idle"} labels={{ idle: t("copyInviteLink"), busy: t("copied") }} /></Button>
       </article>
     </div>
     <span className="sr-only" aria-live="polite">{copied ? t("copied") : ""}</span>

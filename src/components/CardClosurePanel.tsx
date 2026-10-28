@@ -5,6 +5,7 @@ import { Dialog } from "radix-ui";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 import { createCardClosureBatch, getCardClosureBatch } from "../api";
 
 type Intent = { key: string; id?: string };
@@ -55,7 +56,7 @@ export function CardClosurePanel({ token, owner, enabled }: { token: string; own
   const active = Boolean(intent?.id && (!batch || batch.pending > 0 || result.isError));
   return <>
     {enabled && <Button variant="destructive" disabled={active || submit.isPending} onClick={() => { setConfirmed(false); setOpen(true); }}>
-      <Trash2 />{t(intent && !intent.id ? "cardTools.resume" : "cardTools.closeAll")}
+      <Trash2 /><StableSwap state={intent && !intent.id ? "alt" : "idle"} labels={{ idle: t("cardTools.closeAll"), alt: t("cardTools.resume") }} />
     </Button>}
     {intent?.id && <section className="transaction-panel" data-testid="card-closure-progress" aria-label={t("cardTools.progress")}>
       <h3>{t("cardTools.progress")}</h3>
@@ -90,7 +91,7 @@ export function CardClosurePanel({ token, owner, enabled }: { token: string; own
           <Button variant="destructive" disabled={!confirmed || !enabled || submit.isPending} onClick={() => {
             if (submitting.current) return;
             submitting.current = true; submit.mutate();
-          }}>{t(submit.isPending ? "processing" : "cardTools.confirm")}</Button>
+          }}><StableSwap state={submit.isPending ? "busy" : "idle"} labels={{ idle: t("cardTools.confirm"), busy: t("processing") }} /></Button>
         </div>
       </Dialog.Content></Dialog.Portal>
     </Dialog.Root>

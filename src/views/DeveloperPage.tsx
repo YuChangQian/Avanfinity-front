@@ -5,6 +5,7 @@ import { Navigate } from "@tanstack/react-router";
 import { BookOpen, Check, Copy, Download, KeyRound, RotateCcw, Search, Send, ShieldCheck, Terminal, Webhook } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { DataSkeleton, PageShell } from "../components/PageShell";
 import {
   ApiError,
@@ -131,7 +132,7 @@ function DeveloperWebhooks({ token, keys }: { token: string; keys: DeveloperKey[
             </select>
           </label>
           <Button type="button" onClick={() => sendTest.mutate()} disabled={!selectedKey.webhookUrl || !selectedKey.webhookSecretReady || sendTest.isPending}>
-            <Send />{sendTest.isPending ? t("sending") : t("sendTestWebhook")}
+            <Send /><StableSwap state={sendTest.isPending ? "busy" : "idle"} labels={{ idle: t("sendTestWebhook"), busy: t("sending") }} />
           </Button>
         </div>
         {!selectedKey.webhookUrl && <p className="developer-webhook-note">{t("webhookConfigureFirst")}</p>}
@@ -530,13 +531,13 @@ export function DeveloperPage() {
   });
 
   if (!session) return <Navigate to="/login" />;
-  if (query.isError) return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")}>
+  if (query.isError) return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")} className="developer-page">
     <section className="deposit-panel query-error" role="alert">
       <strong>{t("developerKeysLoadFailed")}</strong>
       <Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button>
     </section>
   </PageShell>;
-  if (!query.data) return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")}>
+  if (!query.data) return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")} className="developer-page">
     <div aria-busy="true">
       <section className="deposit-panel developer-key-create"><div className="inline-action">{flags.developerApi && <Button disabled><KeyRound />{t("createKey")}</Button>}<Button asChild variant="outline"><a href="#api-reference">{t("apiDocumentation")}</a></Button></div></section>
       <section className="transaction-panel developer-keys">{[0, 1].map((item) => <form className="transaction-row developer-key-form" key={item}><div className="transaction-icon"><KeyRound /></div><div className="developer-key-fields"><strong><DataSkeleton /></strong><div className="developer-field-grid"><label>{t("keyName")}<input disabled /></label><label>{t("ipWhitelist")}<input disabled /></label></div><div className="developer-webhook-url"><label>{t("webhookUrl")}</label><input disabled /><small>{t("webhookUrlHint")}</small></div><div className="developer-quota-grid"><label>{t("minuteLimit")}<input disabled /></label><label>{t("dailyLimit")}<input disabled /></label></div></div><div className="developer-key-actions"><DataSkeleton /><div className="inline-action"><Button size="xs" disabled>{t("save")}</Button><Button type="button" size="xs" variant="outline" disabled>{t("delete")}</Button></div></div></form>)}</section>
@@ -683,7 +684,7 @@ const deposit = await call("/deposits", {
 const depositStatus = await call("/deposits/" + deposit.body.data.gatewayRef);
 const operation = await call("/operations/" + operationId);`;
 
-  return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")}>
+  return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")} className="developer-page">
     <section className="deposit-panel developer-key-create">
       <div className="inline-action">
         {flags.developerApi && <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || query.data.data.length >= 5}>

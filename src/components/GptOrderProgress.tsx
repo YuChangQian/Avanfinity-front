@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "./StableSwap";
 import type { GptDirectEvent, GptDirectOrder } from "../api";
 import { creditQuantityForPlan, isCreditPlan } from "../gptDirect/plans";
 import { formatDecimal } from "../decimal";
@@ -218,7 +219,7 @@ export function GptOrderProgress({ order, events = [], defaultExpanded = false, 
         <small>{t("gptSessionCredentialHint")}</small>
       </label>
       {sessionRecoveryForm.error && <p role="alert" className="error">{sessionRecoveryForm.error}</p>}
-      <Button type="submit" size="sm" disabled={sessionRecoveryForm.pending || !sessionRecoveryForm.value.trim()}>{sessionRecoveryForm.pending ? t("processing") : t(renewalRecovery ? "gptRenewalSessionSubmit" : "gptSubmitRecoverySession")}</Button>
+      <Button type="submit" size="sm" disabled={sessionRecoveryForm.pending || !sessionRecoveryForm.value.trim()}><StableSwap state={sessionRecoveryForm.pending ? "busy" : renewalRecovery ? "alt" : "idle"} labels={{ idle: t("gptSubmitRecoverySession"), alt: t("gptRenewalSessionSubmit"), busy: t("processing") }} /></Button>
     </form>}
     {order.needsRenewalCancel && renewalForm && <form className="gpt-renewal-form" onSubmit={renewalForm.onSubmit}>
       <p>{t(order.autoCancelRenewal === false ? "gptRenewalKeptHint" : "gptRenewalResubmitHint")}</p>
@@ -227,7 +228,7 @@ export function GptOrderProgress({ order, events = [], defaultExpanded = false, 
         <small>{t("gptSessionCredentialHint")}</small>
       </label>
       {renewalForm.error && <p role="alert" className="error">{renewalForm.error}</p>}
-      <Button type="submit" size="sm" disabled={renewalForm.pending || !renewalForm.value.trim()}>{renewalForm.pending ? t("processing") : t("gptSubmitRenewalSession")}</Button>
+      <Button type="submit" size="sm" disabled={renewalForm.pending || !renewalForm.value.trim()}><StableSwap state={renewalForm.pending ? "busy" : "idle"} labels={{ idle: t("gptSubmitRenewalSession"), busy: t("processing") }} /></Button>
     </form>}
     {expanded && events.length > 0 && <section className="gpt-order-events">
       <div className="gpt-order-events-heading"><strong>{t("gptPublicTimeline")}</strong><small>{events.length}</small></div>

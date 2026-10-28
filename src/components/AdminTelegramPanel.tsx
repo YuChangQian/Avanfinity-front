@@ -15,6 +15,7 @@ import {
   type AdminTelegramGroup,
 } from "../api";
 import { Button } from "./ui/button";
+import { StableSwap } from "./StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { DataSkeleton } from "./PageShell";
 
@@ -64,7 +65,7 @@ function TelegramGroupForm({ group, pending, save }: { group: AdminTelegramGroup
       <label>{t("telegramCheckinReportInterval")}<input name="checkinReportIntervalMinutes" type="number" min="0" max="1440" step="15" defaultValue={reportInterval} disabled={reportMode !== "scheduled"} required /><small>{t("telegramCheckinReportIntervalHint")}</small></label>
       <div className="admin-telegram-report-status"><span>{t("telegramCheckinReportNext")}</span><strong>{group.checkinReportNextAt ? new Date(group.checkinReportNextAt).toLocaleString() : "—"}</strong><small>{t("telegramCheckinReportLast")}: {group.checkinReportLastSentAt ? new Date(group.checkinReportLastSentAt).toLocaleString() : "—"}</small></div>
     </div>
-    <div className="admin-form-actions"><Button size="sm" variant="outline" disabled={pending}>{pending ? t("processing") : t("saveGroupSettings")}</Button></div>
+    <div className="admin-form-actions"><Button size="sm" variant="outline" disabled={pending}><StableSwap state={pending ? "busy" : "idle"} labels={{ idle: t("saveGroupSettings"), busy: t("processing") }} /></Button></div>
   </form>;
 }
 
@@ -170,7 +171,7 @@ export function AdminTelegramPanel({ token, onSelectCustomer }: { token: string;
         <label>{i18n.language === "en" ? "Global / minute" : "全局每分钟"}<input name="globalPerMinute" type="number" min={1} max={600} defaultValue={ai.data.data.globalPerMinute} /></label>
         <label>{i18n.language === "en" ? "Max output tokens" : "最大输出 Token"}<input name="maxOutputTokens" type="number" min={64} max={4096} defaultValue={ai.data.data.maxOutputTokens} /></label>
         <label>{i18n.language === "en" ? "DeepSeek API key" : "DeepSeek API 密钥"}<input name="apiKey" type="password" autoComplete="new-password" placeholder={ai.data.data.apiKeyConfigured ? `已配置 · ${ai.data.data.apiKeyFingerprint}` : "sk-..."} /><small>{i18n.language === "en" ? "Leave blank to keep the current key." : "留空保留现有密钥；保存后无法读取明文。"}</small></label>
-        <div className="admin-form-actions"><Button disabled={saveAi.isPending}>{saveAi.isPending ? t("processing") : t("save")}</Button></div>
+        <div className="admin-form-actions"><Button disabled={saveAi.isPending}><StableSwap state={saveAi.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button></div>
       </form>}
       <div className="admin-knowledge-grid">
         <form className="admin-product-form" onSubmit={(event) => { event.preventDefault(); knowledgeAction.mutate({ action: "save", form: event.currentTarget }); }}><div><strong>{i18n.language === "en" ? "Add knowledge" : "新增知识文章"}</strong><small>{i18n.language === "en" ? "Keyword retrieval; no vector database." : "使用关键词与标签检索，不引入向量数据库。"}</small></div><label>{i18n.language === "en" ? "Title" : "标题"}<input name="title" maxLength={160} required /></label><label>{i18n.language === "en" ? "Content" : "正文"}<textarea name="content" maxLength={12000} required /></label><label>{i18n.language === "en" ? "Tags" : "标签"}<input name="tags" placeholder="GPT, CDK, 财务" /></label><div className="admin-form-grid two"><label>{i18n.language === "en" ? "Language" : "语言"}<select name="language"><option value="zh">中文</option><option value="en">English</option></select></label><label>{i18n.language === "en" ? "Audience" : "可见范围"}<select name="audience"><option value="both">群聊与私聊</option><option value="group">仅群聊</option><option value="private">仅私聊</option></select></label></div><Button disabled={knowledgeAction.isPending}>{i18n.language === "en" ? "Add article" : "添加文章"}</Button></form>

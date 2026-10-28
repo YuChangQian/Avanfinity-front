@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
 import { CircleDollarSign, Network, ReceiptText, ShieldCheck, UserRound, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { DataSkeleton, PageShell } from "../components/PageShell";
 import { InviteLinksPanel } from "../components/InviteLinksPanel";
 import { getReferral, withdrawPromo, type ReferralEstimateRange } from "../api";
@@ -57,7 +58,7 @@ export function ReferralPage() {
     <section className="stats compact-stats referral-stats" data-testid="referral-overview">
       <article><Network /><span>{t("referrals")}</span><strong>{data.referralCount}</strong></article>
       <article><CircleDollarSign /><span>{t("earnings")}</span><strong>${formatDecimal(data.cumulativeEarnings)}</strong></article>
-      <article><WalletCards /><span>{t("promoBalance")}</span><strong>${formatDecimal(data.promoBalance)}</strong>{Number(data.promoBalance) > 0 && <Button size="sm" onClick={() => withdraw.mutate()} disabled={withdraw.isPending}>{withdraw.isPending ? t("processing") : t("withdrawPromo")}</Button>}</article>
+      <article><WalletCards /><span>{t("promoBalance")}</span><strong>${formatDecimal(data.promoBalance)}</strong>{Number(data.promoBalance) > 0 && <Button size="sm" onClick={() => withdraw.mutate()} disabled={withdraw.isPending}><StableSwap state={withdraw.isPending ? "busy" : "idle"} labels={{ idle: t("withdrawPromo"), busy: t("processing") }} /></Button>}</article>
     </section>
     <p className="referral-balance-note">{t("promoBalanceUsageHint")}</p>
 

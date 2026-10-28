@@ -6,6 +6,7 @@ import { Navigate } from "@tanstack/react-router";
 import { ArrowUpRight, Send, WalletCards } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { formatRateBps } from "../components/PaymentPerformance";
 import { DataSkeleton } from "../components/PageShell";
 import { getWallet, getWalletTransactions, requestTransferChallenge, transfer, type TransferChallenge } from "../api";
@@ -111,7 +112,7 @@ export function FinancePage() {
               <label>{t("transferAmount")}<input name="amount" value={amount} onChange={(event) => changeTransferTarget(recipientCode, event.target.value)} inputMode="decimal" pattern="[0-9]+([.][0-9]{1,4})?" placeholder="10.00" disabled={Boolean(challenge)} required /></label>
               {challenge && <><p className="transfer-verification-hint">{t(challenge.deliveryChannel === "telegram" ? "transferCodeSentTelegram" : "transferCodeSentEmail", { destination: challenge.destination })}</p><label>{t("transferVerificationCode")}<input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="000000" required /></label>{challenge.deliveryChannel === "email" && <small className="field-hint">{t("transferEmailSpamHint")}</small>}</>}
               {error && <p role="alert" className="error">{error}</p>}
-              <Button type="submit" disabled={mutation.isPending || challengeMutation.isPending} size="lg">{challengeMutation.isPending ? t("sendingVerificationCode") : mutation.isPending ? t("transferring") : challenge ? t("confirmTransfer") : t("sendTransferVerificationCode")}</Button>
+              <Button type="submit" disabled={mutation.isPending || challengeMutation.isPending} size="lg"><StableSwap state={challengeMutation.isPending ? "code" : mutation.isPending ? "transfer" : challenge ? "confirm" : "send"} labels={{ send: t("sendTransferVerificationCode"), code: t("sendingVerificationCode"), transfer: t("transferring"), confirm: t("confirmTransfer") }} /></Button>
             </form>
           </Dialog.Content>
         </Dialog.Portal>

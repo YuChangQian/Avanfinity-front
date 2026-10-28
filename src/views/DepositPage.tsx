@@ -6,6 +6,7 @@ import { Navigate } from "@tanstack/react-router";
 import { AlertTriangle, ArrowDownToLine, Check, Clock3, Copy, ShieldCheck, XCircle } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "../components/StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataSkeleton } from "../components/PageShell";
 import { cancelDeposit, createDeposit, getDepositRecords, type DepositNetwork, type DepositOrder, type DepositRecord } from "../api";
@@ -191,7 +192,7 @@ export function DepositPage() {
           {touched && !amountValid && <p role="alert" className="error">{t("invalidDepositAmount")}</p>}
         </div>
         <Button className="deposit-create-button" size="lg" type="submit" disabled={!amountValid || !selectedNetworkAvailable || mutation.isPending || cancelMutation.isPending || (serverStatus === "pending" && secondsLeft > 0)}>
-          <ArrowDownToLine />{mutation.isPending ? t("creating") : t("createDepositOrder")}
+          <ArrowDownToLine /><StableSwap state={mutation.isPending ? "busy" : "idle"} labels={{ idle: t("createDepositOrder"), busy: t("creating") }} />
         </Button>
       </form> : <div className="feature-disabled"><ShieldCheck /><p>{t("featureUnavailable")}</p></div>}
       {flags.deposits && <details className="deposit-fee-calculator">
@@ -214,7 +215,7 @@ export function DepositPage() {
             <div><span>{t(activeOrder ? "depositTransferTotal" : "depositTransferEstimate")}</span><strong data-testid="deposit-transfer-total">{transferTotal ?? "—"} USDT</strong></div>
             <Button type="button" variant="outline" disabled={!activeOrder || transferTotal === null || cancelMutation.isPending}
               onClick={() => { if (transferTotal !== null) void copy(transferTotal, "total"); }} aria-label={t("copyTransferTotal")}>
-              {copied === "total" ? <Check /> : <Copy />}{copied === "total" ? t("copied") : t("copy")}
+              {copied === "total" ? <Check /> : <Copy />}<StableSwap state={copied === "total" ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} />
             </Button>
             <small>{t(activeOrder ? "depositTransferTotalHint" : "depositTransferEstimateHint")}</small>
           </div>
@@ -236,7 +237,7 @@ export function DepositPage() {
           <span>{t("exactPaymentAmount")}</span>
           <strong data-testid="deposit-expected-amount">{formatDecimal(currentOrder.expectedAmount)} <small>USDT</small></strong>
           <Button type="button" variant="outline" disabled={status !== "pending" || cancelMutation.isPending} onClick={() => copy(currentOrder.expectedAmount, "amount")} aria-label={t("copyPaymentAmount")}>
-            {copied === "amount" ? <Check /> : <Copy />}{copied === "amount" ? t("copied") : t("copy")}
+            {copied === "amount" ? <Check /> : <Copy />}<StableSwap state={copied === "amount" ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} />
           </Button>
           </div>
           <p className="deposit-exact-warning"><AlertTriangle />{t("exactAmountWarning")}</p>
@@ -250,7 +251,7 @@ export function DepositPage() {
                 if (window.confirm(t("cancelDepositConfirm"))) cancelMutation.mutate(currentOrder.gatewayRef);
               }}
             >
-              <XCircle />{cancelMutation.isPending ? t("cancellingDeposit") : t("cancelDepositOrder")}
+              <XCircle /><StableSwap state={cancelMutation.isPending ? "busy" : "idle"} labels={{ idle: t("cancelDepositOrder"), busy: t("cancellingDeposit") }} />
             </Button>
           </div>}
           <div className="deposit-order-metrics">
@@ -269,7 +270,7 @@ export function DepositPage() {
               <span>{currentOrder.network === "SOL" ? t("solanaWalletAddress") : t("receivingAddress")}</span>
               <strong data-testid="deposit-address">{currentOrder.address}</strong>
               <Button type="button" variant="outline" disabled={status !== "pending" || cancelMutation.isPending} onClick={() => copy(currentOrder.address, "address")} aria-label={t("copyReceivingAddress")}>
-                {copied === "address" ? <Check /> : <Copy />}{copied === "address" ? t("copied") : t("copy")}
+                {copied === "address" ? <Check /> : <Copy />}<StableSwap state={copied === "address" ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} />
               </Button>
               <small>{t("orderNumber")}: <code data-testid="gateway-ref">{currentOrder.gatewayRef}</code></small>
             </div>

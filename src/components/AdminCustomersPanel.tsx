@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, ClipboardList, CreditCard, Gift, ShieldCheck, Users, WalletCards } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { StableSwap } from "./StableSwap";
 import { formatRateBps } from "./PaymentPerformance";
 import {
   ApiError,
@@ -416,7 +417,7 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
       }}>
         <label>{t("riskResolutionNote")}<input name="remark" minLength={10} maxLength={200} placeholder={t("riskResolutionNotePlaceholder")} required /></label>
         <small>{t("riskResolutionDebitHint", { amount: formatDecimal(detail.risk.owedCharges.total) })}</small>
-        <div className="admin-form-actions"><Button type="submit" disabled={riskAction.isPending || riskActionBlocked}>{riskAction.isPending ? t("processing") : t("resolveCustomerRisk")}</Button></div>
+        <div className="admin-form-actions"><Button type="submit" disabled={riskAction.isPending || riskActionBlocked}><StableSwap state={riskAction.isPending ? "busy" : "idle"} labels={{ idle: t("resolveCustomerRisk"), busy: t("processing") }} /></Button></div>
       </form>}
     </section>
 
