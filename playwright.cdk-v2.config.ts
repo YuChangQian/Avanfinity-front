@@ -1,0 +1,2 @@
+import { defineConfig, devices } from '@playwright/test';
+export default defineConfig({ testDir: './tests', testMatch: 'cdk-v2.spec.ts', use: { baseURL: 'http://127.0.0.1:15178' }, webServer: { command: 'npm run dev -- --host 127.0.0.1 --port 15178', url: 'http://127.0.0.1:15178', reuseExistingServer: false }, projects: [{ name: 'desktop', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }, { name: 'mobile', use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium', channel: 'chrome' } }] });

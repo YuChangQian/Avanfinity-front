@@ -1,0 +1,17 @@
+{
+  "name": "Avanfinity",
+  "short_name": "Avanfinity",
+  "description": "Secure digital payments / 安全数字支付",
+  "start_url": "/register",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#171717",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

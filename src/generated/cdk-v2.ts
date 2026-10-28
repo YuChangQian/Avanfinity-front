@@ -1,0 +1,25 @@
+// Generated from openapi/downstream-v2.json. Run node scripts/generate-cdk-v2.mjs.
+export type DeclinePolicy = { mode: "switch_card" | "fail"; maxPaymentAttempts: number };
+export type ExecutionPolicy = { cardStrategy: "existing_first" | "new_first" | "existing_only" | "dedicated_new"; fundingStrategy: "auto_topup" | "none" | "fixed"; declinePolicy: DeclinePolicy; maxWalletDebitPerCodeUsd: string; fixedFundingAmountUsd?: string };
+export type AutoCard = { productCode: string; firstName: string; lastName: string };
+export type ProfileInput = { name: string; productId: string; executionPolicy: ExecutionPolicy; autoCard?: AutoCard; enabled: boolean; expectedVersion?: number };
+export type Profile = { id: string; version: number; enabled: boolean; configuration: ProfileInput };
+export type Product = { id: string; channel?: string; plan?: string; label: string; enabled: boolean; inputType: "gpt_credential" | "recipient"; cardStrategies?: Array<string>; fundingStrategies?: Array<string>; declineStrategies?: Array<string> };
+export type Products = { list: Array<Product>; issueEnabled: boolean; authorizeEnabled: boolean; checkoutCountries?: Array<CheckoutRegion> };
+export type Profiles = { list: Array<Profile> };
+export type BatchInput = { profileId: string; quantity: number; externalReference?: string; paymentCountry?: string };
+export type Code = { id: string; batchId: string; productId: string; codePrefix: string; code?: string; status: string; createdAt: string; checkoutRegion?: (CheckoutRegion) | (null) };
+export type Batch = { id: string; profileId: string; profileVersion: number; productId: string; quantity: number; externalReference?: string | null; list: Array<Code>; replayed: boolean; checkoutRegion?: (CheckoutRegion) | (null) };
+export type Codes = { list: Array<Code>; total: number; page: number; pageSize: number };
+export type PreviewInput = { code: string };
+export type Preview = { legacy: boolean; channel?: string; redeemPath?: string; productId?: string; status?: string; inputType?: string; authorizeEnabled?: boolean };
+export type PrepareInput = { code: string; deviceToken: string; clientRequestId: string; recipient?: string; credential?: GptCredential };
+export type TokenInput = { redemptionToken: string; deviceToken: string; quoteId?: string };
+export type Quote = { amountMinor: number | null; currency: string | null; expiresAt: string | null };
+export type Attempt = { id: string; number: number; cardId: number | null; status: string; fundingDispatched: boolean; paymentDispatched: boolean; walletBudgetOccupiedUsd: string };
+export type Event = { id: string; type: string; data: unknown; createdAt: string };
+export type Redemption = { id: string; productId: string; status: string; paymentStatus: string; deliveryStatus: string; attemptCount: number; nextAction: string; stopReason: string | null; quoteId: string | null; quote: Quote; recipient: string | null; canRetryPreflight: boolean; redemptionToken?: string; attempts?: Array<Attempt>; events?: Array<Event> };
+export type Revoked = { id: string; status: string };
+export type Error = { error: { code: string; message: string }; requestId: string };
+export type GptCredential = ({ mode: "access_token"; accessToken: string }) | ({ mode: "session"; session: string | Record<string, unknown> }) | ({ mode: "mailbox"; email: string; password: string }) | ({ mode: "password"; email: string; password: string; totpSecret: string });
+export type CheckoutRegion = { country: string; currency: string };
