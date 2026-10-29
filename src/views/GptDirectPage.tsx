@@ -286,6 +286,7 @@ function GptDirectContent() {
     : parseGptMailboxBatch(batchValue), [mode, importedSessionBatch, batchValue]);
   const [batchError, setBatchError] = useState("");
   const [preparedBatch, setPreparedBatch] = useState<BatchPreviewRow[] | null>(null);
+  const [toolsTab, setToolsTab] = useState<"orders" | "lifecycle" | "cdk">("orders");
   const [oneCardPerAccount, setOneCardPerAccount] = useState(false);
   const [batchResults, setBatchResults] = useState<BatchResult[]>(() => savedProgress.batch.map((row, index) => ({ ...row, maskedEmail: `#${index + 1}` })));
 
@@ -650,6 +651,7 @@ function GptDirectContent() {
     ? !productsQuery.isLoading && !openAiPricesQuery.isLoading
     : selectedCardMode === "external" ? externalCardReady : Boolean(selectedCardId);
   const busy = preflightPending || orderPending || batchPending || batchImportPending;
+  const checkoutReady = Boolean(preflightData) || Boolean(preparedBatch?.length) || batchResults.length > 0;
   const createDisabled = !flags.gptDirect || !selectedPlan || !cardReady || !preflightData || !selectedQuote || Boolean(quoteError) || preflightExpired || busy || singleUncertain || !retryReady || (creditsCustomActive && !creditQuantity);
 
   function orderPayload(
@@ -1115,14 +1117,24 @@ function GptDirectContent() {
       <div><strong>{t("telegramGptHandoffTitle")}</strong><p>{t("telegramGptHandoffDesc")}</p></div>
       <Button type="button" variant="outline" onClick={discardTelegramHandoff}>{t("telegramGptHandoffDiscard")}</Button>
     </section>}
-    <section className="gpt-direct-intro">
-      <div><Sparkles /><span><strong>{t("gptDirectOfficialPlan")}</strong><small>{t("gptDirectOfficialPlanDesc")}</small></span></div>
-      <div><ShieldCheck /><span><strong>{t("gptDirectCredentialSafety")}</strong><small>{t("gptDirectCredentialSafetyDesc")}</small></span></div>
-      <div><Clock3 /><span><strong>{t("gptDirectAsync")}</strong><small>{t("gptDirectAsyncDesc")}</small></span></div>
-    </section>
+
+    <nav className="gpt-direct-steps" aria-label={t("gptDirectTitle")}>
+      <div className={`gpt-direct-step${!checkoutReady ? " is-current" : " is-done"}`}>
+        <span>1</span>
+        <strong>{t("gptDirectStepPreflight")}</strong>
+        {checkoutReady && <small>{t("gptDirectStepDone")}</small>}
+      </div>
+      <div className="gpt-direct-step-rail" aria-hidden="true" />
+      <div className={`gpt-direct-step${checkoutReady ? " is-current" : " is-pending"}`}>
+        <span>2</span>
+        <strong>{t("gptDirectStepCheckout")}</strong>
+        {!checkoutReady && <small>{t("gptDirectCheckoutWaiting")}</small>}
+      </div>
+    </nav>
+    <p className="gpt-direct-flow-hint">{t("gptDirectFlowHint")}</p>
 
     <div className="gpt-direct-layout">
-      <section className="gpt-direct-panel">
+      <section className={`gpt-direct-panel${!checkoutReady ? " is-focus" : ""}`}>
         <div className="section-title"><div><span className="eyebrow">01 · PREFLIGHT</span><h2>{t("gptCredentialPreflight")}</h2></div></div>
         {flags.gptDirect ? <form className="gpt-direct-form" onSubmit={submitPreflight}>
           <fieldset className="gpt-credential-modes">
@@ -1262,23 +1274,23 @@ function GptDirectContent() {
         </form> : <div className="feature-disabled"><ShieldCheck /><p>{t("featureUnavailable")}</p></div>}
       </section>
 
-      <section className="gpt-direct-panel gpt-order-panel">
-        <div className="section-title"><div><span className="eyebrow">02 · CHECKOUT</span><h2>{t("gptOrderReview")}</h2></div></div>
+      <section className={`gpt-direct-panel gpt-order-panel${checkoutReady ? " is-focus" : " is-waiting"}`}>
+        <div className="section-title"><div><span className="eyebrow">02 · CHECKOUT</span><h2>{t("gptOrderReview")}</h2></div>{!checkoutReady && <span className="gpt-direct-panel-badge">{t("gptDirectCheckoutWaiting")}</span>}</div>
         <div className="gpt-order-content">
           {flags.gptDirect && <>
           <fieldset className="gpt-card-modes">
             <legend>{t("gptPaymentMethod")}</legend>
             <label className={selectedCardMode === "existing" ? "is-selected" : ""}>
               <input type="radio" name="cardMode" value="existing" checked={selectedCardMode === "existing"} disabled={!activeCards.length || Boolean(handoff) || busy} onChange={() => { setCardMode("existing"); orderIntent.current = null; }} />
-              <span><CreditCard /><span><strong>{t("gptUseExistingCard")}</strong><small>{t("gptUseExistingCardHint")}</small></span></span>
+              <span><span className="gpt-card-mode-title"><CreditCard /><strong>{t("gptUseExistingCard")}</strong></span><small>{t("gptUseExistingCardHint")}</small></span>
             </label>
             <label className={selectedCardMode === "auto" ? "is-selected" : ""}>
               <input type="radio" name="cardMode" value="auto" checked={selectedCardMode === "auto"} disabled={!flags.cardOpening || Boolean(handoff) || busy} onChange={() => { setCardMode("auto"); orderIntent.current = null; }} />
-              <span><Sparkles /><span><strong>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccount" : "gptSmartCard" : "gptAutoOpenCard")}</strong><small>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccountHint" : "gptSmartCardHint" : "gptAutoOpenCardHint")}</small></span></span>
+              <span><span className="gpt-card-mode-title"><Sparkles /><strong>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccount" : "gptSmartCard" : "gptAutoOpenCard")}</strong></span><small>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccountHint" : "gptSmartCardHint" : "gptAutoOpenCardHint")}</small></span>
             </label>
             <label className={selectedCardMode === "external" ? "is-selected" : ""}>
               <input type="radio" name="cardMode" value="external" checked={selectedCardMode === "external"} disabled={Boolean(handoff) || busy} onChange={() => { setCardMode("external"); orderIntent.current = null; }} />
-              <span><CreditCard /><span><strong>{t("gptUseExternalCard")}</strong><small>{t("gptUseExternalCardHint")}</small></span></span>
+              <span><span className="gpt-card-mode-title"><CreditCard /><strong>{t("gptUseExternalCard")}</strong></span><small>{t("gptUseExternalCardHint")}</small></span>
             </label>
           </fieldset>
 
@@ -1369,8 +1381,17 @@ function GptDirectContent() {
       </section>
     </div>
 
-    <section className="transaction-panel gpt-cdk-market" data-testid="gpt-cdk-generate">
-      <div className="section-title"><div><span className="eyebrow">CDK ISSUE</span><h2><KeyRound />{t("gptCdkGenerate")}</h2></div><Button asChild size="sm" variant="utility"><Link to="/cdk/redeem"><KeyRound />{t("gptOpenCdkRedeem")}</Link></Button></div>
+    <section className="transaction-panel gpt-direct-tools">
+      <div className="section-title gpt-direct-tools-title">
+        <div className="gpt-direct-tool-tabs" role="tablist" aria-label={t("gptDirectTools")}>
+          <button type="button" role="tab" aria-selected={toolsTab === "orders"} className={toolsTab === "orders" ? "is-active" : undefined} onClick={() => setToolsTab("orders")}>{t("gptOrderHistory")}</button>
+          <button type="button" role="tab" aria-selected={toolsTab === "lifecycle"} className={toolsTab === "lifecycle" ? "is-active" : undefined} onClick={() => setToolsTab("lifecycle")}>{t("gptCdkHistory")}</button>
+          <button type="button" role="tab" aria-selected={toolsTab === "cdk"} className={toolsTab === "cdk" ? "is-active" : undefined} onClick={() => setToolsTab("cdk")}>{t("gptCdkGenerate")}</button>
+        </div>
+      </div>
+
+      {toolsTab === "cdk" && <div className="gpt-cdk-market" data-testid="gpt-cdk-generate">
+      <div className="gpt-direct-tool-heading"><h3>{t("gptCdkGenerate")}</h3><div className="gpt-direct-tool-actions"><Button asChild size="sm" variant="utility"><Link to="/cdk/redeem"><KeyRound />{t("gptOpenCdkRedeem")}</Link></Button></div></div>
       <p className="gpt-cdk-market-intro">{t("gptCdkGenerateDesc")}</p>
       <ul className="gpt-cdk-requirements">
         <li>{t("gptCdkNeedSession")}</li>
@@ -1394,11 +1415,10 @@ function GptDirectContent() {
         <div>{purchasedCdk.checkoutRegion && <p>结账地区：{regionNames.of(purchasedCdk.checkoutRegion.country)} · {purchasedCdk.checkoutRegion.currency}</p>}<strong>{t("gptCdkGenerateSuccessCount", { count: purchasedCdk.quantity ?? purchasedItems.length })}</strong><small>{t("gptCdkSavedDelivery")}{purchasedCdk.forceNewCard ? ` · ${t("gptCdkForceNewCardBadge")}` : ""}</small><div className="gpt-cdk-code-list">{purchasedItems.map((item) => <div key={item.cdkId}><code>{item.code ?? item.codePrefix}</code>{item.code && <Button size="xs" variant="utility" onClick={async () => { await navigator.clipboard.writeText(item.code!); setCopiedCdk(item.cdkId); }}>{copiedCdk === item.cdkId ? <Check /> : <Copy />}<StableSwap state={copiedCdk === item.cdkId ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} /></Button>}</div>)}</div></div>
         <div className="gpt-cdk-purchase-actions">{purchasedItems.some((item) => item.code) && <Button size="sm" variant="utility" onClick={async () => { await navigator.clipboard.writeText(purchasedItems.flatMap((item) => item.code ? [item.code] : []).join("\n")); setCopiedCdk("all"); }}>{copiedCdk === "all" ? <Check /> : <Copy />}<StableSwap state={copiedCdk === "all" ? "busy" : "idle"} labels={{ idle: t("copyAll"), busy: t("copied") }} /></Button>}<Button asChild size="sm"><Link to="/cdk/redeem">{t("redeemNow")}</Link></Button></div>
       </div>}
-    </section>
+      </div>}
 
-    <div className="gpt-history-grid">
-    <section className="transaction-panel gpt-orders-panel">
-      <div className="section-title"><h2><Sparkles />{t("gptOrderHistory")}</h2><span>{ordersQuery.isLoading ? <DataSkeleton /> : t("records", { count: ordersQuery.data?.data.total ?? 0 })}</span></div>
+      {toolsTab === "orders" && <div className="gpt-orders-panel gpt-direct-tool-panel">
+      <div className="gpt-direct-tool-heading"><h3>{t("gptOrderHistory")}</h3><span>{ordersQuery.isLoading ? <DataSkeleton /> : t("records", { count: ordersQuery.data?.data.total ?? 0 })}</span></div>
       <form className="gpt-order-search" onSubmit={(event) => { event.preventDefault(); setOrderSearch(orderSearchDraft.trim()); }}>
         <label><Search /><input aria-label={t("gptOrderEmailSearch")} value={orderSearchDraft} maxLength={320} onChange={(event) => setOrderSearchDraft(event.target.value)} placeholder={t("gptOrderEmailSearchPlaceholder")} /></label>
         <Button size="sm" type="submit">{t("search")}</Button>
@@ -1411,19 +1431,29 @@ function GptDirectContent() {
           <div className="gpt-order-row is-clickable" onClick={(event) => { if ((event.target as HTMLElement).closest("a,button")) return; setActiveCdkId(""); setAcceptedOrder(order); setActiveOrderId(order.id); }}>
             <div className="gpt-order-row-main is-static">
               <span className={`gpt-status-dot is-${order.status}`} />
-              <button className="gpt-order-heading-trigger" type="button" onClick={() => { setActiveCdkId(""); setAcceptedOrder(order); setActiveOrderId(order.id); }}><strong>{t(`gptPlan.${order.plan}`, { defaultValue: order.plan })}</strong><small>{order.email ?? order.maskedEmail ?? t("gptAccountPending")}</small><small>{t("gptPaymentCardLastFour")}：{paymentCardLastFour(order) ? `•••• ${paymentCardLastFour(order)}` : t("gptPaymentCardNotRecorded")}</small></button>
+              <div className="gpt-order-heading">
+                <button className="gpt-order-heading-trigger" type="button" onClick={() => { setActiveCdkId(""); setAcceptedOrder(order); setActiveOrderId(order.id); }}>
+                  <strong>{t(`gptPlan.${order.plan}`, { defaultValue: order.plan })}</strong>
+                </button>
+                <div className="gpt-order-heading-detail">
+                  <button className="gpt-order-heading-lines" type="button" onClick={() => { setActiveCdkId(""); setAcceptedOrder(order); setActiveOrderId(order.id); }}>
+                    <small>{order.email ?? order.maskedEmail ?? t("gptAccountPending")}</small>
+                    <small>{t("gptPaymentCardLastFour")}：{paymentCardLastFour(order) ? `•••• ${paymentCardLastFour(order)}` : t("gptPaymentCardNotRecorded")}</small>
+                  </button>
+                  {invoiceUrls.length > 0 && <span className="gpt-order-invoices">{invoiceUrls.map((invoiceUrl, index) => <a className="gpt-invoice-link" href={invoiceUrl} target="_blank" rel="noopener noreferrer" key={invoiceUrl}>{t("gptViewStripeInvoice")}{invoiceUrls.length > 1 ? ` ${index + 1}` : ""}</a>)}</span>}
+                </div>
+              </div>
               <span className="gpt-order-row-state">
-                {invoiceUrls.length > 0 && <span className="gpt-order-invoices">{invoiceUrls.map((invoiceUrl, index) => <a className="gpt-invoice-link" href={invoiceUrl} target="_blank" rel="noopener noreferrer" key={invoiceUrl}>{t("gptViewStripeInvoice")}{invoiceUrls.length > 1 ? ` ${index + 1}` : ""}</a>)}</span>}
                 <button type="button" className="gpt-cdk-progress-trigger" onClick={() => { setActiveCdkId(""); setAcceptedOrder(order); setActiveOrderId(order.id); }} aria-label={t("gptViewOrder", { id: order.id })}><span className="gpt-row-progress-line"><i aria-hidden="true"><b style={{ width: `${progress}%` }} /></i><strong>{progress}%</strong></span><small>{order.progress?.at(-1)?.publicMessage ?? stageLabel(order.stage)} · {new Date(order.updatedAt ?? order.createdAt).toLocaleString(locale)}</small></button>
               </span>
             </div>
           </div>
         </div>;
       })}
-    </section>
+      </div>}
 
-    <section className="transaction-panel gpt-orders-panel">
-      <div className="section-title gpt-cdk-history-title"><h2><Sparkles />{t("gptCdkHistory")}</h2><div className="gpt-cdk-history-title-actions"><span>{cdksQuery.isLoading ? <DataSkeleton /> : t("records", { count: cdksQuery.data?.data.total ?? 0 })}</span><Button size="sm" variant="utility" onClick={() => void exportCdks()} disabled={exportingCdks || !cdksQuery.data?.data.total}>{exportingCdks ? <RefreshCw className="is-spinning" /> : <Download />}<StableSwap state={exportingCdks ? "busy" : "idle"} labels={{ idle: t("exportUnredeemedCdks"), busy: t("exportingCdks") }} /></Button></div></div>
+      {toolsTab === "lifecycle" && <div className="gpt-orders-panel gpt-direct-tool-panel">
+      <div className="gpt-direct-tool-heading gpt-cdk-history-title"><h3>{t("gptCdkHistory")}</h3><div className="gpt-cdk-history-title-actions"><span>{cdksQuery.isLoading ? <DataSkeleton /> : t("records", { count: cdksQuery.data?.data.total ?? 0 })}</span><Button size="sm" variant="utility" onClick={() => void exportCdks()} disabled={exportingCdks || !cdksQuery.data?.data.total}>{exportingCdks ? <RefreshCw className="is-spinning" /> : <Download />}<StableSwap state={exportingCdks ? "busy" : "idle"} labels={{ idle: t("exportUnredeemedCdks"), busy: t("exportingCdks") }} /></Button></div></div>
       {cdksQuery.isLoading ? <div aria-busy="true">{[0, 1, 2].map((item) => <div className="gpt-order-history-row" key={item}><div className="gpt-order-row"><div className="gpt-order-row-main is-static"><span className="gpt-status-dot" /><span><strong className="gpt-cdk-history-code"><DataSkeleton /></strong><small><DataSkeleton /></small></span><span className="gpt-cdk-history-state"><DataSkeleton /></span></div></div></div>)}</div> : cdksQuery.isError ? <p className="gpt-list-state error" role="alert">{t("gptCdksLoadFailed")}</p> : !cdksQuery.data?.data.list.length ? <p className="gpt-list-state">{t("gptNoCdks")}</p> : cdksQuery.data.data.list.map((cdk) => {
         const invoiceUrls = stripeInvoiceUrls(cdk.invoiceUrls, cdk.invoiceUrl);
         const amount = quotedAmount(cdk.quotedAmountMinor, cdk.currency);
@@ -1444,8 +1474,8 @@ function GptDirectContent() {
       {revealError && <p className="admin-alert is-error" role="alert">{revealError}</p>}
       {exportError && <p className="admin-alert is-error" role="alert">{exportError}</p>}
       {cdkTotalPages > 1 && <div className="gpt-cdk-pagination"><Button size="sm" variant="outline" disabled={cdkPage <= 1} onClick={() => setCdkPage((page) => page - 1)}>{t("previousPage")}</Button><span>{t("pageOf", { page: cdkPage, total: cdkTotalPages })}</span><Button size="sm" variant="outline" disabled={cdkPage >= cdkTotalPages} onClick={() => setCdkPage((page) => page + 1)}>{t("nextPage")}</Button></div>}
+      </div>}
     </section>
-    </div>
 
     <Dialog.Root open={Boolean(activeOrderId || activeCdkId)} onOpenChange={(open) => { if (!open) { setActiveOrderId(""); setActiveCdkId(""); } }}>
       <Dialog.Portal><div className="dialog-overlay" data-state={activeOrderId || activeCdkId ? "open" : "closed"} aria-hidden="true" onClick={() => { setActiveOrderId(""); setActiveCdkId(""); }} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content gpt-progress-drawer">

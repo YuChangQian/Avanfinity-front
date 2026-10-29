@@ -738,6 +738,10 @@ async function mockAdminWorkspace(page: Page, options: {
   });
 }
 
+async function openGptDirectTool(page: Page, name: "直充订单" | "CDK 生命周期" | "生成待售 CDK" | "Direct-pay orders" | "CDK lifecycle" | "Generate CDKs to sell") {
+  await page.getByRole("tab", { name, exact: true }).click();
+}
+
 async function mockGptDirect(page: Page, options: {
   checkoutCountries?: Array<{ country: string; currency: string }>;
   batchConcurrencyByCountry?: Record<string, number>;
@@ -3222,6 +3226,7 @@ test("GPT direct explains the active-card requirement and fits mobile", async ({
 test("GPT direct shows customer-owned CDK lifecycle records", async ({ page }) => {
   await mockGptDirect(page, { cdk: true });
   await page.goto("/gpt-direct");
+  await openGptDirectTool(page, "CDK 生命周期");
   await expect(page.getByRole("heading", { name: "CDK 生命周期", exact: true })).toBeVisible();
   await expect(page.getByText("AVF-********", { exact: true })).toBeVisible();
   await expect(page.getByText("consumed", { exact: true })).toBeVisible();
@@ -3234,6 +3239,7 @@ test("customers can generate a one-CDK-one-card batch", async ({ page }) => {
   await mockAuthenticatedShell(page, "customer");
   await mockGptDirect(page, { onGenerate: (body, key) => { generateBody = body; generateKey = key; } });
   await page.goto("/gpt-direct");
+  await openGptDirectTool(page, "生成待售 CDK");
   const generator = page.getByTestId("gpt-cdk-generate");
   const forceNewCard = generator.getByRole("checkbox", { name: /一卡一付（仅新开卡）/ });
   await expect(forceNewCard).not.toBeChecked();
@@ -3252,6 +3258,7 @@ test("one-CDK-one-card stays hidden until every backend replica is upgraded", as
   await mockAuthenticatedShell(page, "customer");
   await mockGptDirect(page, { forceNewCardEnabled: false });
   await page.goto("/gpt-direct");
+  await openGptDirectTool(page, "生成待售 CDK");
   await expect(page.getByTestId("gpt-cdk-generate").getByRole("checkbox", { name: /一卡一付（仅新开卡）/ })).toHaveCount(0);
 });
 
@@ -3263,6 +3270,7 @@ test("CDK generation retries one intent but changes its key when card mode chang
     onGenerate: (body, key) => calls.push({ body, key }),
   });
   await page.goto("/gpt-direct");
+  await openGptDirectTool(page, "生成待售 CDK");
   const generator = page.getByTestId("gpt-cdk-generate");
   const plusButton = generator.getByTestId("gpt-cdk-generate-plus");
   await plusButton.click();
@@ -3288,6 +3296,7 @@ test("logged-in customers can generate CDKs and see checkout countries from the 
   await mockAuthenticatedShell(page, "customer");
   await mockGptDirect(page);
   await page.goto("/gpt-direct");
+  await openGptDirectTool(page, "生成待售 CDK");
   await expect(page.getByTestId("gpt-cdk-generate")).toBeVisible();
   await expect(page.getByText("买家兑换时必须粘贴完整 ChatGPT Session（含 sessionToken）。")).toBeVisible();
   await expect(page.getByText("普通模式只使用并轮换你名下已有的 ACTIVE 卡；没有可用卡时兑换失败，不会自动开卡。")).toBeVisible();
@@ -3427,6 +3436,7 @@ test("logged-in customers can generate CDKs in a batch and reveal them again fro
     });
   });
   await page.goto("/gpt-direct");
+  await openGptDirectTool(page, "生成待售 CDK");
   await expect(page.getByRole("heading", { name: "生成待售 CDK", exact: true }))
     .toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("heading", { name: "购买自动开通 CDK", exact: true })).toHaveCount(0);
@@ -3441,6 +3451,7 @@ test("logged-in customers can generate CDKs in a batch and reveal them again fro
   expect(page.url()).not.toContain(codes[0]);
   await page.reload();
   for (const code of codes) await expect(page.getByText(code, { exact: true })).toHaveCount(0);
+  await openGptDirectTool(page, "CDK 生命周期");
   await page.getByRole("button", { name: "导出未兑换 CDK", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem("recentAuthReturnPath"))).toBe("/gpt-direct");
@@ -3448,6 +3459,7 @@ test("logged-in customers can generate CDKs in a batch and reveal them again fro
   await page.getByPlaceholder("8+").fill("Admin123!Secure");
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(page).toHaveURL(/\/gpt-direct$/);
+  await openGptDirectTool(page, "CDK 生命周期");
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "导出未兑换 CDK", exact: true }).click(),
@@ -3568,7 +3580,8 @@ test("logged-in CDK history shows a trusted Stripe invoice", async ({ page }) =>
   await mockAuthenticatedShell(page, "customer");
   await mockGptDirect(page, { cdk: true, cdkInvoiceUrl: invoiceUrl });
   await page.goto("/gpt-direct");
-  const history = page.locator(".gpt-orders-panel").nth(1);
+  await openGptDirectTool(page, "CDK 生命周期");
+  const history = page.locator(".gpt-direct-tool-panel");
   const invoice = history.getByRole("link", { name: "查看 Stripe 账单", exact: true });
   await expect(invoice).toHaveCount(1);
   await expect(invoice).toHaveAttribute("href", invoiceUrl);
@@ -3608,10 +3621,11 @@ test("payment card last four is shown in direct and CDK history and drawers", as
   } } }));
   await page.goto("/gpt-direct");
   await expect(page.locator(".gpt-order-history-row").getByText("支付卡后四位：•••• 4242", { exact: true })).toBeVisible();
-  await expect(page.locator(".gpt-orders-panel").nth(1).getByText("支付卡后四位：•••• 0910", { exact: true })).toBeVisible();
   await page.locator(".gpt-order-heading-trigger").first().click();
   await expect(page.getByRole("dialog").getByTestId("gpt-payment-card-last-four")).toHaveText("支付卡后四位：•••• 4242");
   await page.keyboard.press("Escape");
+  await openGptDirectTool(page, "CDK 生命周期");
+  await expect(page.locator(".gpt-direct-tool-panel").getByText("支付卡后四位：•••• 0910", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "CDK 生命周期 AVF-********", exact: true }).click();
   await expect(page.getByRole("dialog").getByTestId("gpt-payment-card-last-four")).toHaveText("支付卡后四位：•••• 0910");
 });
@@ -4544,6 +4558,7 @@ test("real GPT direct flow persists one order and applies its configured service
 
 test("real logged-in CDK batch generate keeps codes recoverable without debiting the wallet", async ({ page }) => {
   await page.goto("/gpt-direct");
+  await openGptDirectTool(page, "生成待售 CDK");
   await expect(page.getByRole("heading", { name: "生成待售 CDK", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "购买自动开通 CDK", exact: true })).toHaveCount(0);
   const offer = page.getByTestId("gpt-cdk-generate").locator("article").filter({ hasText: "Plus" });
