@@ -743,6 +743,7 @@ async function openGptDirectTool(page: Page, name: "直充订单" | "CDK 生命�
 }
 
 async function mockGptDirect(page: Page, options: {
+  cdkRegionSelectionEnabled?: boolean;
   checkoutCountries?: Array<{ country: string; currency: string }>;
   batchConcurrencyByCountry?: Record<string, number>;
   currentPlan?: string;
@@ -761,6 +762,7 @@ async function mockGptDirect(page: Page, options: {
   forceNewCardEnabled?: boolean;
   includeCreditPlans?: boolean;
   observedQuote?: boolean;
+  observedQuotes?: Array<{ plan: string; country: string; currency: string; amountMajor: string; amountUsd: string; observedAt: string; fxDate: string }>;
   cardSuccess?: boolean;
   historyInvoiceUrls?: Array<string | null>;
   historyEmails?: string[];
@@ -814,10 +816,10 @@ async function mockGptDirect(page: Page, options: {
   await page.route("**/api/gpt-direct/**", (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path.endsWith("/observed-quotes")) return route.fulfill({ json: { code: 0, data: { list: options.observedQuote === false ? [] : [{
+    if (path.endsWith("/observed-quotes")) return route.fulfill({ json: { code: 0, data: { list: options.observedQuotes ?? (options.observedQuote === false ? [] : [{
       plan: "plus", country: "US", currency: "USD", amountMajor: "20", amountUsd: "20.00000000",
       observedAt: "2026-08-04T07:55:00.000Z", fxDate: "2026-08-04",
-    }] } } });
+    }]) } } });
     if (path.endsWith("/card-successes")) return route.fulfill({ json: { code: 0, data: { list: options.cardSuccess === false ? [] : [{
       cardId: 91,
       overall: { attempts: 5, successes: 4, declines: 1, successRateBps: 8000, declineRateBps: 2000 },
@@ -826,7 +828,7 @@ async function mockGptDirect(page: Page, options: {
         { plan: "plus", attempts: 5, successes: 4, declines: 1, successRateBps: 8000, declineRateBps: 2000, latestSuccess: { type: "openai_direct", plan: "plus", priceMajor: "20", currency: "USD", completedAt: "2026-08-04T07:58:00.000Z" } },
       ],
     }] } } });
-    if (path.endsWith("/plans")) return route.fulfill({ json: { code: 0, data: { version: 2, batchConcurrencyByCountry: options.batchConcurrencyByCountry, externalCardServiceFee: "1.0000", checkoutCountries: options.checkoutCountries ?? [
+    if (path.endsWith("/plans")) return route.fulfill({ json: { code: 0, data: { version: 2, cdkRegionSelectionEnabled: options.cdkRegionSelectionEnabled ?? true, batchConcurrencyByCountry: options.batchConcurrencyByCountry, externalCardServiceFee: "1.0000", checkoutCountries: options.checkoutCountries ?? [
       { country: "PH", currency: "PHP" }, { country: "US", currency: "USD" },
     ], plans: [
       { key: "plus", label: "ChatGPT Plus", currency: "USD", enabled: true, serviceFeeUsdMinor: 100, customerServiceFee: "1.2500" },
@@ -2455,7 +2457,7 @@ for (const [origin, target, currency, regionName, outcome] of [
 
 test("GPT direct shows a recent quote and the card's latest success before credentials", async ({ page }) => {
   await mockAuthenticatedShell(page, "customer");
-  await mockGptDirect(page);
+  await mockGptDirect(page, { checkoutCountries: [{ country: "US", currency: "USD" }] });
   await page.goto("/gpt-direct");
   await expect(page.getByLabel("Session 凭据", { exact: true })).toHaveValue("");
   const observed = page.locator(".gpt-observed-quote");
@@ -2503,6 +2505,61 @@ test("GPT direct auto-card uses verified BIN performance and raises funding to t
   await page.getByRole("button", { name: "提交开通", exact: true }).click();
   await expect.poll(() => submitted).toBeTruthy();
   expect(submitted?.autoCard).toMatchObject({ productCode: "P5378OX", initAmount: "20.0000" });
+});
+
+test("GPT direct region prices follow the selected country and currency without preflight", async ({ page }, testInfo) => {
+  let preflights = 0;
+  await mockAuthenticatedShell(page, "customer");
+  await mockGptDirect(page, {
+    checkoutCountries: [{ country: "PH", currency: "PHP" }, { country: "US", currency: "USD" }, { country: "JP", currency: "JPY" }],
+    onPreflight: () => { preflights += 1; },
+    observedQuotes: [
+      { plan: "plus", country: "PH", currency: "USD", amountMajor: "999", amountUsd: "999", observedAt: "2026-08-04T08:00:00Z", fxDate: "2026-08-04" },
+      { plan: "plus", country: "US", currency: "USD", amountMajor: "20", amountUsd: "20", observedAt: "2026-08-04T08:00:00Z", fxDate: "2026-08-04" },
+      { plan: "plus", country: "PH", currency: "PHP", amountMajor: "999.50", amountUsd: "17.25", observedAt: "2026-08-04T08:00:00Z", fxDate: "2026-08-04" },
+    ],
+  });
+  await page.goto("/gpt-direct");
+  const observed = page.locator(".gpt-observed-quote");
+  await expect(observed).toContainText("PHP");
+  await expect(observed).toContainText("999.5");
+  for (const [region, price] of [["美国 (USD)", "US$20"], ["日本 (JPY)", "该套餐暂无有效近期报价"], ["菲律宾 (PHP)", "999.5"]]) {
+    await page.getByRole("combobox", { name: "付款地区", exact: true }).click();
+    await page.getByRole("option", { name: region, exact: true }).click();
+    await expect(observed).toContainText(price);
+    await expect(page.getByRole("button", { name: "提交开通", exact: true })).toBeDisabled();
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(observed).toContainText("999.5");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("regional-quotes-mobile.png"), fullPage: true });
+  expect(preflights).toBe(0);
+});
+
+test("GPT direct region prices refresh after preflight and survive switching back", async ({ page }) => {
+  let quoteReads = 0;
+  let checked = false;
+  await mockAuthenticatedShell(page, "customer");
+  await mockGptDirect(page, { onPreflight: () => { checked = true; } });
+  await page.route("**/api/gpt-direct/observed-quotes", route => {
+    quoteReads += 1;
+    return route.fulfill({ json: { code: 0, data: { list: [
+      { plan: "plus", country: "PH", currency: "PHP", amountMajor: checked ? "982.14" : "999", amountUsd: "17", observedAt: "2026-08-04T08:00:00Z", fxDate: "2026-08-04" },
+      { plan: "plus", country: "US", currency: "USD", amountMajor: "20", amountUsd: "20", observedAt: "2026-08-04T08:00:00Z", fxDate: "2026-08-04" },
+    ] } } });
+  });
+  await page.goto("/gpt-direct");
+  await expect(page.locator(".gpt-observed-quote")).toContainText("999");
+  await page.getByLabel("Session 凭据", { exact: true }).fill("synthetic-region-session");
+  await page.getByRole("button", { name: "验证凭据与获取报价", exact: true }).click();
+  await expect(page.locator(".gpt-preflight-result")).toBeVisible();
+  await expect.poll(() => quoteReads).toBeGreaterThan(1);
+  for (const [region, price] of [["美国 (USD)", "US$20"], ["菲律宾 (PHP)", "982.14"]]) {
+    await page.getByRole("combobox", { name: "付款地区", exact: true }).click();
+    await page.getByRole("option", { name: region, exact: true }).click();
+    await expect(page.locator(".gpt-observed-quote")).toContainText(price);
+    await expect(page.getByRole("button", { name: "提交开通", exact: true })).toBeDisabled();
+  }
 });
 
 test("GPT direct recent quote has an explicit empty state without enabling checkout", async ({ page }) => {
@@ -6177,7 +6234,7 @@ test("create a developer key and only reveal its secrets once", async ({ page, c
   await expect(page.getByText("sk_****", { exact: false })).toBeVisible();
   const row = page.locator(".transaction-row").filter({ hasText: "sk_****" });
   await expect(row.getByLabel("读取卡产品", { exact: true })).toBeChecked();
-  await expect(row.locator('input[name="scopes"]')).toHaveCount(15);
+  await expect(row.locator('input[name="scopes"]')).toHaveCount(19);
   await expect(row.getByLabel("读取账户余额", { exact: true })).not.toBeChecked();
   await expect(row.getByLabel("创建卡片", { exact: true })).not.toBeChecked();
   await expect(row.getByLabel("卡片充值", { exact: true })).not.toBeChecked();
@@ -6247,8 +6304,9 @@ test("developer guide documents authentication, money retries, polling, and secu
   await expect(guide).toContainText("2/4/8/16 秒");
   await expect(guide).not.toContainText("当前版本没有下游 Webhook");
   await guide.getByText("curl", { exact: true }).click();
-  await expect(guide.locator("pre").first()).toContainText("X-App-Secret");
-  await expect(guide.locator("pre").first()).toContainText('Idempotency-Key: $OPEN_IDEMPOTENCY_KEY');
+  const curl = guide.locator("pre").filter({ hasText: 'Idempotency-Key: $OPEN_IDEMPOTENCY_KEY' });
+  await expect(curl).toContainText("X-App-Secret");
+  await expect(curl).toContainText('Idempotency-Key: $OPEN_IDEMPOTENCY_KEY');
   await expect(page.getByRole("link", { name: "完整 API 文档 / OpenAPI" }).first()).toHaveAttribute("href", "#api-reference");
 });
 
@@ -6553,7 +6611,7 @@ test("announcements persist per user until they are acknowledged", async ({ page
     await online.getByPlaceholder("8+").fill(password);
     await online.getByRole("button", { name: "登录", exact: true }).click();
     await expect(online).toHaveURL(/\/dashboard$/);
-    await expect(online.getByRole("dialog")).toHaveCount(0);
+    await expect(online.getByTestId("announcement-strip")).toHaveCount(0);
 
     await page.goto("/admin");
     await page.getByTestId("admin-nav-announcements").click();
@@ -6566,34 +6624,38 @@ test("announcements persist per user until they are acknowledged", async ({ page
     const publishedBody = await publishedResponse.json();
     expect(publishedResponse.status(), JSON.stringify(publishedBody)).toBe(200);
     announcementId = publishedBody.data.id;
-    await expect(page.getByRole("dialog")).toContainText(title);
+    await expect(page.getByTestId("announcement-strip")).toContainText(title);
+    await page.getByTestId("announcement-strip").getByRole("button", {name: "1 条通知", exact:true}).click();
     await page.getByRole("button", { name: "我知道了", exact: true }).click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByTestId("announcement-strip")).toHaveCount(0);
     await online.clock.fastForward(30_001);
-    await expect(online.getByRole("dialog")).toContainText(title);
+    await expect(online.getByTestId("announcement-strip")).toContainText(title);
+    await online.getByTestId("announcement-strip").getByRole("button", {name: "1 条通知", exact:true}).click();
     await online.getByRole("button", { name: "我知道了", exact: true }).click();
-    await expect(online.getByRole("dialog")).toHaveCount(0);
+    await expect(online.getByTestId("announcement-strip")).toHaveCount(0);
 
     await customer.goto("/login");
     await customer.getByPlaceholder("your@email.com").fill(email);
     await customer.getByPlaceholder("8+").fill(password);
     await customer.getByRole("button", { name: "登录", exact: true }).click();
-    const dialog = customer.getByRole("dialog");
+    const dialog = customer.getByTestId("announcement-strip");
+    await dialog.getByRole("button", {name: "1 条通知", exact:true}).click();
     await expect(dialog).toContainText(title);
     await expect(customer.locator(".sidebar-badge")).toHaveText("1");
     await expect(dialog).toContainText(content);
     await expect(dialog.locator("img, script")).toHaveCount(0);
     expect(await customer.evaluate(() => (globalThis as typeof globalThis & { __announcementXss?: number }).__announcementXss)).toBeUndefined();
 
-    await dialog.getByRole("button", { name: "下次登录提醒", exact: true }).click();
+    await dialog.getByRole("button", { name: "收起全部通知", exact: true }).click();
     await expect(dialog).toHaveCount(0);
     await customer.getByRole("button", { name: "退出", exact: true }).click();
     await customer.getByPlaceholder("your@email.com").fill(email);
     await customer.getByPlaceholder("8+").fill(password);
     await customer.getByRole("button", { name: "登录", exact: true }).click();
-    await expect(customer.getByRole("dialog")).toContainText(title);
+    await expect(customer.getByTestId("announcement-strip")).toContainText(title);
+    await customer.getByTestId("announcement-strip").getByRole("button", {name:"1 条通知",exact:true}).click();
     await customer.getByRole("button", { name: "我知道了", exact: true }).click();
-    await expect(customer.getByRole("dialog")).toHaveCount(0);
+    await expect(customer.getByTestId("announcement-strip")).toHaveCount(0);
     await expect(customer.locator(".sidebar-badge")).toHaveCount(0);
 
     const repeatedReads = await Promise.all(Array.from({ length: 12 }, () =>
@@ -9123,4 +9185,177 @@ test("GPT five-field batch sends password and 2FA without leaking mailbox passwo
   await expect(input).toHaveValue("");
   const storage = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
   for (const secret of ["gpt-password-test", "mail-password-test", "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "rt.test-export"]) expect(storage).not.toContain(secret);
+});
+
+test("CDK generation omits regions for nonlocal service", async ({ page }) => {
+  let body: Record<string, unknown> | undefined;
+  await mockAuthenticatedShell(page, "customer");
+  await mockGptDirect(page, { cdkRegionSelectionEnabled: false, forceNewCardEnabled: false, onGenerate: value => { body = value; } });
+  await page.goto("/gpt-direct");
+  await page.getByRole("tab", { name: "生成待售 CDK", exact: true }).click();
+  const generator = page.getByTestId("gpt-cdk-generate");
+  await expect(generator.getByRole("combobox", { name: "CDK 结账地区" })).toHaveCount(0);
+  await generator.locator("article").filter({ hasText: "Plus" }).getByRole("button", { name: "生成 1 个", exact: true }).click();
+  await expect.poll(() => body).toEqual({ plan: "plus", quantity: 1, forceNewCard: false });
+});
+
+test("ledger filters query upstream history and reset pagination", async ({page}) => {
+  await mockAuthenticatedShell(page);
+  await mockAdminWorkspace(page);
+  const requests:URL[]=[];
+  await page.route('**/api/admin/upstreams/*/balance-logs?*',route=>{
+    requests.push(new URL(route.request().url()));
+    return route.fulfill({json:{code:0,data:[],pagination:{total:0,page:Number(new URL(route.request().url()).searchParams.get('page')||1),pageSize:50}}});
+  });
+  await page.goto('/admin');
+  await page.getByTestId('admin-nav-funds').click();
+  const form=page.getByTestId('upstream-ledger-filter');
+  await form.getByLabel('类型',{exact:true}).selectOption('reversal_fee');
+  await form.getByLabel('收支方向').selectOption('debit');
+  await form.getByLabel('开始日期').fill('2026-10-01');
+  await form.getByLabel('结束日期').fill('2026-10-28');
+  await form.getByLabel('关键词').fill('5556');
+  await form.getByRole('button',{name:'筛选',exact:true}).click();
+  await expect.poll(()=>requests.at(-1)?.searchParams.get('type')).toBe('reversal_fee');
+  expect(requests.at(-1)?.searchParams.get('direction')).toBe('debit');
+  expect(requests.at(-1)?.searchParams.get('q')).toBe('5556');
+  expect(requests.at(-1)?.searchParams.get('start_at')).toBe('2026-09-30T16:00:00.000Z');
+  expect(requests.at(-1)?.searchParams.get('end_at')).toBe('2026-10-28T16:00:00.000Z');
+  await expect(form).toBeVisible();
+  await form.screenshot({path:'../.superpowers/ledger-filters-20261029/admin-filter.png'});
+  await page.getByTestId('admin-nav-upstreams').click();
+  await page.getByTestId('admin-nav-funds').click();
+  await expect(form.getByRole('combobox',{name:'类型',exact:true})).toHaveValue('reversal_fee');
+  await expect(form.getByLabel('关键词')).toHaveValue('5556');
+  await form.getByRole('button',{name:'重置',exact:true}).click();
+  await expect.poll(()=>requests.at(-1)?.searchParams.get('type')).toBe(null);
+});
+
+test("ledger filters wallet reversal supplements, empty results and page changes", async ({page}) => {
+  await mockAuthenticatedShell(page,'customer');
+  await page.route('**/api/wallet',route=>route.fulfill({json:{code:0,data:{balance:'20',spendableBalance:'20',lockedBalance:'0',promoBalance:'0',cumulativeDeposit:'20',cumulativeSpend:'0'}}}));
+  const requests:URL[]=[];
+  await page.route('**/api/wallet/transactions*',route=>{
+    const url=new URL(route.request().url());requests.push(url);
+    return route.fulfill({json:{code:0,data:{total:url.searchParams.has('q')?0:30,list:[]}}});
+  });
+  await page.goto('/finance');
+  const form=page.getByTestId('wallet-ledger-filter');
+  await form.getByLabel('卡片费用类型').selectOption('REVERSAL_FEE');
+  await form.getByRole('button',{name:'筛选',exact:true}).click();
+  await expect.poll(()=>requests.at(-1)?.searchParams.get('fee_kind')).toBe('REVERSAL_FEE');
+  await page.getByTestId('wallet-ledger-pagination').getByRole('button',{name:'下一页',exact:true}).click();
+  await expect.poll(()=>requests.at(-1)?.searchParams.get('page')).toBe('2');
+  await form.getByLabel('关键词').fill('no results');
+  await form.getByRole('button',{name:'筛选',exact:true}).click();
+  await expect.poll(()=>requests.at(-1)?.searchParams.get('page')).toBe('1');
+  await expect(form).toBeVisible();
+  await form.getByRole('button',{name:'重置',exact:true}).click();
+  await expect.poll(()=>requests.at(-1)?.searchParams.get('fee_kind')).toBe(null);
+});
+
+test("ledger filters mobile layout and English fee labels", async ({page}) => {
+  await mockAuthenticatedShell(page,'customer');
+  await page.setViewportSize({width:390,height:844});
+  await page.route('**/api/wallet',route=>route.fulfill({json:{code:0,data:{balance:'20',spendableBalance:'20',lockedBalance:'0',promoBalance:'0',cumulativeDeposit:'20',cumulativeSpend:'0'}}}));
+  await page.route('**/api/wallet/transactions*',route=>route.fulfill({json:{code:0,data:{total:0,list:[]}}}));
+  await page.goto('/finance?lang=en');
+  const form=page.getByTestId('wallet-ledger-filter');
+  await form.getByRole('combobox',{name:'Card fee type',exact:true}).selectOption('REVERSAL_FEE');
+  await expect(form.getByRole('option',{name:'Authorization reversal fee',exact:true})).toBeAttached();
+  await expect(form.getByRole('button',{name:'Reset',exact:true})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+  await form.screenshot({path:'../.superpowers/ledger-filters-20261029/mobile-filter.png'});
+});
+
+test("announcement strip groups unread notices without blocking the page", async ({page}) => {
+  await mockAuthenticatedShell(page,'customer');
+  await page.clock.install();
+  await page.route('**/api/wallet',route=>route.fulfill({json:{code:0,data:{balance:'20',spendableBalance:'20',lockedBalance:'0',promoBalance:'0',cumulativeDeposit:'20',cumulativeSpend:'0'}}}));
+  await page.route('**/api/wallet/transactions*',route=>route.fulfill({json:{code:0,data:{total:0,list:[]}}}));
+  let notices=[{id:101,title:'第一条公告',content:'第一条正文',isPinned:false,createdAt:'2026-10-29T00:00:00Z',telegramDelivery:null},
+    {id:102,title:'第二条公告',content:'<img src=x onerror=alert(1)>',isPinned:false,createdAt:'2026-10-29T00:00:00Z',telegramDelivery:null}];
+  const reads:number[]=[];
+  await page.route('**/api/announcements/unread',route=>route.fulfill({json:{code:0,data:notices,unreadCount:notices.length}}));
+  await page.route('**/api/announcements/*/read',route=>{const id=Number(route.request().url().split('/').at(-2));reads.push(id);notices=notices.filter(n=>n.id!==id);return route.fulfill({json:{code:0,data:{id}}});});
+  await page.goto('/finance');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const strip=page.getByTestId('announcement-strip');
+  await expect(strip).toBeVisible();
+  const toggle=strip.getByRole('button',{name:'2 条通知',exact:true});
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
+  await page.getByTestId('wallet-ledger-filter').getByLabel('关键词').fill('不受通知影响');
+  await toggle.click();
+  await expect(strip).toContainText('第一条正文');
+  await expect(strip).toContainText('<img src=x onerror=alert(1)>');
+  await expect(strip.locator('img')).toHaveCount(0);
+  await strip.screenshot({path:'../.superpowers/announcement-strip-20261029/desktop.png'});
+  await strip.getByTestId('announcement-101').getByRole('button',{name:'我知道了',exact:true}).click();
+  await expect.poll(()=>reads).toEqual([101]);
+  await strip.getByRole('button',{name:'收起全部通知',exact:true}).click();
+  await expect(strip).toHaveCount(0);
+  expect(reads).toEqual([101]);
+  await page.clock.fastForward(30_001);
+  await expect(strip).toHaveCount(0);
+  notices.push({id:103,title:'新到通知',content:'新的正文',isPinned:false,createdAt:'2026-10-29T00:01:00Z',telegramDelivery:null});
+  await page.clock.fastForward(30_001);
+  await expect(strip).toContainText('新到通知');
+});
+
+test("announcement strip remains usable on mobile and preserves failed acknowledgements", async ({page}) => {
+  await mockAuthenticatedShell(page,'customer');
+  await page.setViewportSize({width:390,height:844});
+  await page.route('**/api/wallet',route=>route.fulfill({json:{code:0,data:{balance:'20',spendableBalance:'20',lockedBalance:'0',promoBalance:'0',cumulativeDeposit:'20',cumulativeSpend:'0'}}}));
+  await page.route('**/api/wallet/transactions*',route=>route.fulfill({json:{code:0,data:{total:0,list:[]}}}));
+  await page.route('**/api/announcements/unread',route=>route.fulfill({json:{code:0,unreadCount:1,data:[{id:201,title:'A long notification title that should stay inside the screen',content:'Long content. '.repeat(250),isPinned:false,createdAt:'2026-10-29T00:00:00Z'}]}}));
+  await page.route('**/api/announcements/201/read',route=>route.fulfill({status:503,json:{error:'Try again'}}));
+  await page.goto('/finance?lang=en');
+  const strip=page.getByTestId('announcement-strip');
+  await strip.getByRole('button',{name:'1 notification',exact:true}).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await strip.getByRole('button',{name:'Got it',exact:true}).click();
+  await expect(strip.getByRole('alert')).toBeVisible();
+  await expect(strip.getByTestId('announcement-201')).toBeVisible();
+  await expect(strip.getByRole('button',{name:'Got it',exact:true})).toBeEnabled();
+  await page.getByTestId('wallet-ledger-filter').getByLabel('Keyword').fill('still usable');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(await strip.getByRole('alert').evaluate(e => getComputedStyle(e).position)).not.toBe('fixed');
+  await strip.screenshot({path:'../.superpowers/announcement-strip-20261029/mobile.png'});
+  await strip.getByRole('button',{name:'Dismiss all notifications',exact:true}).click();
+  await expect(strip).toHaveCount(0);
+});
+
+test("unified CDK docs explain region selection before generation and hide the independent entry", async ({page}) => {
+  await mockAuthenticatedShell(page,'customer');
+  await page.route('**/api/developer/keys',route=>route.fulfill({json:{code:0,data:[]}}));
+  await page.route('**/api/developer/webhooks/**',route=>route.fulfill({json:{code:0,data:{total:0,list:[]}}}));
+  await page.route('**/api/v1/openapi.json',route=>route.fulfill({json:{openapi:'3.1.0',info:{title:'API',version:'v1'},paths:{},components:{schemas:{}}}}));
+  await page.goto('/developer');
+  await expect(page.locator('.app-sidebar a[href="/cdk-v2"]')).toHaveCount(0);
+  const guide=page.getByTestId('cdk-region-guide');
+  await expect(guide).toContainText('GET /api/v1/gpt-direct/plans');
+  await expect(guide).toContainText('checkoutCountries');
+  await expect(guide).toContainText('paymentCountry');
+  await expect(guide).toContainText('POST /api/v1/gpt-direct/cdks/generate');
+  await expect(guide).toContainText('checkoutRegion');
+  await expect(page.getByRole('heading',{name:'CDK v2 接口与完整示例'})).toHaveCount(0);
+});
+
+test("unified CDK docs retain existing compatibility grants when saving a key", async ({page}) => {
+  await mockAuthenticatedShell(page,'customer');
+  const key={id:9,name:'Existing',appId:'app_fixture',appSecretMasked:'sk_****',status:'active',ipWhitelist:'127.0.0.1/32',webhookUrl:'',scopes:['gpt:read','cdk:purchase','cdk:issue','cdk:export'],cdkProductIds:['gpt.plus'],minuteLimit:120,dailyLimit:10000,createdAt:'2026-10-29T00:00:00Z',webhookSecretReady:true,gptAutoCancelRenewal:true};
+  let saved:Record<string,unknown>|undefined;
+  await page.route('**/api/developer/keys',route=>{
+    if(route.request().method()==='PATCH'){saved=route.request().postDataJSON();return route.fulfill({json:{code:0,msg:'saved'}});}
+    return route.fulfill({json:{code:0,data:[key]}});
+  });
+  await page.route('**/api/developer/webhooks/**',route=>route.fulfill({json:{code:0,data:{total:0,list:[]}}}));
+  await page.route('**/api/v1/openapi.json',route=>route.fulfill({json:{openapi:'3.1.0',info:{title:'API',version:'v1'},paths:{},components:{schemas:{}}}}));
+  await page.goto('/developer');
+  const form=page.locator('.developer-key-form');
+  await expect(form.locator('details')).not.toHaveAttribute('open','');
+  await form.getByLabel('密钥名称',{exact:true}).fill('Updated name');
+  await form.getByRole('button',{name:'保存',exact:true}).click();
+  await expect.poll(()=>saved?.scopes).toEqual(expect.arrayContaining(['cdk:issue','cdk:export','gpt:read','cdk:purchase']));
+  expect(saved?.cdkProductIds).toEqual(['gpt.plus']);
 });

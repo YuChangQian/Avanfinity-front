@@ -84,3 +84,29 @@ test('GPT issuance sends the chosen region and keeps it after reload', async ({ 
   await expect(page.getByText('结账地区：美国 · USD')).toBeVisible();
   expect(keys).toHaveLength(2); expect(keys[0]).toBe(keys[1]);
 });
+
+for (const savedCountry of [undefined, 'US']) test(`saved GPT issuance replays ${savedCountry ?? 'legacy'} request when regions change`, async ({ page }) => {
+  const body = { profileId: 'p1', quantity: 1, externalReference: '', ...(savedCountry ? { paymentCountry: savedCountry } : {}) };
+  const requests: unknown[] = [];
+  await page.addInitScript(({ body }) => {
+    localStorage.setItem('session', JSON.stringify({ token: 'test', userId: 1, displayName: 'Issuer', email: 'issuer@example.test' }));
+    sessionStorage.setItem('cdk-v2-issuance-1', JSON.stringify({ key: 'saved-request-key', body }));
+  }, { body });
+  await page.route('**/api/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith('/cdk-v2/products')) return route.fulfill({ json: { data: { list: [{ id: 'gpt.plus', enabled: true }], checkoutCountries: [{ country: 'PH', currency: 'PHP' }], issueEnabled: true, authorizeEnabled: true } } });
+    if (path.endsWith('/cdk-v2/profiles')) return route.fulfill({ json: { data: { list: [{ id: 'p1', version: 1, enabled: true, configuration: { name: 'Saved GPT', productId: 'gpt.plus', executionPolicy: { cardStrategy: 'existing_only', fundingStrategy: 'none', declinePolicy: { mode: 'fail', maxPaymentAttempts: 1 }, maxWalletDebitPerCodeUsd: '30' } } }] } } });
+    if (path.endsWith('/cdk-v2/codes')) return route.fulfill({ json: { data: { list: [], total: 0, page: 1, pageSize: 20 } } });
+    if (path.endsWith('/cdk-v2/batches')) {
+      requests.push({ key: route.request().headers()['idempotency-key'], body: route.request().postDataJSON() });
+      return route.fulfill({ json: { data: { id: 'b1', profileId: 'p1', profileVersion: 1, productId: 'gpt.plus', quantity: 1, list: [], replayed: true } } });
+    }
+    if (path.endsWith('/dashboard')) return route.fulfill({ json: { code: 0, data: { userId: 1, role: 'user', walletBalance: '100', cardBalance: '0', cardCount: 0, inviteCode: 'x' } } });
+    if (path.endsWith('/features')) return route.fulfill({ json: { code: 0, data: { developerApi: true } } });
+    return route.fulfill({ json: { code: 0, data: [] } });
+  });
+  await page.goto('/cdk-v2');
+  const generate = page.getByRole('button', { name: '免费生成兑换码', exact: true });
+  await expect(generate).toBeEnabled(); await generate.click();
+  await expect.poll(() => requests).toEqual([{ key: 'saved-request-key', body }]);
+});

@@ -1,3 +1,5 @@
+import { LedgerFilters } from "../components/LedgerFilters";
+import type { LedgerFilters as LedgerFilterValues } from "../api";
 import { AdminProfitPanel } from "../components/AdminProfitPanel";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAtomValue } from "jotai";
@@ -459,6 +461,7 @@ export function AdminPage() {
   const [actionMessage, setActionMessage] = useState("");
   const [selectedUpstreamCode, setSelectedUpstreamCode] = useState("");
   const [balanceLogPage, setBalanceLogPage] = useState(1);
+  const [balanceLogFilters, setBalanceLogFilters] = useState<LedgerFilterValues>({});
   const [customerDetailId, setCustomerDetailId] = useState<number | null>(initialCustomerContext?.customerId ?? null);
   const [customerCardId, setCustomerCardId] = useState<number | null>(initialCustomerContext?.cardId ?? null);
   const [customerView, setCustomerView] = useState<AdminCustomerView>(() => initialCustomerContext?.view ?? (initialCustomerContext?.cardId ? "cards" : "overview"));
@@ -520,7 +523,7 @@ export function AdminPage() {
     || upstreams.data?.data[0]?.code
     || "";
   const upstreamBalance = useQuery({ queryKey: ["admin-upstream-balance", upstreamCode], queryFn: () => getAdminUpstreamBalance(token, upstreamCode), enabled: Boolean(session && upstreamCode && activePanel === "upstreams"), retry: false });
-  const balanceLogs = useQuery({ queryKey: ["admin-balance-logs", upstreamCode, balanceLogPage], queryFn: () => getAdminUpstreamBalanceLogs(token, upstreamCode, balanceLogPage, 50), enabled: Boolean(session && upstreamCode && isPanel("upstreams", "funds")), retry: false });
+  const balanceLogs = useQuery({ queryKey: ["admin-balance-logs", upstreamCode, balanceLogPage, balanceLogFilters], queryFn: () => getAdminUpstreamBalanceLogs(token, upstreamCode, balanceLogPage, 50, balanceLogFilters), enabled: Boolean(session && upstreamCode && isPanel("upstreams", "funds")), retry: false });
   const pricing = useQuery({ queryKey: ["admin-pricing"], queryFn: () => getAdminPricing(token), enabled: Boolean(session) && isPanel("costs", "tiers"), retry: false });
   const cards = useQuery({ queryKey: ["admin-cards", cardQuery], queryFn: () => getAdminCards(token, { ...cardQuery, pageSize: 50 }), enabled: Boolean(session) && activePanel === "cards", retry: false });
   const deposits = useQuery({
@@ -1045,12 +1048,13 @@ export function AdminPage() {
       </section>
       <section className="admin-surface">
         <div className="admin-section-heading"><div><span className="admin-kicker">UPSTREAM LEDGER</span><h2>{t("upstreamBalanceLogs")}</h2></div></div>
+        <LedgerFilters id="upstream-ledger-filter" applied={balanceLogFilters} types={balanceLogs.data?.types ?? ["reversal_fee", "refund_fee", "decline_fee", "authorization_fee", "low_auth_fee", "foreign_tx_fee", "small_tx_fee", "merchant_violation_fee", "open_card", "card_recharge", "refund", "transfer_fee"]} onApply={filters => {if (balanceLogPage === 1 && JSON.stringify(filters) === JSON.stringify(balanceLogFilters)) void balanceLogs.refetch();setBalanceLogFilters(filters);setBalanceLogPage(1);}} />
         {balanceLogs.isLoading && <AdminRowsSkeleton />}
         {balanceLogs.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
         {balanceLogs.data?.data.length === 0 && <AdminState>{t("noBalanceLogs")}</AdminState>}
         {balanceLogs.data && balanceLogs.data.data.length > 0 && <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-balance-log-table">
           <thead><tr><th>{t("type")}</th><th>{t("amount")}</th><th>{t("balanceBefore")}</th><th>{t("balanceAfter")}</th><th>{t("remark")}</th><th>{t("linkedOperation")}</th><th>{t("matchStatus")}</th><th>{t("createdTime")}</th></tr></thead>
-          <tbody>{balanceLogs.data.data.map((log) => <tr key={log.id}><td>{log.type}</td><td className={Number(log.amount) >= 0 ? "positive" : "negative"}>{formatDecimal(log.amount)}</td><td>{log.before}</td><td>{log.after}</td><td>{log.remark ?? "—"}</td><td><code>{log.operationId ? log.operationId.slice(0, 8) : "—"}</code></td><td>{log.matchStatus}</td><td>{displayDate(log.occurredAt, locale)}</td></tr>)}</tbody>
+          <tbody>{balanceLogs.data.data.map((log) => <tr key={log.id}><td>{t(`ledgerTypes.${log.type}`, { defaultValue: log.type })}</td><td className={Number(log.amount) >= 0 ? "positive" : "negative"}>{formatDecimal(log.amount)}</td><td>{log.before}</td><td>{log.after}</td><td>{log.remark ?? "—"}</td><td><code>{log.operationId ? log.operationId.slice(0, 8) : "—"}</code></td><td>{log.matchStatus}</td><td>{displayDate(log.occurredAt, locale)}</td></tr>)}</tbody>
         </table></div>}
         {balanceLogs.data && <div className="admin-pagination"><span>{t("totalItems", { count: balanceLogs.data.pagination.total })}</span><div><Button size="xs" variant="outline" onClick={() => setBalanceLogPage((page) => page - 1)} disabled={balanceLogs.data.pagination.page <= 1}>{t("previousPage")}</Button><span>{balanceLogs.data.pagination.page}</span><Button size="xs" variant="outline" onClick={() => setBalanceLogPage((page) => page + 1)} disabled={balanceLogs.data.pagination.page * balanceLogs.data.pagination.pageSize >= balanceLogs.data.pagination.total}>{t("nextPage")}</Button></div></div>}
       </section>

@@ -29,7 +29,7 @@ import {
   type OpenApiSchema,
 } from "../api";
 import { sessionAtom } from "../state";
-import { CdkV2DeveloperGuide } from "../components/CdkV2DeveloperGuide";
+import { CdkRegionGuide } from "../components/CdkRegionGuide";
 import { useFeatures } from "../features";
 
 const scopeGroups: Array<{ label: string; hint: string; options: Array<{ value: DeveloperKeyScope; label: string }> }> = [
@@ -58,7 +58,6 @@ const scopeGroups: Array<{ label: string; hint: string; options: Array<{ value: 
       { value: "gpt:write", label: "scopeGptWrite" },
       { value: "tg-direct:write", label: "提交 TG 直充" },
       { value: "cdk:purchase", label: "scopeCdkPurchase" },
-      ...(["configure", "issue", "export", "revoke"] as const).map(v => ({ value: `cdk:${v}` as DeveloperKeyScope, label: `CDK v2 ${v}` })),
     ],
   },
 ];
@@ -344,7 +343,7 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
         <h2><BookOpen />{t("openApiReferenceTitle")}</h2>
         <p>{t("openApiReferenceDesc")}</p>
       </div>
-      <Button asChild variant="outline"><a href={`data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(spec, null, 2))}`} target="_blank" rel="noreferrer" download="avanfinity-openapi.json"><Download />{t("downloadRawOpenApi")}</a></Button>
+      <Button asChild variant="outline"><a href="/api/v1/openapi.json" target="_blank" rel="noreferrer" download="avanfinity-openapi.json"><Download />{t("downloadRawOpenApi")}</a></Button>
     </div>
     <div className="openapi-controls">
       <label><span>{t("searchApiOperations")}</span><div><Search /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={t("searchApiPlaceholder")} /></div></label>
@@ -734,9 +733,15 @@ const operation = await call("/operations/" + operationId);`;
             </div>
             <fieldset className="developer-scope-fieldset">
               <legend>{t("apiScopes")}</legend>
-              <label>CDK v2 显式产品授权（逗号分隔）<input name="cdkProductIds" defaultValue={(key.cdkProductIds ?? []).join(',')} placeholder="gpt.plus,x.premium_3m,tg.premium_3m" /></label>
+              <details><summary>已有接入的兼容设置</summary>
+              <label>兼容接口产品授权（逗号分隔）<input name="cdkProductIds" defaultValue={(key.cdkProductIds ?? []).join(',')} placeholder="gpt.plus,x.premium_3m,tg.premium_3m" /></label>
               <p>权限预设仅修改 CDK scope；产品须明确填写，旧权限不会自动升级。写权限须 IP 白名单。</p>
               {([['只读', ['cdk:read']], ['发行', ['cdk:read','cdk:configure','cdk:issue']], ['完整管理', ['cdk:read','cdk:configure','cdk:issue','cdk:export','cdk:revoke']]] as const).map(([label, selected]) => <button key={label} type="button" onClick={event => { const form = event.currentTarget.closest('form'); form?.querySelectorAll<HTMLInputElement>('input[name="scopes"]').forEach(input => { if (input.value.startsWith('cdk:') && input.value !== 'cdk:purchase') input.checked = (selected as readonly string[]).includes(input.value); }); }}>{label}</button>)}
+              <div className="developer-scopes">{([['configure','配置模板'],['issue','发行'],['export','导出'],['revoke','撤销']] as const).map(([value,label]) => <label key={value}>
+                <input name="scopes" type="checkbox" value={`cdk:${value}`} defaultChecked={key.scopes.includes(`cdk:${value}`)} />
+                <span>{label}</span><code>{`cdk:${value}`}</code>
+              </label>)}</div>
+              </details>
               <div className="developer-scope-groups">
                 {scopeGroups.map((group) => <section className="developer-scope-group" key={group.label}>
                   <header><strong>{t(group.label)}</strong><small>{t(group.hint)}</small></header>
@@ -780,7 +785,7 @@ const operation = await call("/operations/" + operationId);`;
             <div><dt>{t("apiAuthentication")}</dt><dd><code>X-App-Id</code> + <code>X-App-Secret</code></dd></div>
             <div><dt>{t("apiContentType")}</dt><dd><code>application/json</code></dd></div>
           </dl>
-          <CdkV2DeveloperGuide />
+          <CdkRegionGuide />
           <p className="developer-callout">{t("apiScopeIpRule")}</p>
         </article>
 

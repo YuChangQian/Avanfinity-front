@@ -1,4 +1,4 @@
-// Generated from openapi/downstream-v2.json. Run node scripts/generate-cdk-v2.mjs.
+// Generated from backend/openapi/downstream-v2.json. Run node scripts/generate-cdk-v2.mjs.
 export type DeclinePolicy = { mode: "switch_card" | "fail"; maxPaymentAttempts: number };
 export type ExecutionPolicy = { cardStrategy: "existing_first" | "new_first" | "existing_only" | "dedicated_new"; fundingStrategy: "auto_topup" | "none" | "fixed"; declinePolicy: DeclinePolicy; maxWalletDebitPerCodeUsd: string; fixedFundingAmountUsd?: string };
 export type AutoCard = { productCode: string; firstName: string; lastName: string };
@@ -21,5 +21,5 @@ export type Event = { id: string; type: string; data: unknown; createdAt: string
 export type Redemption = { id: string; productId: string; status: string; paymentStatus: string; deliveryStatus: string; attemptCount: number; nextAction: string; stopReason: string | null; quoteId: string | null; quote: Quote; recipient: string | null; canRetryPreflight: boolean; redemptionToken?: string; attempts?: Array<Attempt>; events?: Array<Event> };
 export type Revoked = { id: string; status: string };
 export type Error = { error: { code: string; message: string }; requestId: string };
-export type GptCredential = ({ mode: "access_token"; accessToken: string }) | ({ mode: "session"; session: string | Record<string, unknown> }) | ({ mode: "mailbox"; email: string; password: string }) | ({ mode: "password"; email: string; password: string; totpSecret: string });
+export type GptCredential = ({ mode: "access_token"; accessToken: string }) | ({ mode: "session"; session: string }) | ({ mode: "mailbox"; email: string; password: string }) | ({ mode: "password"; email: string; password: string; totpSecret: string });
 export type CheckoutRegion = { country: string; currency: string };

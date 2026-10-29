@@ -78,7 +78,19 @@ export type Wallet = {
   cumulativeDeposit: string;
   cumulativeSpend: string;
 };
+export type LedgerFilters = { type?: string; direction?: string; startAt?: string; endAt?: string; q?: string; feeKind?: string };
+
+function ledgerQuery(filters: LedgerFilters, page: number, pageSize: number) {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  for (const [key, value] of Object.entries({type: filters.type, direction: filters.direction, start_at: filters.startAt, end_at: filters.endAt, q: filters.q, fee_kind: filters.feeKind})) {
+    if (value) params.set(key, value);
+  }
+  return params.toString();
+}
+
 export type WalletTransaction = {
+  feeKind?: string | null;
+  feeKinds?: string[];
   id: number;
   type: string;
   amount: string;
@@ -199,6 +211,7 @@ export type GptDirectPlans = {
   version: number;
   plans: GptDirectPlan[] | Record<string, Omit<GptDirectPlan, "key"> & { key?: string }>;
   checkoutCountries?: Array<{ country: string; currency: string }>;
+  cdkRegionSelectionEnabled?: boolean;
   externalCardServiceFee?: string;
   batchConcurrencyByCountry?: Record<string, number> | null;
 };
@@ -1448,8 +1461,8 @@ export const resumeTelegramSession = () =>
 export const getWallet = (token: string) =>
   request<{ code: number; data: Wallet }>("/wallet", { headers: { authorization: `Bearer ${token}` } });
 
-export const getWalletTransactions = (token: string) =>
-  request<{ code: number; data: { total: number; list: WalletTransaction[] } }>("/wallet/transactions", {
+export const getWalletTransactions = (token: string, filters: LedgerFilters = {}, page = 1, pageSize = 20) =>
+  request<{ code: number; data: { total: number; list: WalletTransaction[]; types?: string[] } }>(Object.keys(filters).length || page !== 1 || pageSize !== 20 ? `/wallet/transactions?${ledgerQuery(filters, page, pageSize)}` : "/wallet/transactions", {
     headers: { authorization: `Bearer ${token}` },
   });
 
@@ -2334,9 +2347,9 @@ export const getAdminUpstreamBalance = (token: string, code: string) =>
     headers: { authorization: `Bearer ${token}` },
   });
 
-export const getAdminUpstreamBalanceLogs = (token: string, code: string, page = 1, pageSize = 50) =>
-  request<{ code: number; data: UpstreamBalanceLog[]; pagination: { total: number; page: number; pageSize: number } }>(
-    `/admin/upstreams/${encodeURIComponent(code)}/balance-logs?page=${page}&page_size=${pageSize}`, {
+export const getAdminUpstreamBalanceLogs = (token: string, code: string, page = 1, pageSize = 50, filters: LedgerFilters = {}) =>
+  request<{ code: number; types?: string[]; data: UpstreamBalanceLog[]; pagination: { total: number; page: number; pageSize: number } }>(
+    `/admin/upstreams/${encodeURIComponent(code)}/balance-logs?${ledgerQuery(filters, page, pageSize)}`, {
       headers: { authorization: `Bearer ${token}` },
     },
   );

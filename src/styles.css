@@ -2000,15 +2000,26 @@ html body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !im
 .dialog-content form input,
 .dialog-content form select,
 .dialog-content form textarea { font-size: 15px; }
-.announcement-dialog { width: min(540px, calc(100% - 28px)); padding: 0; overflow: hidden; }
-.announcement-dialog-heading { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 14px; padding: 24px 26px 20px; border-bottom: 1px solid #ececea; }
-.announcement-dialog-heading > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; color: #fff; background: #171717; }
-.announcement-dialog-heading svg { width: 18px; }
-.announcement-dialog-heading small { color: #666; font-size: 12px; font-weight: 750; letter-spacing: .08em; }
-.announcement-dialog-heading h2 { margin: 4px 0 0; font-size: 22px; font-weight: 650; letter-spacing: -.02em; line-height: 1.3; }
-.dialog-content > .announcement-dialog-body { max-height: min(48vh, 420px); margin: 0; padding: 22px 26px; overflow-y: auto; color: #3f3f3c; font-size: 15px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
-.announcement-dialog > .error { margin: 0 26px; }
-.announcement-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding: 0 26px 24px; }
+.announcement-strip { margin: 20px 32px 0; border: 1px solid #e3e1dc; border-radius: 12px; background: #faf9f6; overflow: hidden; }
+.announcement-strip-heading { display: flex; align-items: center; }
+.announcement-strip-toggle, .announcement-strip-close { min-height: 44px; padding: 12px; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.announcement-strip-toggle { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; text-align: left; font-size: 12px; }
+.announcement-strip-toggle strong { flex-shrink: 0; }
+.announcement-strip-toggle > span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #686762; }
+.announcement-strip-toggle svg, .announcement-strip-close svg { width: 16px; height: 16px; flex-shrink: 0; }
+.announcement-strip-chevron { margin-left: auto; }
+.announcement-strip-toggle[aria-expanded="true"] .announcement-strip-chevron { transform: rotate(180deg); }
+.announcement-strip-close { display: grid; place-items: center; flex-shrink: 0; }
+.announcement-strip button:focus-visible { outline: 2px solid #54728e; outline-offset: -3px; }
+.announcement-strip-list { max-height: min(45vh, 360px); overflow-y: auto; padding: 0 16px; border-top: 1px solid #e3e1dc; }
+.announcement-strip-list article { padding: 16px 0; border-bottom: 1px solid #e8e6e1; }
+.announcement-strip-list article:last-child { border-bottom: 0; }
+.announcement-strip-list h2 { margin: 0 0 8px; font-size: 13px; overflow-wrap: anywhere; }
+.announcement-strip-list p { margin: 0 0 12px; color: #565550; font-size: 12px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.announcement-strip-history { display: inline-block; margin: 12px 16px; font-size: 12px; }
+.announcement-strip-error { margin: 12px 16px; color: #bd2828; font-size: 12px; }
+@media (max-width: 600px) { .announcement-strip { margin: 12px 16px 0; } }
+
 .announcement-history-panel { overflow: hidden; }
 .announcement-history-list { display: grid; }
 .announcement-history-row { min-width: 0; display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: start; gap: 14px; padding: 20px 22px; border-top: 1px solid #eeeeec; }
@@ -3856,6 +3867,8 @@ html:has(.landing-page) { scroll-behavior: smooth; }
 .card-closure-confirm { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 18px; }
 .card-closure-confirm input[type="checkbox"] { width: 16px; height: 16px; min-height: 16px; min-width: 16px; margin: 2px 0 0; padding: 0; }
 
+.ledger-filter-bar { justify-content: flex-start; margin: 16px 0; }
+@media (max-width: 600px) { .ledger-filter-bar.is-wallet label:nth-child(-n+2) { grid-column: 1 / -1; } }
 .card-spending-page > header .eyebrow,
 .referral-page > header .eyebrow,
 .membership-page > header .eyebrow,

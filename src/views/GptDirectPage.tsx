@@ -350,6 +350,7 @@ function GptDirectContent() {
       return order && !financiallyFinal(order) ? 3_000 : false;
     },
   });
+  const cdkRegionSelectionEnabled = plansQuery.data?.data.cdkRegionSelectionEnabled === true;
   const forceNewCardEnabled = cdksQuery.data?.data.forceNewCardEnabled === true;
   const dedicatedCardMode = forceNewCardEnabled && forceNewCard;
   const orderQuery = useQuery({
@@ -460,7 +461,7 @@ function GptDirectContent() {
   async function generateCdk(plan: string) {
     if (purchasingPlan || !flags.gptCdk) return;
     const quantity = Math.min(Math.max(cdkQuantities[`generate:${plan}`] ?? 1, 1), 50);
-    const country = cdkPaymentCountry || paymentRegions[0]?.country;
+    const country = cdkRegionSelectionEnabled ? cdkPaymentCountry || paymentRegions[0]?.country : undefined;
     const fingerprint = `generate:${plan}:${quantity}:${dedicatedCardMode ? 1 : 0}:${country}`;
     if (purchaseIntent.current?.fingerprint !== fingerprint) {
       purchaseIntent.current = { fingerprint, key: crypto.randomUUID() };
@@ -564,7 +565,8 @@ function GptDirectContent() {
       }
       : undefined);
   const selectedQuote = workingQuotes[selectedPlanKey];
-  const observedQuote = observedQuotesQuery.data?.data.list.find((quote) => quote.plan === selectedPlanKey);
+  const observedQuote = observedQuotesQuery.data?.data.list.find((quote) => quote.plan === selectedPlanKey
+    && quote.country === selectedPaymentRegion.country && quote.currency === selectedPaymentRegion.currency);
   const quoteError = preflightData?.quoteError;
   const currentOrder = orderQuery.data?.data.order ?? acceptedOrder;
   const activeCdk = cdksQuery.data?.data.list.find((cdk) => cdk.id === activeCdkId);
@@ -758,6 +760,7 @@ function GptDirectContent() {
       );
       setPreflightExpired(false);
       setPreflightData(response.data);
+      void queryClient.invalidateQueries({ queryKey: ["gpt-observed-quotes"] });
     } catch (error) {
       setPreflightError(error instanceof Error ? error.message : t("gptPreflightFailed"));
     } finally {
@@ -919,6 +922,7 @@ function GptDirectContent() {
       await runGptBatch(rows, async () => capacity, async (row, index) => { results[index] = await previewAccount(row); return true; });
       clearSensitiveFields(true);
       setPreparedBatch(results);
+      void queryClient.invalidateQueries({ queryKey: ["gpt-observed-quotes"] });
     } catch (error) { setBatchError(error instanceof Error ? error.message : t("gptPreflightFailed")); }
     finally { setPreflightPending(false); }
   }
@@ -1400,7 +1404,7 @@ function GptDirectContent() {
         <li>{t(dedicatedCardMode ? "gptCdkForceNewCardBalance" : "gptCdkNeedBalance")}</li>
       </ul>
       {!flags.gptCdk ? <div className="feature-disabled"><KeyRound /><p>{t("featureUnavailable")}</p></div> : <>
-      <label className="gpt-cdk-quantity"><span>CDK 结账地区</span><select aria-label="CDK 结账地区" value={cdkPaymentCountry || paymentRegions[0]?.country || ""} disabled={Boolean(purchasingPlan)} onChange={event => setCdkPaymentCountry(event.target.value)}>{paymentRegions.map(region => <option key={region.country} value={region.country}>{regionNames.of(region.country)} · {region.currency}</option>)}</select><small>生成后固定使用该地区及币种，兑换时不可更改。</small></label>
+      {cdkRegionSelectionEnabled && <label className="gpt-cdk-quantity"><span>CDK 结账地区</span><select aria-label="CDK 结账地区" value={cdkPaymentCountry || paymentRegions[0]?.country || ""} disabled={Boolean(purchasingPlan)} onChange={event => setCdkPaymentCountry(event.target.value)}>{paymentRegions.map(region => <option key={region.country} value={region.country}>{regionNames.of(region.country)} · {region.currency}</option>)}</select><small>生成后固定使用该地区及币种，兑换时不可更改。</small></label>}
       {forceNewCardEnabled && <label className="gpt-cdk-force-new-card"><input type="checkbox" checked={dedicatedCardMode} disabled={Boolean(purchasingPlan)} onChange={(event) => setForceNewCard(event.target.checked)} /><span><strong>{t("gptCdkForceNewCard")}</strong><small>{t("gptCdkForceNewCardHint")}</small></span></label>}
       <div className="gpt-cdk-offers">{["go","plus","pro_5x","pro_20x","pro_25x"].map((plan) => {
         return <article key={plan} className="is-available">

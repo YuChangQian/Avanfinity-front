@@ -1,7 +1,9 @@
+import { LedgerFilters } from "../components/LedgerFilters";
+import type { LedgerFilters as LedgerFilterValues } from "../api";
 import { formatDecimal } from "../decimal";
 import { useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
 import { ArrowUpRight, Send, WalletCards } from "lucide-react";
 import { Dialog } from "radix-ui";
@@ -20,6 +22,8 @@ export function FinancePage() {
   const queryClient = useQueryClient();
   const { flags } = useFeatures();
   const [error, setError] = useState("");
+  const [ledgerFilters, setLedgerFilters] = useState<LedgerFilterValues>({});
+  const [ledgerPage, setLedgerPage] = useState(1);
   const [transferOpen, setTransferOpen] = useState(false);
   const [recipientCode, setRecipientCode] = useState("");
   const [amount, setAmount] = useState("");
@@ -32,8 +36,9 @@ export function FinancePage() {
     refetchInterval: 10_000,
   });
   const transactions = useQuery({
-    queryKey: ["wallet-transactions"],
-    queryFn: () => getWalletTransactions(session!.token),
+    queryKey: ["wallet-transactions", ledgerFilters, ledgerPage],
+    queryFn: () => getWalletTransactions(session!.token, ledgerFilters, ledgerPage),
+    placeholderData: keepPreviousData,
     enabled: Boolean(session),
     refetchInterval: 10_000,
   });
@@ -58,7 +63,7 @@ export function FinancePage() {
   });
 
   if (!session) return <Navigate to="/login" />;
-  if (!wallet.data || !transactions.data) return <main className="finance-page" aria-busy="true">
+  if (!wallet.data || transactions.isLoading) return <main className="finance-page" aria-busy="true">
     <header><div><span className="eyebrow">MONEY MOVEMENT</span><h1>{t("financeTitle")}</h1><p>{t("financeDesc")}</p></div>
       {flags.walletTransfer && <Button size="lg" disabled><Send /> {t("transfer")}</Button>}
     </header>
@@ -137,13 +142,20 @@ export function FinancePage() {
       </div>}
     </section>}
     <section className="transaction-panel">
-      <div className="section-title"><h2>{t("ledger")}</h2><span>{t("records", { count: transactions.data.data.total })}</span></div>
-      {transactions.data.data.list.length === 0 ? <div className="empty-state">{t("noLedger")}</div> :
-        transactions.data.data.list.map((item) => <article className="transaction-row" key={item.id}>
+      <div className="section-title"><h2>{t("ledger")}</h2><span>{t("records", { count: transactions.data?.data.total ?? 0 })}</span></div>
+      <LedgerFilters id="wallet-ledger-filter" applied={ledgerFilters} wallet types={transactions.data?.data.types ?? ["deposit", "card_open", "card_recharge", "card_refund", "card_transaction_fee", "transfer_in", "transfer_out"]} onApply={filters => {if (ledgerPage === 1 && JSON.stringify(filters) === JSON.stringify(ledgerFilters)) void transactions.refetch();setLedgerFilters(filters);setLedgerPage(1);}} />
+      {transactions.isPlaceholderData && <p role="status">{t("loading")}</p>}
+      {transactions.isError && <p role="alert">{t("adminLoadFailed")}</p>}
+      {(transactions.data?.data.list.length ?? 0) === 0 ? <div className="empty-state">{t("noLedger")}</div> :
+        transactions.data?.data.list.map((item) => <article className="transaction-row" key={item.id}>
           <div className="transaction-icon"><ArrowUpRight /></div>
-          <div><strong>{item.remark ?? item.type}</strong><small>{new Date(item.createdAt).toLocaleString()}</small></div>
+          <div><strong>{(item.feeKinds?.length ? item.feeKinds : item.feeKind ? [item.feeKind] : []).map(kind => t(`ledgerFees.${kind}`, { defaultValue: kind })).join(" / ")}{(item.feeKinds?.length || item.feeKind) ? " · " : ""}{item.remark ?? t(`ledgerTypes.${item.type}`, { defaultValue: item.type })}</strong><small>{new Date(item.createdAt).toLocaleString()}</small></div>
           <span className={Number(item.amount) >= 0 ? "positive" : "negative"}>{Number(item.amount) >= 0 ? "+" : ""}${formatDecimal(item.amount)}</span>
         </article>)}
+      <div className="admin-pagination" data-testid="wallet-ledger-pagination"><span>{t("totalItems", { count: transactions.data?.data.total ?? 0 })}</span><div>
+        <Button size="xs" variant="outline" disabled={ledgerPage <= 1 || transactions.isFetching} onClick={() => setLedgerPage(page => page - 1)}>{t("previousPage")}</Button><span>{ledgerPage}</span>
+        <Button size="xs" variant="outline" disabled={ledgerPage * 20 >= (transactions.data?.data.total ?? 0) || transactions.isFetching} onClick={() => setLedgerPage(page => page + 1)}>{t("nextPage")}</Button>
+      </div></div>
     </section>
   </main>;
 }

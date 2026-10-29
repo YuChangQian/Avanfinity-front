@@ -2,10 +2,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAtom, useSetAtom } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, Navigate, Outlet, useLocation } from "@tanstack/react-router";
-import { Dialog } from "radix-ui";
 import {
   BarChart3,
   CreditCard,
+  ChevronDown,
   Crown,
   Gift,
   KeyRound,
@@ -40,6 +40,7 @@ export function AppShell() {
   const [session, setSession] = useAtom(sessionAtom);
   const setGptDirectDraft = useSetAtom(gptDirectDraftAtom);
   const [dismissedAnnouncementIds, setDismissedAnnouncementIds] = useState<number[]>([]);
+  const [announcementsExpanded, setAnnouncementsExpanded] = useState(false);
   const [logoutError, setLogoutError] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -50,6 +51,8 @@ export function AppShell() {
     if (previousSessionIdentity.current !== identity) {
       queryClient.clear();
       setGptDirectDraft(emptyGptDirectDraft());
+      setDismissedAnnouncementIds([]);
+      setAnnouncementsExpanded(false);
       previousSessionIdentity.current = identity;
     }
   }, [identity, queryClient, setGptDirectDraft]);
@@ -92,7 +95,9 @@ export function AppShell() {
   const supportUnread = supportTickets.data?.data.reduce((total, ticket) => total + ticket.unreadCount, 0) ?? 0;
   const readAnnouncement = useMutation({
     mutationFn: (id: number) => markAnnouncementRead(session!.token, id),
-    onSuccess: async (_, id) => {
+    onMutate: () => identity,
+    onSuccess: async (_, id, mutationIdentity) => {
+      if (mutationIdentity !== previousSessionIdentity.current) return;
       setDismissedAnnouncementIds((current) => current.includes(id) ? current : [...current, id]);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["announcements"] }),
@@ -100,7 +105,7 @@ export function AppShell() {
       ]);
     },
   });
-  const currentAnnouncement = announcements.data?.data.find((item) => !dismissedAnnouncementIds.includes(item.id));
+  const visibleAnnouncements = announcements.data?.data.filter((item) => !dismissedAnnouncementIds.includes(item.id)) ?? [];
 
   if (!session) return isPublicCdkRoute ? <Outlet /> : <Navigate to="/login" />;
   if (profile.error instanceof ApiError && profile.error.errorCode === "AUTH_REQUIRED") {
@@ -171,7 +176,6 @@ export function AppShell() {
         <span className="sidebar-section">{t("accountTools")}</span>
         <Link to="/support" {...linkProps(t("supportTickets"))}><LifeBuoy /><span>{t("supportTickets")}</span>{supportUnread > 0 && <b className="sidebar-badge" aria-label={t("unreadSupportMessages", { count: supportUnread })}>{supportUnread > 99 ? "99+" : supportUnread}</b>}</Link>
         <Link to="/announcements" {...linkProps(t("announcementHistory"))}><Megaphone /><span>{t("announcementHistory")}</span>{Boolean(announcements.data?.unreadCount) && <b className="sidebar-badge" aria-label={t("unreadAnnouncements", { count: announcements.data!.unreadCount })}>{announcements.data!.unreadCount > 99 ? "99+" : announcements.data!.unreadCount}</b>}</Link>
-        <Link to="/cdk-v2" {...linkProps("CDK 发行中心")}><KeyRound /><span>CDK 发行中心</span></Link>
         <Link to="/developer" {...linkProps("API")}><KeyRound /><span>API</span></Link>
         {flags.market && <Link to="/openai-prices" {...linkProps(t("market"))}><BarChart3 /><span>{t("market")}</span></Link>}
         {profile.data?.role === "admin" && <Link to="/admin" {...linkProps(t("admin"))}><ShieldCheck /><span>{t("admin")}</span></Link>}
@@ -190,28 +194,27 @@ export function AppShell() {
         {logoutError && <p className="error" role="alert">{logoutError}</p>}
       </div>
     </aside>
-    <div className="app-content" id="main-content" tabIndex={-1}><Outlet /></div>
-    <Dialog.Root open={Boolean(currentAnnouncement)} onOpenChange={(open) => {
-      if (!open && currentAnnouncement) {
-        setDismissedAnnouncementIds((current) => current.includes(currentAnnouncement.id) ? current : [...current, currentAnnouncement.id]);
-        readAnnouncement.reset();
-      }
-    }}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog-content announcement-dialog">
-          <div className="announcement-dialog-heading"><span><Megaphone /></span><div><small>{t("systemAnnouncement")}</small><Dialog.Title>{currentAnnouncement?.title}</Dialog.Title></div></div>
-          <Dialog.Description className="announcement-dialog-body">{currentAnnouncement?.content}</Dialog.Description>
-          {readAnnouncement.isError && <p className="error" role="alert">{t("announcementReadFailed")}</p>}
-          <div className="announcement-dialog-actions">
-            <Button variant="outline" onClick={() => {
-              if (currentAnnouncement) setDismissedAnnouncementIds((current) => current.includes(currentAnnouncement.id) ? current : [...current, currentAnnouncement.id]);
-              readAnnouncement.reset();
-            }}>{t("remindNextLogin")}</Button>
-            <Button onClick={() => currentAnnouncement && readAnnouncement.mutate(currentAnnouncement.id)} disabled={readAnnouncement.isPending}><StableSwap state={readAnnouncement.isPending ? "busy" : "idle"} labels={{ idle: t("acknowledgeAnnouncement"), busy: t("processing") }} /></Button>
-          </div>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <div className="app-content" id="main-content" tabIndex={-1}>
+      {visibleAnnouncements.length > 0 && <section className="announcement-strip" data-testid="announcement-strip" aria-label={t("systemAnnouncement")}>
+        <div className="announcement-strip-heading">
+          <button type="button" className="announcement-strip-toggle" aria-label={t("announcementStripCount", { count: visibleAnnouncements.length })} aria-expanded={announcementsExpanded} aria-controls="announcement-strip-list" onClick={() => setAnnouncementsExpanded(open => !open)}>
+            <Megaphone aria-hidden="true" /><strong>{t("announcementStripCount", { count: visibleAnnouncements.length })}</strong><span>{visibleAnnouncements[0].title}</span><ChevronDown className="announcement-strip-chevron" aria-hidden="true" />
+          </button>
+          <button type="button" className="announcement-strip-close" aria-label={t("announcementStripDismiss")} onClick={() => {
+            setDismissedAnnouncementIds(current => Array.from(new Set([...current, ...visibleAnnouncements.map(item => item.id)])));
+            setAnnouncementsExpanded(false);readAnnouncement.reset();
+          }}><X aria-hidden="true" /></button>
+        </div>
+        <div id="announcement-strip-list" hidden={!announcementsExpanded}>
+          {readAnnouncement.isError && <p className="announcement-strip-error" role="alert">{t("announcementReadFailed")}</p>}
+          <div className="announcement-strip-list">{visibleAnnouncements.map(item => <article key={item.id} data-testid={`announcement-${item.id}`}>
+            <h2>{item.title}</h2><p>{item.content}</p>
+            <Button size="sm" variant="outline" onClick={() => readAnnouncement.mutate(item.id)} disabled={readAnnouncement.isPending}><StableSwap state={readAnnouncement.isPending && readAnnouncement.variables === item.id ? "busy" : "idle"} labels={{ idle: t("acknowledgeAnnouncement"), busy: t("processing") }} /></Button>
+          </article>)}</div>
+          <Link className="announcement-strip-history" to="/announcements">{t("announcementHistory")}</Link>
+        </div>
+      </section>}
+      <Outlet />
+    </div>
   </div>;
 }
