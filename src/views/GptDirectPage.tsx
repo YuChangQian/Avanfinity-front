@@ -45,9 +45,10 @@ import { gptDirectDraftAtom, sessionAtom, sessionIdentity } from "../state";
 import { useFeatures } from "../features";
 import { GPT_BATCH_MAX_ACCOUNTS, GPT_SESSION_BATCH_MAX_ACCOUNTS, GPT_SESSION_FILE_MAX_BYTES, gptBatchConcurrency, parseGptMailboxBatch, parseGptSessionBatch, runGptBatch } from "../gptBatch";
 import { normalizeGptSession } from "../gptSession";
+import { GptRegionalPriceCatalog } from "../components/GptRegionalPriceCatalog";
 import { GptCreditsPlanFieldset } from "../components/GptCreditsPlanFieldset";
 import { GptCreditsCheckoutSummary } from "../components/GptCreditsCheckoutSummary";
-import { creditFundingUsd, creditQuoteFromBase, creditQuantityForPlan, isCreditPlan, parseCreditQuantity, splitDirectPlans } from "../gptDirect/plans";
+import { CREDIT_PRESET_QUANTITIES, creditFundingUsd, creditPlanKey, creditQuoteFromBase, creditQuantityForPlan, isCreditPlan, parseCreditQuantity, parseCreditQuantityDraft, splitDirectPlans } from "../gptDirect/plans";
 
 const cancellableStatuses = new Set(["queued", "awaiting_card", "funding_pending"]);
 const autoCardBufferUsd = 3;
@@ -254,6 +255,7 @@ function GptDirectContent() {
   const [orderSearch, setOrderSearch] = useState("");
   const [acceptedOrder, setAcceptedOrder] = useState<GptDirectOrder | null>(null);
   const [cdkPaymentCountry, setCdkPaymentCountry] = useState("");
+  const [cdkCreditsDraft, setCdkCreditsDraft] = useState("");
   const [purchasedCdk, setPurchasedCdk] = useState<GptCdkPurchase | null>(null);
   const [purchaseError, setPurchaseError] = useState("");
   const [purchasingPlan, setPurchasingPlan] = useState("");
@@ -458,9 +460,9 @@ function GptDirectContent() {
     window.location.assign("/login");
   }
 
-  async function generateCdk(plan: string) {
+  async function generateCdk(plan: string, quantityKey = plan) {
     if (purchasingPlan || !flags.gptCdk) return;
-    const quantity = Math.min(Math.max(cdkQuantities[`generate:${plan}`] ?? 1, 1), 50);
+    const quantity = Math.min(Math.max(cdkQuantities[`generate:${quantityKey}`] ?? 1, 1), 50);
     const country = cdkRegionSelectionEnabled ? cdkPaymentCountry || paymentRegions[0]?.country : undefined;
     const fingerprint = `generate:${plan}:${quantity}:${dedicatedCardMode ? 1 : 0}:${country}`;
     if (purchaseIntent.current?.fingerprint !== fingerprint) {
@@ -567,6 +569,15 @@ function GptDirectContent() {
   const selectedQuote = workingQuotes[selectedPlanKey];
   const observedQuote = observedQuotesQuery.data?.data.list.find((quote) => quote.plan === selectedPlanKey
     && quote.country === selectedPaymentRegion.country && quote.currency === selectedPaymentRegion.currency);
+  const lowestRegionPrices = plans.map((plan) => ({
+    plan,
+    quote: observedQuotesQuery.data?.data.list
+      .filter((quote) => quote.plan === plan.key
+        && paymentRegions.some((region) => region.country === quote.country && region.currency === quote.currency)
+        && Number.isFinite(Number(quote.amountUsd)) && Number(quote.amountUsd) > 0
+        && Number.isFinite(Number(quote.amountMajor)) && Number(quote.amountMajor) > 0)
+      .sort((left, right) => Number(left.amountUsd) - Number(right.amountUsd))[0],
+  }));
   const quoteError = preflightData?.quoteError;
   const currentOrder = orderQuery.data?.data.order ?? acceptedOrder;
   const activeCdk = cdksQuery.data?.data.list.find((cdk) => cdk.id === activeCdkId);
@@ -1137,6 +1148,41 @@ function GptDirectContent() {
     </nav>
     <p className="gpt-direct-flow-hint">{t("gptDirectFlowHint")}</p>
 
+    {flags.gptDirect && <section className="gpt-lowest-prices" aria-labelledby="gpt-lowest-prices-title">
+      <div className="gpt-lowest-prices-heading">
+        <div><span className="eyebrow">REGION PICKS</span><h2 id="gpt-lowest-prices-title">{t("gptLowestPricesTitle")}</h2></div>
+        <span>{t("gptLowestPricesCompare")}</span>
+      </div>
+      <div className="gpt-lowest-prices-grid">
+        {lowestRegionPrices.map(({ plan, quote }) => {
+          const selected = selectedPlanKey === plan.key && selectedPaymentRegion.country === quote?.country && selectedPaymentRegion.currency === quote?.currency;
+          const label = t(`gptPlan.${plan.key}`, { defaultValue: plan.label });
+          return quote ? <button key={plan.key} type="button" className={`gpt-lowest-price${selected ? " is-selected" : ""}`}
+            disabled={busy || Boolean(handoff)} aria-pressed={selected} onClick={() => {
+              setCreditsCustomActive(false);
+              updateDraft({ planKey: plan.key, paymentRegionKey: `${quote.country}:${quote.currency}` });
+              clearPreflight();
+            }}>
+            <span className="gpt-lowest-price-top"><strong>{label}</strong><span>{t("gptLowestPriceBadge")}</span></span>
+            <span className="gpt-lowest-price-region">{regionNames.of(quote.country) ?? quote.country}<small>{quote.currency}</small></span>
+            <strong className="gpt-lowest-price-usd">≈ ${Number(quote.amountUsd).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            <span className="gpt-lowest-price-local">{formatReferencePrice(quote.amountMajor, quote.currency)}</span>
+            <span className="gpt-lowest-price-action">{t(selected ? "gptLowestPriceSelected" : "gptLowestPriceSelect")}{selected ? <Check size={14} /> : <span aria-hidden="true">↗</span>}</span>
+          </button> : <div key={plan.key} className="gpt-lowest-price is-empty">
+            <strong>{label}</strong><span>{observedQuotesQuery.isLoading || plansQuery.isLoading ? <DataSkeleton /> : t(observedQuotesQuery.isError ? "gptRecentQuoteFailed" : "gptLowestPriceEmpty")}</span>
+          </div>;
+        })}
+      </div>
+      <p className="gpt-lowest-prices-note">{t("gptLowestPricesHint")}</p>
+    </section>}
+
+    {flags.gptDirect && session && <GptRegionalPriceCatalog token={session.token} regions={paymentRegions}
+      disabled={busy || Boolean(handoff)} onSelect={(plan, country, currency) => {
+        setCreditsCustomActive(false);
+        updateDraft({ planKey: plan, paymentRegionKey: `${country}:${currency}` });
+        clearPreflight();
+      }} enabledPlans={plans.map(plan => plan.key)} />}
+
     <div className="gpt-direct-layout">
       <section className={`gpt-direct-panel${!checkoutReady ? " is-focus" : ""}`}>
         <div className="section-title"><div><span className="eyebrow">01 · PREFLIGHT</span><h2>{t("gptCredentialPreflight")}</h2></div></div>
@@ -1406,11 +1452,15 @@ function GptDirectContent() {
       {!flags.gptCdk ? <div className="feature-disabled"><KeyRound /><p>{t("featureUnavailable")}</p></div> : <>
       {cdkRegionSelectionEnabled && <label className="gpt-cdk-quantity"><span>CDK 结账地区</span><select aria-label="CDK 结账地区" value={cdkPaymentCountry || paymentRegions[0]?.country || ""} disabled={Boolean(purchasingPlan)} onChange={event => setCdkPaymentCountry(event.target.value)}>{paymentRegions.map(region => <option key={region.country} value={region.country}>{regionNames.of(region.country)} · {region.currency}</option>)}</select><small>生成后固定使用该地区及币种，兑换时不可更改。</small></label>}
       {forceNewCardEnabled && <label className="gpt-cdk-force-new-card"><input type="checkbox" checked={dedicatedCardMode} disabled={Boolean(purchasingPlan)} onChange={(event) => setForceNewCard(event.target.checked)} /><span><strong>{t("gptCdkForceNewCard")}</strong><small>{t("gptCdkForceNewCardHint")}</small></span></label>}
-      <div className="gpt-cdk-offers">{["go","plus","pro_5x","pro_20x","pro_25x"].map((plan) => {
-        return <article key={plan} className="is-available">
-        <div><span className="gpt-cdk-plan">{t(`gptPlan.${plan}`, { defaultValue: plan })}</span><strong data-testid={`gpt-cdk-listed-price-${plan}`}>{t("gptCdkGenerateFree", { price: "$0.00" })}</strong><small>{t("gptCdkGenerateHint")}</small></div>
-        <label className="gpt-cdk-quantity"><span>{t("quantity")}</span><input type="number" min={1} max={50} aria-label={t("quantity")} value={Math.min(cdkQuantities[`generate:${plan}`] ?? 1, 50)} disabled={Boolean(purchasingPlan)} onChange={(event) => setCdkQuantities((current) => ({ ...current, [`generate:${plan}`]: Math.min(Math.max(Number.parseInt(event.target.value, 10) || 1, 1), 50) }))} /></label>
-        <Button data-testid={`gpt-cdk-generate-${plan}`} onClick={() => generateCdk(plan)} disabled={Boolean(purchasingPlan)}><StableSwap state={purchasingPlan === `generate:${plan}` ? "busy" : "idle"} labels={{ idle: t("gptGenerateCdks", { count: Math.min(cdkQuantities[`generate:${plan}`] ?? 1, 50) }), busy: t("processing") }} /></Button>
+      <div className="gpt-cdk-offers">{["go","plus","pro_5x","pro_20x","pro_25x", ...(cdkRegionSelectionEnabled ? [...CREDIT_PRESET_QUANTITIES.map(creditPlanKey), "credits_custom"] : [])].map((option) => {
+        const custom = option === "credits_custom";
+        const points = custom ? parseCreditQuantityDraft(cdkCreditsDraft) : parseCreditQuantity(option);
+        const plan = custom ? creditPlanKey(points) : option;
+        const quantityKey = `generate:${option}`;
+        return <article key={option} className="is-available">
+        <div><span className="gpt-cdk-plan">{custom ? t("gptCreditsCustom") : t(`gptPlan.${plan}`, { defaultValue: plan })}</span><strong data-testid={`gpt-cdk-listed-price-${option}`}>{t("gptCdkGenerateFree", { price: "$0.00" })}</strong><small>{t("gptCdkGenerateHint")}</small>{custom && <label className="gpt-cdk-quantity"><span>{t("gptChooseCredits")}</span><input type="text" inputMode="numeric" autoComplete="off" aria-label="CDK 自定义点数" value={cdkCreditsDraft} placeholder={t("gptCreditsCustomPlaceholder")} disabled={Boolean(purchasingPlan)} onChange={event => setCdkCreditsDraft(event.target.value)} /><small>{t("gptCreditsCustomHint")}</small>{cdkCreditsDraft !== "" && !points && <small role="alert">{t("gptCreditsQuantityInvalid")}</small>}</label>}</div>
+        <label className="gpt-cdk-quantity"><span>{t("quantity")}</span><input type="number" min={1} max={50} aria-label={custom ? "CDK 自定义张数" : t("quantity")} value={Math.min(cdkQuantities[quantityKey] ?? 1, 50)} disabled={Boolean(purchasingPlan)} onChange={(event) => setCdkQuantities((current) => ({ ...current, [quantityKey]: Math.min(Math.max(Number.parseInt(event.target.value, 10) || 1, 1), 50) }))} /></label>
+        <Button data-testid={`gpt-cdk-generate-${option}`} onClick={() => generateCdk(plan, option)} disabled={Boolean(purchasingPlan) || (custom && !points)}><StableSwap state={purchasingPlan === `generate:${plan}` ? "busy" : "idle"} labels={{ idle: t("gptGenerateCdks", { count: Math.min(cdkQuantities[quantityKey] ?? 1, 50) }), busy: t("processing") }} /></Button>
       </article>;
       })}</div></>}
       {purchaseError && <p className="admin-alert is-error" role="alert">{purchaseError}</p>}
@@ -1468,7 +1518,7 @@ function GptDirectContent() {
         <div className={`gpt-order-row${redemptionOrder ? " is-clickable" : ""}`} onClick={redemptionOrder ? (event) => { if ((event.target as HTMLElement).closest("a,button")) return; setActiveOrderId(""); setActiveCdkId(cdk.id); } : undefined}>
           <div className="gpt-order-row-main is-static">
             <span className={`gpt-status-dot is-${cdk.redemptionStatus || cdk.status}`} />
-            <span><strong className="gpt-cdk-history-code">{revealedCdks[cdk.id] ?? cdk.codePrefix}</strong><small>{cdk.plan} · {cdk.forceNewCard ? `${t("gptCdkForceNewCardBadge")} · ` : ""}{cdk.maskedEmail ? `${cdk.maskedEmail} · ` : ""}{amount ? `${formatDecimal(amount)} · ` : ""}{new Date(cdk.updatedAt).toLocaleString(locale)}</small><small>{t("gptPaymentCardLastFour")}：{paymentCardLastFour(cdk) ? `•••• ${paymentCardLastFour(cdk)}` : t("gptPaymentCardNotRecorded")}</small></span>
+            <span><strong className="gpt-cdk-history-code">{revealedCdks[cdk.id] ?? cdk.codePrefix}</strong><small>{isCreditPlan(cdk.plan) ? t("gptCdkCreditsLabel", { count: parseCreditQuantity(cdk.plan) }) : cdk.plan} · {cdk.forceNewCard ? `${t("gptCdkForceNewCardBadge")} · ` : ""}{cdk.maskedEmail ? `${cdk.maskedEmail} · ` : ""}{amount ? `${formatDecimal(amount)} · ` : ""}{new Date(cdk.updatedAt).toLocaleString(locale)}</small><small>{t("gptPaymentCardLastFour")}：{paymentCardLastFour(cdk) ? `•••• ${paymentCardLastFour(cdk)}` : t("gptPaymentCardNotRecorded")}</small></span>
             <span className="gpt-cdk-history-state">{invoiceUrls.length ? <span className="gpt-order-invoices">{invoiceUrls.map((invoiceUrl, index) => <a className="gpt-invoice-link" href={invoiceUrl} target="_blank" rel="noopener noreferrer" key={invoiceUrl}>{t("gptViewStripeInvoice")}{invoiceUrls.length > 1 ? ` ${index + 1}` : ""}</a>)}</span>
               : redeemed ? <span className="gpt-order-invoices"><span className="gpt-invoice-link">{t("cdkInvoicePending")} <Link to="/cdk/redeem">{t("cdkLookupTitle")}</Link></span></span> : null}{redemptionOrder ? <button type="button" className="gpt-cdk-progress-trigger" onClick={() => { setActiveOrderId(""); setActiveCdkId(cdk.id); }} aria-label={`${t("gptCdkHistory")} ${cdk.codePrefix}`}><span className="gpt-row-progress-line"><i aria-hidden="true"><b style={{ width: `${progress}%` }} /></i><strong>{progress}%</strong></span><small>{new Date(redemptionOrder.updatedAt ?? cdk.updatedAt).toLocaleString(locale)}</small></button> : <strong>{cdk.status}</strong>}<span className="gpt-cdk-history-actions"><Button size="xs" variant="utility" aria-pressed={Boolean(revealedCdks[cdk.id])} onClick={() => void toggleCdkSensitive(cdk.id)} disabled={revealingCdkId === cdk.id}>{revealingCdkId === cdk.id ? <RefreshCw className="is-spinning" /> : revealedCdks[cdk.id] ? <EyeOff /> : <Eye />}<StableSwap state={revealingCdkId === cdk.id ? "busy" : revealedCdks[cdk.id] ? "alt" : "idle"} labels={{ idle: t("viewCdkCode"), alt: t("hideCdkCode"), busy: t("processing") }} /></Button>{revealedCdks[cdk.id] && <Button size="xs" variant="utility" onClick={async () => { await navigator.clipboard.writeText(revealedCdks[cdk.id]); setCopiedCdk(cdk.id); }}>{copiedCdk === cdk.id ? <Check /> : <Copy />}<StableSwap state={copiedCdk === cdk.id ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} /></Button>}</span></span>
           </div>

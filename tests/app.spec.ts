@@ -7531,7 +7531,7 @@ test("admin configures automatic CDK quote refresh without echoing the Session",
   await page.goto("/admin");
   await page.getByTestId("admin-nav-cdks").click();
   let section = page.getByTestId("admin-gpt-quote-refresh");
-  await expect(section).toContainText("6 小时汇率新鲜度");
+  await expect(section).toContainText("分批查询各支持地区的套餐目录价");
   await section.getByLabel("Session", { exact: true }).fill(secret);
   await section.getByLabel("刷新间隔（分钟）", { exact: true }).fill("30");
   await section.getByRole("checkbox", { name: "启用自动刷新", exact: true }).check();

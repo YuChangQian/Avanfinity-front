@@ -10,7 +10,7 @@
 - GPT 直充订阅档位：`go`、`plus`、`pro_5x`、`pro_20x`、`pro_25x`。点数下单使用 `credits_N`，N 为 250–9999999 的整数，例如 `credits_800`。目录列出的常用点数档位与自定义数量分别处理；必须预检目标套餐，不能按比例自行计算付款金额。
 - CDK 生成支持可选 `paymentCountry`。国家从套餐目录的 `checkoutCountries` 选择，币种由服务端决定。返回 `checkoutRegion={country,currency}`；省略国家时固定发行当时的默认地区。生成后不可改变，地区停用或币种变化时停止兑换，不自动换区。旧码没有地区快照时保留原行为。
 - 改变国家、套餐、数量或开卡策略时使用新幂等键；网络超时重试保留原键和完全相同的请求体。地区参与请求幂等校验。同一请求重放返回原地区，即使后来默认地区变化。
-- CDK 只开放其产品目录列出的档位，不能因为直充支持自定义点数就推断 CDK 也支持。自动开卡任务当前仍只接受其接口列出的四个订阅档位。
+- GPT CDK v1 支持订阅、固定点数及自定义点数：`credits_250`、`credits_1000`、`credits_2500`、`credits_5000` 或 `credits_N`（N 为 250–9,999,999 整数）。点数码仅支持自有 OpenAI 支付服务；旧 v2 产品目录仍以其接口返回值为准。自动开卡任务当前仍只接受其接口列出的四个订阅档位。
 - 完整 Session 用 JSON **字符串**提交，含 `sessionToken` 与 `accessToken`，UTF-8 最多 65536 字节；不直接传 JSON 对象。订单恢复换 Session 的接口只接受 Session 模式。其他凭据模式是否可完成付款取决于账户及实际流程；需要 Session 时返回明确错误。
 - 指定卡付款结果未知时只查询原订单；不要重新建单。`cs_live` 交接沿用本次选卡，禁止自动换卡，新增服务成本由平台承担，客户已确认价格不变；该路径接受自动尝试取消续费，以订单 `willRenew` 和续费结果为准。
 
@@ -836,11 +836,13 @@ scope 为 `gpt:write`，要求 IP 白名单，不要求 `Idempotency-Key`。仅�
 
 ### POST `/gpt-direct/cdks/generate`
 
+点数示例：`{ "plan": "credits_800", "quantity": 2, "paymentCountry": "US" }` 生成两张各 800 点的 CDK，`quantity` 是张数，不是点数。先查询 `/gpt-direct/plans` 的 `checkoutCountries`，再传所选 `paymentCountry`；服务端固定保存地区与币种，兑换时不得变更。生成免费，兑换时以账号预检的有效点数报价执行；自定义点数复用当前直充的阶梯优惠与最小币种单位取整。缺失、过期或地区不符的报价将停止兑换。修改点数、张数或地区须用新幂等键。点数充值不变更订阅，也不执行取消订阅续费。批量导出按面额分文件，例如 `credits_800.txt`、`credits_800-force-new-card.txt`。
+
 ```json
 { "plan": "plus", "quantity": 2, "forceNewCard": true }
 ```
 
-必须带幂等键。`plan` 可为 `go`、`plus`、`pro_5x`、`pro_20x`、`pro_25x`；`quantity` 可省略，默认 1，范围 1–50。`forceNewCard` 可省略，默认 `false`，保持原有逻辑：只复用并轮换生成者名下已有的 `ACTIVE` 卡；没有可用卡时兑换失败、无法支付，不自动开卡。
+必须带幂等键。`plan` 可为 `go`、`plus`、`pro_5x`、`pro_20x`、`pro_25x`，或点数产品 `credits_N`（N 为 250–9,999,999 的整数，固定面额为 250、1000、2500、5000）；`quantity` 可省略，默认 1，范围 1–50。`forceNewCard` 可省略，默认 `false`，保持原有逻辑：只复用并轮换生成者名下已有的 `ACTIVE` 卡；没有可用卡时兑换失败、无法支付，不自动开卡。
 
 `forceNewCard=true` 时，每张 CDK 在首次兑换时恰好新开并绑定一张卡，不使用或轮换生成者的已有卡。后续幂等重试只复用已绑定的该张卡；支付失败时不再开第二张，也不回退到已有卡。绑定后的专用卡不会进入普通 CDK 的自动选卡池。生成时不扣套餐费；兑换时的新卡初始充值本金、开卡费和初始充值手续费由 CDK 生成者承担。
 
@@ -3753,7 +3755,7 @@ amount 为从卡余额退回本站钱包的本金。退款前同步上游最新�
 
 操作：`generateCdks`；权限：`cdk:purchase`。
 
-生成 1–50 张当前账户自有 CDK，生成时不扣套餐费。forceNewCard 默认 false；为 true 时，每张 CDK 兑换只新开并绑定一张卡，不使用已有卡；该卡支付失败时不再开第二张，且不会进入普通 CDK 的自动选卡池。开卡费由 CDK 生成者承担。同一 Idempotency-Key 和完全相同的请求只生成一个批次；改变 plan、quantity 或 forceNewCard 必须使用新幂等键。完整兑换码只在成功响应及同幂等请求的恢复窗口内返回。 paymentCountry 可选择结账地区，省略时固定生成当时的默认地区；成功及幂等重放返回 checkoutRegion。改变地区须使用新的幂等键。
+生成 1–50 张当前账户自有 CDK，生成时不扣套餐费。forceNewCard 默认 false；为 true 时，每张 CDK 兑换只新开并绑定一张卡，不使用已有卡；该卡支付失败时不再开第二张，且不会进入普通 CDK 的自动选卡池。开卡费由 CDK 生成者承担。同一 Idempotency-Key 和完全相同的请求只生成一个批次；改变 plan、quantity 或 forceNewCard 必须使用新幂等键。完整兑换码只在成功响应及同幂等请求的恢复窗口内返回。 paymentCountry 可选择结账地区，省略时固定生成当时的默认地区；成功及幂等重放返回 checkoutRegion。改变地区须使用新的幂等键。 支持点数充值 CDK：plan=credits_250、credits_1000、credits_2500、credits_5000，或 credits_N（N 为 250–9999999 整数）；生成免费，兑换时按所选地区的当前有效点数报价执行充值，不变更账号订阅。点数和地区在发码时固定。
 
 参数：
 ```json
@@ -11181,12 +11183,12 @@ all=true 固定提交时的本人卡片清单；或传入1–1000个cardIds。�
       "properties": {
         "plan": {
           "type": "string",
-          "enum": [
-            "go",
+          "pattern": "^(go|plus|pro_5x|pro_20x|pro_25x|credits_(25[0-9]|2[6-9][0-9]|[3-9][0-9]{2}|[1-9][0-9]{3,6}))$",
+          "description": "订阅套餐，或点数产品 credits_N；固定面额为 credits_250、credits_1000、credits_2500、credits_5000，自定义 N 为 250–9999999 的整数。点数 CDK 仅支持自有 OpenAI 支付服务。点数与结账地区在生成时固定，兑换时不可更改。",
+          "examples": [
             "plus",
-            "pro_5x",
-            "pro_20x",
-            "pro_25x"
+            "credits_250",
+            "credits_800"
           ]
         },
         "quantity": {

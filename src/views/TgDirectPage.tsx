@@ -5,6 +5,7 @@ import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { tgStatuses, tgOrderStatus, tgOrderExplanation, TgOrderTiming } from "../components/TgOrderStatus";
 import { StableSwap } from "../components/StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageShell } from "../components/PageShell";
@@ -13,12 +14,7 @@ import { TgDirectCdkPanel } from "../components/TgDirectCdkPanel";
 import { sessionAtom, sessionIdentity } from "../state";
 import { ApiError, cancelTgDirect, confirmTgDirect, getCards, getTgDirectOrder, getTgDirectOrders, getTgDirectPlans, prepareTgDirect, type TgDirectOrder } from "../api";
 
-const statuses: Record<string, string> = {
-  preparing: "正在检查资格和报价", prepared: "待确认付款", processing: "正在充值",
-  completed: "充值完成", paid_pending_delivery: "已付款，等待到账", review_required: "结果待核对，请勿重复付款",
-  requires_action: "支付需要进一步验证，请联系客服", ineligible: "账号暂不符合充值条件",
-  failed_precharge: "未扣款，充值未完成", cancelled: "已取消",
-};
+const statuses = tgStatuses;
 const settledStatuses = ["completed", "paid_pending_delivery", "failed_precharge", "ineligible", "cancelled"];
 const feeStatuses = { unpaid: "未收取", charged: "已收取", refunded: "已退还", waived: "免服务费" };
 const paid = (order: TgDirectOrder) => ["completed", "paid_pending_delivery"].includes(order.status);
@@ -37,6 +33,7 @@ function TgOrderProgress({ order, preparing, confirming, uncertain }: { order?: 
   const stoppedLabel = order?.status === "failed_precharge" ? (started ? "支付失败" : "获取报价失败") : order?.status === "ineligible" ? "资格未通过" : order?.status === "cancelled" ? (current === 1 ? "未开始" : "已取消") : order?.status === "requires_action" ? "待验证" : "待核对";
   const active = !stopped && (quoting || confirming || uncertain || ["processing", "paid_pending_delivery"].includes(order?.status ?? ""));
   return <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-3" aria-live="polite">
+    <p className="text-sm font-semibold">当前步骤：{completed ? "充值到账已确认" : quoting ? "检查账号与报价" : paymentKnown ? "核对 Telegram 赠送到账" : order?.stage === "authenticating" ? "支付认证与验证" : order?.stage === "tokenizing" ? "准备支付信息" : started ? "提交付款与核对支付结果" : "等待确认付款"}</p>
     <ol aria-label="充值流程" className="space-y-4">
       {["检查资格与报价", "支付 TG 订单", "确认充值到账"].map((label, index) => {
         const done = completed || index < current;
@@ -74,7 +71,7 @@ export function TgDirectPage() {
   const cards = useQuery({ queryKey: [...key, "cards"], queryFn: () => getCards(token, 1, 100), enabled: !!session });
   const orders = useQuery({ queryKey: [...key, "orders", orderQuery], queryFn: () => getTgDirectOrders(token, orderQuery), enabled: !!session && tab === "direct", refetchInterval: tab === "direct" ? 15000 : false });
   const detail = useQuery({ queryKey: [...key, "order", selected], queryFn: () => getTgDirectOrder(token, selected!), enabled: !!session && !!selected && tab === "direct",
-    refetchInterval: query => submitting === "confirm" || (uncertainOrderId === selected && !!selected && !settledStatuses.includes(query.state.data?.data.status ?? "")) || ["processing", "preparing", "paid_pending_delivery"].includes(query.state.data?.data.status ?? "") ? 3000 : false });
+    refetchInterval: query => query.state.data?.data.statusSnapshot || submitting === "confirm" || (uncertainOrderId === selected && !!selected && !settledStatuses.includes(query.state.data?.data.status ?? "")) || ["processing", "preparing", "paid_pending_delivery", "requires_action", "review_required"].includes(query.state.data?.data.status ?? "") ? 3000 : false });
   const order = detail.data?.data ?? orders.data?.data.find(item => item.id === selected);
   const refresh = async (value: TgDirectOrder) => {
     await queryClient.cancelQueries({ queryKey: [...key, "order", value.id] });
@@ -113,14 +110,17 @@ export function TgDirectPage() {
 
   const preview = submitting !== "confirm" && uncertainOrderId !== order?.id && !paymentStarted(order);
   const recovered = uncertainOrderId === order?.id && settledStatuses.includes(order?.status ?? "");
-  const orderContent = <div className="space-y-4">
+  const orderContent = <div className="tg-order-content space-y-4">
+        {selected && detail.isPending && <p role="status">正在读取原订单进度…</p>}
         {message && !recovered && <p role="alert">{message}</p>}
         {detail.isError && <p role="alert">状态暂时无法获取，请刷新原订单，勿重复充值。</p>}
         {(order || submitting === "prepare") && <TgOrderProgress order={order} preparing={submitting === "prepare"} confirming={submitting === "confirm"} uncertain={uncertainOrderId === order?.id && !recovered} />}
         {order ? <>
           <strong>@{order.recipient} · {planList.find(item => item.key === order.plan)?.label ?? order.plan}</strong>
-          <p>{submitting === "confirm" && !paid(order) ? "正在充值" : preview && order.status === "failed_precharge" ? "报价获取失败，未开始充值" : preview && order.status === "review_required" ? "报价结果待核对，未开始充值" : statuses[order.status] ?? "结果待核对"}</p>
-          {order.message && <p role="alert">{order.message}</p>}
+          <p>{submitting === "confirm" && !paid(order) ? "正在充值" : preview && order.status === "failed_precharge" ? "报价获取失败，未开始充值" : preview && order.status === "review_required" ? "报价结果待核对，未开始充值" : tgOrderStatus(order)}</p>
+          {tgOrderExplanation(order) && <p className="tg-order-explanation" role="status">{tgOrderExplanation(order)}</p>}
+          {order.message && !tgOrderExplanation(order) && <p role="alert">{order.message}</p>}
+          <TgOrderTiming order={order} />
           <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2">
             <div className="flex items-center justify-between gap-3"><span>官方金额</span><strong>{amount(order)}</strong></div>
             {order.amountMinor != null && <div className="flex items-center justify-between gap-3"><span>美元参考金额</span><strong>{order.estimatedUsd ? `约 USD ${order.estimatedUsd}` : "暂无法换算"}</strong></div>}
@@ -131,7 +131,7 @@ export function TgDirectPage() {
           <Button variant="outline" disabled={action.isPending || detail.isFetching} onClick={() => void detail.refetch()}>刷新订单状态</Button>
           {paid(order) && <div><strong>赠送到账</strong><p>{order.deliveryStatus === "delivered" ? `已核验赠送记录${order.giftMessageId ? ` #${order.giftMessageId}` : ""}${order.giftDays ? ` · ${order.giftDays} 天` : ""}` : "付款已确认，正在核对 Telegram 赠送记录。"}</p></div>}
           <small>订单编号：{order.id}</small>
-        </> : submitting !== "prepare" && <p>完成资格检查后，在这里核对账号、套餐和金额。</p>}
+        </> : submitting !== "prepare" && !selected && <p>完成资格检查后，在这里核对账号、套餐和金额。</p>}
   </div>;
   const openDetails = (id: string) => { setSelected(id); setMessage(""); setDrawerOpen(true); };
 
@@ -161,7 +161,7 @@ export function TgDirectPage() {
       </form></section>
       <section className="gpt-direct-panel"><div className="gpt-order-content" aria-live="polite">
         <h2>{preview ? "报价预览" : "充值确认"}</h2>
-        {drawerOpen ? <p>正在侧边窗口查看订单进度与到账。</p> : orderContent}
+        {drawerOpen ? <><p>{order ? tgOrderStatus(order) : "正在读取订单进度…"}</p><Button variant="outline" onClick={() => setDrawerOpen(true)}>查看当前充值进度</Button></> : orderContent}
       </div></section>
     </div>
     <section className="transaction-panel gpt-orders-panel mt-5" aria-labelledby="tg-order-history-title">
@@ -172,7 +172,7 @@ export function TgDirectPage() {
           <span className={`gpt-status-dot is-${item.status}`} />
           <button type="button" className="gpt-order-heading-trigger" disabled={action.isPending} onClick={() => openDetails(item.id)}>
             <strong>@{item.recipient}</strong><small>{planList.find(p => p.key === item.plan)?.label ?? item.plan}</small>
-            <small>{statuses[item.status] ?? "结果待核对"}{item.createdAt ? ` · ${new Date(item.createdAt).toLocaleString("zh-CN")}` : ""}</small>
+            <small>{tgOrderStatus(item)}{item.createdAt ? ` · ${new Date(item.createdAt).toLocaleString("zh-CN")}` : ""}</small>
           </button>
           <span className="gpt-order-row-state"><strong>{amount(item)}</strong>{item.estimatedUsd && <small>约 USD {item.estimatedUsd}</small>}
             <Button variant="outline" size="sm" disabled={action.isPending} onClick={() => openDetails(item.id)}>订单详情</Button>
@@ -182,9 +182,9 @@ export function TgDirectPage() {
     </section>
     <Dialog.Root open={drawerOpen} onOpenChange={setDrawerOpen}><Dialog.Portal>
       <Dialog.Overlay className="dialog-overlay" />
-      <Dialog.Content className="dialog-content gpt-progress-drawer">
+      <Dialog.Content className="dialog-content gpt-progress-drawer tg-progress-drawer">
         <div className="card-transaction-drawer-head"><div><Dialog.Title>TG 直充进度与到账</Dialog.Title><Dialog.Description>查看当前流程、支付结果和赠送到账记录。</Dialog.Description></div><Dialog.Close asChild><Button type="button" variant="ghost" size="icon" aria-label="关闭"><X /></Button></Dialog.Close></div>
-        <div className="gpt-progress-drawer-body">{orderContent}</div>
+        <div className="gpt-progress-drawer-body tg-progress-drawer-body">{orderContent}</div>
       </Dialog.Content>
     </Dialog.Portal></Dialog.Root>
     </>}

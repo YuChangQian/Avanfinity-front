@@ -1,4 +1,5 @@
 import { formatDecimal } from "../decimal";
+import { isCreditPlan, parseCreditQuantity } from "../gptDirect/plans";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
 import { Link } from "@tanstack/react-router";
@@ -204,7 +205,7 @@ export function GptCdkRedeemPage() {
       const data = await cdkRequest("/preview", device.current, { code: code.trim() });
       const token = boundedString(data.redemption_token);
       const nextPlan = boundedString(data.plan, 32);
-      if (!token || !nextPlan || !plans.has(nextPlan)) throw new Error("invalid");
+      if (!token || !nextPlan || (!plans.has(nextPlan) && !isCreditPlan(nextPlan))) throw new Error("invalid");
       setRedemptionToken(token);
       setPlan(nextPlan);
       setForceNewCard(data.forceNewCard === true);
@@ -361,7 +362,7 @@ export function GptCdkRedeemPage() {
         </>}
 
         {stage === "credential" && <div className="cdk-form">
-          <div className="cdk-card-heading"><span><ShieldCheck /></span><div><small>02 ACCOUNT</small><h2>{t("cdkVerifyAccount")}</h2><p>{t("cdkSelectedPlan", { plan: t(`gptPlan.${plan}`, { defaultValue: plan }) })}</p>{forceNewCard && <p>{t("cdkForceNewCardNotice")}</p>}</div></div>
+          <div className="cdk-card-heading"><span><ShieldCheck /></span><div><small>02 ACCOUNT</small><h2>{t("cdkVerifyAccount")}</h2><p>{t("cdkSelectedPlan", { plan: isCreditPlan(plan) ? t("gptCdkCreditsLabel", { count: parseCreditQuantity(plan) }) : t(`gptPlan.${plan}`, { defaultValue: plan }) })}</p>{forceNewCard && <p>{t("cdkForceNewCardNotice")}</p>}</div></div>
           {!preflightToken ? <form onSubmit={preflight} className="cdk-credential-form">
             <fieldset className="gpt-credential-modes"><legend>{t("gptCredentialMode")}</legend><label><input type="radio" name="cdkCredentialMode" value="session" checked readOnly /><span>{t("gptCredentialModeLabel.session")}</span></label></fieldset>
             <label>{t("gptSessionCredential")}<textarea aria-label={t("gptSessionCredential")} rows={5} value={sessionValue} onChange={(event) => setSessionValue(event.target.value)} autoComplete="off" spellCheck={false} required /><span className="gpt-session-help"><small>{t("gptSessionCredentialHint")}</small><a href="https://chatgpt.com/api/auth/session" target="_blank" rel="noreferrer">{t("gptGetSession")}</a></span></label>
@@ -370,13 +371,13 @@ export function GptCdkRedeemPage() {
           </form> : <div className="cdk-confirm">
             <CheckCircle2 /><div><strong>{t("cdkPreflightPassed")}</strong><p>{t(forceNewCard ? "cdkForceNewCardNotice" : "cdkAutoCardNotice")}</p></div>
             {error && <p className="error" role="alert">{error}</p>}
-            <Button size="lg" onClick={redeem} disabled={busy || redeemLocked}><RefreshCw className={busy ? "is-spinning" : "is-reserved"} /><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: t("cdkSubmitRedeem"), busy: t("processing") }} /></Button>
+            <Button size="lg" onClick={redeem} disabled={busy || redeemLocked}><RefreshCw className={busy ? "is-spinning" : "is-reserved"} /><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: t(isCreditPlan(plan) ? "cdkSubmitCredits" : "cdkSubmitRedeem"), busy: t("processing") }} /></Button>
           </div>}
         </div>}
 
         {stage === "result" && <div className={`cdk-result ${completed ? "is-completed" : terminalStatuses.has(status) ? "is-failed" : ""}`} role="status" aria-live="polite">
           <span>{completed ? <CheckCircle2 /> : <Clock3 />}</span>
-          <div><small>03 RESULT</small><h2>{completed ? t("cdkRedeemCompleted") : status === "unused" ? t("cdkLookupNotRedeemed") : terminalStatuses.has(status) ? t("cdkRedeemEnded") : t("cdkRedeemProcessing")}</h2>
+          <div><small>03 RESULT</small><h2>{completed ? t(isCreditPlan(plan) ? "gptCreditsOrderCompleted" : "cdkRedeemCompleted") : status === "unused" ? t("cdkLookupNotRedeemed") : terminalStatuses.has(status) ? t("cdkRedeemEnded") : t("cdkRedeemProcessing")}</h2>
             <p>{status === "unused" ? t("cdkLookupNotRedeemedDesc") : stageLabel ? t(`gptOrderStage.${stageLabel.split(":")[0]}`, { defaultValue: stageLabel }) : status ? t(`gptOrderStatus.${status}`, { defaultValue: status }) : t("cdkCheckingResult")}</p>
             {maskedEmail && <p>{t("cdkRedeemedAccount", { email: maskedEmail })}</p>}
             {amountLabel && <p>{t("cdkReceiptAmount", { amount: formatDecimal(amountLabel) })}</p>}

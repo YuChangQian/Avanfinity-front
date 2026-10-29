@@ -17,7 +17,9 @@ const selected = plans.checkoutCountries.find(region => region.country === payme
 if (!selected) throw new Error("所选地区当前不可用");
 
 // 2. 把所选国家放入生成请求；币种由服务端根据地区确定。
-const body = { plan: "plus", quantity: 1, forceNewCard: false, paymentCountry };
+// plan 可选订阅，或 credits_250 / credits_1000 / credits_2500 / credits_5000；
+// 自定义点数用 credits_N，N 为 250–9,999,999 的整数；quantity 是 CDK 张数。
+const body = { plan: "credits_800", quantity: 1, forceNewCard: false, paymentCountry };
 const issuanceKey = crypto.randomUUID();
 // 发送前，持久保存 issuanceKey 与 body。超时重试复用原键和完全相同的 body。
 const batch = await call("/gpt-direct/cdks/generate", {
@@ -37,6 +39,7 @@ export function CdkRegionGuide() {
       <li><strong>选择后再生成：</strong>从目录选择国家，将 <code>paymentCountry</code> 传给 <code>POST /api/v1/gpt-direct/cdks/generate</code>。币种由服务端确定。</li>
       <li><strong>核对返回值：</strong><code>data.checkoutRegion</code> 是生成后固定的地区和币种，兑换时不可更改。</li>
     </ol>
+    <p>点数 CDK 支持 250、1,000、2,500、5,000 点及自定义 250–9,999,999 整数点；使用 <code>plan: "credits_N"</code>，<code>quantity</code> 是张数。点数与地区生成后固定，充值不变更订阅套餐。</p>
     <p>选区仅适用于 GPT CDK。未指定国家时保存生成当时的默认地区；未开放手动选区的服务须省略该字段。当前地区以每次查询结果为准。</p>
     <p><a href="/api/v1/openapi.json" target="_blank" rel="noreferrer">统一 API OpenAPI</a> · <a href="/docs/avanfinity-downstream-api.md" download>下载完整对接文档</a></p>
     <pre style={{ overflowX: 'auto', maxWidth: '100%' }}><code>{example}</code></pre>

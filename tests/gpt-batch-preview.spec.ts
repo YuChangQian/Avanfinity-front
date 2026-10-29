@@ -49,6 +49,60 @@ async function preview(page: Page, count = 2, smart = false, dedicated = false) 
 }
 const confirmPayment = (page: Page) => page.getByRole("button", { name: "确认支付选中账号", exact: true });
 
+async function setupLowestPrices(page: Page, quotesAvailable = true) {
+  const state = await setup(page);
+  await page.route("**/api/gpt-direct/plans", route => route.fulfill({ json: { code: 0, data: {
+    version: 2,
+    checkoutCountries: [{ country: "PH", currency: "PHP" }, { country: "EG", currency: "EGP" }, { country: "US", currency: "USD" }],
+    plans: ["plus", "pro_5x", "pro_20x", "credits_250"].map(key => ({ key, label: key, enabled: true, serviceFeeUsdMinor: 100, customerServiceFee: "1" })),
+  } } }));
+  await page.route("**/api/gpt-direct/observed-quotes", route => route.fulfill({ json: { code: 0, data: { list: quotesAvailable ? [
+    { plan: "plus", country: "US", currency: "USD", amountMajor: "20", amountUsd: "20" },
+    { plan: "plus", country: "PH", currency: "PHP", amountMajor: "999", amountUsd: "17.1" },
+    { plan: "plus", country: "EG", currency: "EGP", amountMajor: "1000", amountUsd: "19" },
+    { plan: "pro_5x", country: "PH", currency: "PHP", amountMajor: "5999", amountUsd: "102" },
+    { plan: "pro_5x", country: "EG", currency: "EGP", amountMajor: "3799", amountUsd: "75.98" },
+    { plan: "plus", country: "TR", currency: "TRY", amountMajor: "1", amountUsd: "0.01" },
+    { plan: "pro_20x", country: "US", currency: "USD", amountMajor: "0", amountUsd: "0" },
+    { plan: "credits_250", country: "US", currency: "USD", amountMajor: "10", amountUsd: "10" },
+  ].map(quote => ({ ...quote, observedAt: "2026-10-29T00:00:00Z", fxDate: "2026-10-29" })) : [] } } }));
+  return state;
+}
+
+test("GPT lowest regional prices compare USD and select a plan and region without charging", async ({ page }) => {
+  const state = await setupLowestPrices(page);
+  await page.goto("/gpt-direct");
+  const section = page.getByRole("region", { name: "各套餐低价地区" });
+  const plus = section.getByRole("button", { name: /Plus/ });
+  await expect(plus).toContainText("菲律宾");
+  await expect(plus).toContainText("999");
+  await expect(plus).toContainText("17.1");
+  const pro = section.getByRole("button", { name: /Pro 5x/ });
+  await expect(pro).toContainText("埃及");
+  await expect(pro).toContainText("75.98");
+  await expect(section.getByText("暂无可比较报价")).toHaveCount(1);
+  await expect(section.getByRole("button", { name: /额度 250/ })).toContainText("10");
+  await page.screenshot({ path: "../artifacts/gpt-lowest-prices-desktop.png" });
+  await section.screenshot({ path: "../artifacts/gpt-lowest-prices-cards.png" });
+  await pro.click();
+  await expect(page.getByRole("radio", { name: /Pro 5x/ })).toBeChecked();
+  await expect(page.getByRole("combobox", { name: "付款地区" })).toContainText("埃及");
+  expect(state.preflights).toHaveLength(0);
+  expect(state.orders).toHaveLength(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(section).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  await page.screenshot({ path: "../artifacts/gpt-lowest-prices-mobile.png", fullPage: true });
+});
+
+test("GPT lowest regional prices show an honest empty state", async ({ page }) => {
+  await setupLowestPrices(page, false);
+  await page.goto("/gpt-direct");
+  const section = page.getByRole("region", { name: "各套餐低价地区" });
+  await expect(section.getByText("暂无可比较报价")).toHaveCount(4);
+  await expect(section.getByRole("button")).toHaveCount(0);
+});
+
 test("GPT batch preview shows membership and quotes without creating any order", async ({ page }) => {
   const state = await setup(page);
   await preview(page);

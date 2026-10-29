@@ -89,6 +89,11 @@ function QuoteRefreshForm({ token, settings }: { token: string; settings: AdminG
       <div><dt>{t("cdkLastRefreshSuccess")}</dt><dd>{displayDate(settings.lastSuccessAt)}</dd></div>
       <div><dt>{t("cdkNextRefresh")}</dt><dd>{settings.enabled ? displayDate(settings.nextRefreshAt) : "—"}</dd></div>
     </dl>
+    {settings.catalogProgress?.total != null && <p className="admin-settings-note" role="status">
+      {t("gptCatalogProgress", { processed: settings.catalogProgress.processed ?? 0, total: settings.catalogProgress.total,
+        succeeded: settings.catalogProgress.succeeded ?? 0, failed: settings.catalogProgress.failed ?? 0 })}
+      {settings.catalogProgress.rateLimited && ` · ${t("gptCatalogRateLimited")}`}
+    </p>}
     {!settings.notificationReady && <p className="admin-alert is-warning"><ShieldAlert />{t("cdkRefreshTelegramRequired")}</p>}
     {error && <p className="admin-alert is-error" role="alert"><span>{error instanceof Error ? error.message : t("updateFailed")}</span>{recentAuthRequired && <Button type="button" size="xs" variant="outline" onClick={requestRecentAuth}>{t("verifyAgain")}</Button>}</p>}
   </section>;
@@ -166,6 +171,7 @@ export function AdminGptCdkPanel({ token }: { token: string }) {
     queryKey: ["admin-gpt-quote-refresh"],
     queryFn: () => getAdminGptQuoteRefresh(token),
     retry: false,
+    refetchInterval: 15_000,
   });
   const pricing = useMutation({
     mutationFn: (input: PricingInput) =>

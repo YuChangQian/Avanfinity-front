@@ -224,6 +224,23 @@ export type GptDirectQuote = {
   minorUnitExponent: number;
   fetchedAt?: number;
 };
+export type GptCatalogPrice = {
+  country: string; currency: string; plan: string; amountMajor: string;
+  tax: "inclusive" | "exclusive" | "unknown";
+  pspAmountMajor: string | null; pspTax: "inclusive" | "exclusive" | "unknown";
+  minorUnitExponent: number; fetchedAt: number;
+  pricingScope: "regional" | "usd_reference";
+  amountUsd: string | null; fxDate: string | null;
+};
+export type GptCatalogCountry = {
+  country: string; rows: GptCatalogPrice[]; stale: boolean; lastError: string | null;
+  observedAt: string | null; lastAttemptAt: string;
+};
+export const getGptPriceCatalog = (token: string) =>
+  request<{ code: number; data: { countries: GptCatalogCountry[] } }>("/gpt-direct/price-catalog", {
+    headers: { authorization: `Bearer ${token}` },
+  });
+
 export type GptObservedQuote = {
   plan: string;
   country: string;
@@ -465,6 +482,7 @@ export type AdminGptProxyPool = {
   proxies: AdminGptProxy[];
 };
 export type AdminGptQuoteRefreshSettings = {
+  catalogProgress?: { total?: number; processed?: number; succeeded?: number; failed?: number; complete?: boolean; rateLimited?: boolean };
   configured: boolean;
   enabled: boolean;
   intervalMinutes: number;
@@ -2708,6 +2726,7 @@ export type TgDirectOrder = {
   amountMinor?: number; currency?: string; message?: string; errorCode?: string;
   cardLast4?: string; deliveryStatus?: string; giftMessageId?: number; giftDays?: number; paymentSubmitted?: boolean; serviceFee: string; serviceFeeStatus?: "unpaid" | "charged" | "refunded" | "waived"; pricingVersion?: number;
   paymentAttempted?: boolean; estimatedUsd?: string | null; fxRateDate?: string | null; createdAt?: string;
+  statusSnapshot?: boolean; stage?: string; updatedAt?: string; executionStartedAt?: string; deadlineAt?: string; executionTimedOut?: boolean;
 };
 export const getTgDirectPlans = (token: string) => request<{ code: number; data: { plans: TgDirectPlan[]; paymentsEnabled: boolean; serviceFee: string } }>("/tg-direct/plans", { signal: AbortSignal.timeout(430_000), headers: { authorization: `Bearer ${token}` } });
 export const getTgDirectOrders = (token: string, filters: DirectOrderFilters = {}) => request<{ code: number; data: TgDirectOrder[]; meta?: DirectOrderMeta }>(`/tg-direct/orders${directOrdersQuery(filters)}`, { signal: AbortSignal.timeout(430_000), headers: { authorization: `Bearer ${token}` } });

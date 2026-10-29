@@ -1,3 +1,4 @@
+import { tgOrderStatus, tgOrderExplanation, TgOrderTiming } from "./TgOrderStatus";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleDollarSign, RefreshCw, Save, X } from "lucide-react";
@@ -106,7 +107,7 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
         <tbody>{orders.data.data.list.map(item => <tr key={item.id}>
           <td>{item.ownerEmail || `#${item.ownerUserId}`}<small>#{item.ownerUserId}</small></td>
           <td><strong>@{item.recipient}</strong><small>{planLabel(item.plan)}</small><small>{item.id.slice(0, 8)}</small></td>
-          <td><span className={`status-pill ${item.status === "completed" ? "is-active" : ""}`}>{statusLabel(item.status)}</span></td>
+          <td><span className={`status-pill ${item.status === "completed" ? "is-active" : ""}`}>{en ? statusLabel(item.status) : tgOrderStatus(item)}</span></td>
           <td><strong>{officialAmount(item)}</strong>{item.estimatedUsd && <small>{en ? "Approx." : "约"} USD {formatDecimal(item.estimatedUsd)}</small>}</td>
           <td><strong>USD {formatDecimal(item.serviceFee)}</strong><small>{feeLabel(item.serviceFeeStatus)}</small></td>
           <td>{dateLabel(item.createdAt)}</td>
@@ -128,7 +129,7 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
               <div><dt>{t("customer")}</dt><dd>{order.ownerEmail || "—"} · #{order.ownerUserId}</dd></div>
               <div><dt>{en ? "TG account" : "TG 账号"}</dt><dd>@{order.recipient}</dd></div>
               <div><dt>{en ? "Plan" : "套餐"}</dt><dd>{planLabel(order.plan)}</dd></div>
-              <div><dt>{t("status")}</dt><dd>{statusLabel(order.status)}</dd></div>
+              <div><dt>{t("status")}</dt><dd>{en ? statusLabel(order.status) : tgOrderStatus(order)}</dd></div>
               <div><dt>{en ? "Official card amount" : "官方扣卡金额"}</dt><dd>{officialAmount(order)}</dd></div>
               <div><dt>{en ? "USD estimate" : "美元参考金额"}</dt><dd>{order.estimatedUsd ? `${en ? "Approx." : "约"} USD ${formatDecimal(order.estimatedUsd)}` : "—"}</dd></div>
               <div><dt>{en ? "Wallet service fee" : "钱包服务费"}</dt><dd>USD {formatDecimal(order.serviceFee)}</dd></div>
@@ -137,6 +138,8 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
               <div><dt>{en ? "Payment card" : "支付卡"}</dt><dd>#{order.cardId}{/^\d{4}$/.test(order.cardLast4 ?? "") ? ` · **** ${order.cardLast4}` : ""}</dd></div>
               <div><dt>{t("createdTime")}</dt><dd>{dateLabel(order.createdAt)}</dd></div>
             </dl>
+            {tgOrderExplanation(order) && <p className="admin-alert is-warning">{tgOrderExplanation(order)}</p>}
+            <TgOrderTiming order={order} />
             <p className="admin-settings-note">{en ? "The card statement determines the final charge. Uncertain payments remain pending review; do not submit another payment." : "最终扣卡金额以卡片账单为准。结果不明的支付保持待核对，请勿重复支付。"}</p>
             <section className="admin-gpt-invoices"><h3>{en ? "Gift delivery" : "赠送到账"}</h3><p>{order.deliveryStatus === "delivered" ? (en ? "Delivery verified" : "已核验到账") : (en ? "Delivery not yet verified" : "尚未核验到账")}{order.giftMessageId ? ` #${order.giftMessageId}` : ""}{order.giftDays ? ` · ${order.giftDays} ${en ? "days" : "天"}` : ""}</p></section>
           </>}

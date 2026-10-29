@@ -2527,6 +2527,25 @@ html body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !im
 .gpt-direct-step.is-pending > span { color: #9a9a95; }
 .gpt-direct-step-rail { height: 2px; border-radius: 99px; background: linear-gradient(90deg, #cfcfc9, #e8e8e4); }
 .gpt-direct-flow-hint { margin: 0 0 16px; color: #666; font-size: 13px; line-height: 1.55; }
+.gpt-lowest-prices { margin-bottom: 22px; padding: 22px; border: 1px solid #e2e2df; border-radius: 17px; background: #fff; box-shadow: 0 1px 2px #00000008; }
+.gpt-lowest-prices-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.gpt-lowest-prices-heading h2 { margin: 4px 0 0; color: #191919; font-size: 18px; font-weight: 650; }
+.gpt-lowest-prices-heading > span, .gpt-lowest-prices-note { color: #777; font-size: 12px; line-height: 1.6; }
+.gpt-lowest-prices-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 10px; }
+.gpt-lowest-price { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 16px; border: 1px solid #e4e4e1; border-radius: 11px; color: #191919; background: #fafaf8; text-align: left; font: inherit; }
+button.gpt-lowest-price { cursor: pointer; transition: border-color .18s ease, background .18s ease; }
+button.gpt-lowest-price:hover, .gpt-lowest-price.is-selected { border-color: #191919; background: #f4f4ef; }
+button.gpt-lowest-price:focus-visible { outline: 2px solid #191919; outline-offset: 3px; }
+button.gpt-lowest-price:disabled { cursor: default; opacity: .6; }
+.gpt-lowest-price-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; font-size: 13px; }
+.gpt-lowest-price-top > span { padding: 3px 6px; border-radius: 5px; background: #eaeae4; color: #666; font-size: 10px; }
+.gpt-lowest-price-region { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; font-size: 15px; font-weight: 600; }
+.gpt-lowest-price-region small { color: #888; font-size: 11px; font-weight: 450; }
+.gpt-lowest-price-usd { font-size: 28px; font-weight: 650; letter-spacing: -1px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.gpt-lowest-price-local { color: #777; font-size: 12px; }
+.gpt-lowest-price-action { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid #e4e4e1; color: #555; font-size: 12px; }
+.gpt-lowest-price.is-empty { justify-content: center; min-height: 190px; color: #888; font-size: 13px; }
+.gpt-lowest-prices-note { margin: 14px 0 0; }
 .gpt-direct-layout { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(360px, .94fr); align-items: start; gap: 16px; }
 .gpt-direct-panel { overflow: hidden; border: 1px solid #e2e2df; border-radius: 17px; background: #fff; box-shadow: 0 1px 2px #00000008; transition: border-color .18s ease, box-shadow .18s ease, opacity .18s ease; }
 .gpt-direct-panel.is-focus { border-color: #c8c8c2; box-shadow: 0 10px 28px #0000000d; }
@@ -4148,3 +4167,34 @@ html:has(.landing-page) { scroll-behavior: smooth; }
 .admin-gpt-order-drawer .admin-customer-inviter { font-size: 14px; }
 .admin-observability-body .admin-alert { font-size: 14px; line-height: 1.55; }
 .admin-observability-body .admin-json summary { color: #333; font-weight: 650; }
+
+/* TG progress stays readable while an original payment is being reconciled. */
+.tg-progress-drawer { display: flex; flex-direction: column; max-height: 100dvh; overflow: hidden; }
+.tg-progress-drawer > .card-transaction-drawer-head { flex: 0 0 auto; }
+.tg-progress-drawer-body { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.tg-order-content { min-width: 0; color: #252525; font-size: 14px; line-height: 1.65; overflow-wrap: anywhere; }
+.tg-order-content > strong { display: block; font-size: 17px; }
+.tg-order-content > small { display: block; color: #777; }
+.tg-order-explanation { margin: 0; padding: 12px 14px; border: 1px solid #e5dec7; border-radius: 10px; color: #67552c; background: #fcf9f0; }
+.tg-order-timing { display: grid; gap: 5px; color: #666; font-size: 12px; line-height: 1.6; }
+.tg-order-timing p { margin: 0; }
+@media (max-width: 600px) { .tg-progress-drawer-body { padding: 18px; } }
+
+.gpt-price-catalog { min-width: 0; margin-bottom: 22px; padding: 22px; border: 1px solid #e2e2df; border-radius: 17px; background: #fff; }
+.gpt-catalog-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.gpt-catalog-heading h2 { margin: 4px 0 0; font-size: 18px; }
+.gpt-catalog-heading > span, .gpt-catalog-note { color: #777; font-size: 12px; line-height: 1.7; }
+.gpt-catalog-filters { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
+.gpt-catalog-filters label { display: flex; flex: 1 1 180px; min-width: 0; flex-direction: column; gap: 6px; color: #555; font-size: 12px; }
+.gpt-catalog-filters select, .gpt-catalog-filters input { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #deded9; border-radius: 8px; color: #242424; background: #fff; font-size: 13px; }
+.gpt-catalog-scroll { max-width: 100%; max-height: 520px; overflow: auto; border: 1px solid #ebebe6; border-radius: 10px; }
+.gpt-catalog-scroll table { width: 100%; min-width: 820px; border-collapse: collapse; text-align: left; font-size: 12px; }
+.gpt-catalog-scroll thead { position: sticky; top: 0; z-index: 1; background: #f6f6f2; }
+.gpt-catalog-scroll th, .gpt-catalog-scroll td { padding: 12px 14px; border-bottom: 1px solid #eeeee9; vertical-align: top; }
+.gpt-catalog-scroll tbody th { font-weight: 400; }
+.gpt-catalog-scroll strong { color: #252525; font-weight: 600; }
+.gpt-catalog-scroll small { display: block; margin-top: 5px; color: #777; line-height: 1.5; }
+.gpt-catalog-scroll .gpt-catalog-stale { color: #9b640f; }
+.gpt-catalog-empty { padding: 24px 16px; text-align: center; color: #777; }
+.gpt-catalog-error { display: flex; align-items: center; gap: 12px; color: #ac3939; }
+@media (max-width: 600px) { .gpt-price-catalog { padding: 16px; } .gpt-catalog-filters label { flex-basis: 100%; } }
