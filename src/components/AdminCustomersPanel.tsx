@@ -112,37 +112,59 @@ function CustomerRecords({ userId, locale, token, initialTab = "financial" }: { 
     else setFinancialFilter({ page: 1, q: value("q"), source: value("source"), status: value("status"), type: value("type") });
   };
   const successStatus = (status: string) => ["success", "COMPLETE", "SUCCEEDED", "confirmed"].includes(status);
+  const searchDefault = tab === "audit" ? auditFilter.q : tab === "deposits" ? depositFilter.q : tab === "spending" ? spendingFilter.q : financialFilter.q;
   return <section className="admin-surface admin-customer-records" id="admin-customer-records" data-testid="admin-customer-records">
     <div className="admin-section-heading"><div><h3><ClipboardList />{t("customerRecords")}</h3><p>{t("customerRecordsHint")}</p></div></div>
-    <nav className="admin-customer-record-tabs" aria-label={t("customerRecords")}>
-      {(["financial", "deposits", "spending", "audit"] as CustomerRecordTab[]).map((item) => <button type="button" key={item} aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)}>{t(`customerRecordTab.${item}`)}</button>)}
-    </nav>
-    <form className="admin-customer-record-filters" key={tab} onSubmit={submit}>
-      <label><span>{t("search")}</span><input name="q" defaultValue={tab === "audit" ? auditFilter.q : tab === "deposits" ? depositFilter.q : tab === "spending" ? spendingFilter.q : financialFilter.q} placeholder={t("customerRecordSearch")} /></label>
-      {tab === "audit" && <><label><span>{t("auditAction")}</span><input name="action" defaultValue={auditFilter.action} placeholder="adjust_wallet" /></label><label><span>{t("auditOutcome")}</span><select name="outcome" defaultValue={auditFilter.outcome}><option value="">{t("allOptions")}</option><option value="success">success</option><option value="failure">failure</option><option value="blocked">blocked</option></select></label></>}
-      {tab === "deposits" && <><label><span>{t("depositNetwork")}</span><select name="network" defaultValue={depositFilter.network}><option value="">{t("allNetworks")}</option>{["TRON", "BSC", "SOL", "ETH", "XLAYER"].map((value) => <option key={value}>{value}</option>)}</select></label><label><span>{t("status")}</span><select name="status" defaultValue={depositFilter.status}><option value="">{t("allStatuses")}</option>{["pending", "confirmed", "expired", "failed", "cancelled"].map((value) => <option key={value} value={value}>{t(`depositStatus.${value}`)}</option>)}</select></label></>}
-      {tab === "spending" && <><label><span>{t("status")}</span><select name="status" defaultValue={spendingFilter.status}><option value="">{t("allOptions")}</option>{["PENDING", "SETTLED", "DECLINED", "REFUNDED", "PARTIALLY_REFUNDED", "REVERSED"].map((value) => <option key={value}>{value}</option>)}</select></label><label><span>{t("cardStatus")}</span><select name="cardStatus" defaultValue={spendingFilter.cardStatus}><option value="">{t("allOptions")}</option>{["ACTIVE", "FROZEN", "DELETED"].map((value) => <option key={value}>{value}</option>)}</select></label><label><span>{t("startDate")}</span><input name="from" type="date" defaultValue={spendingFilter.from} /></label><label><span>{t("endDate")}</span><input name="to" type="date" defaultValue={spendingFilter.to} /></label></>}
-      {tab === "financial" && <><label><span>{t("source")}</span><input name="source" defaultValue={financialFilter.source} placeholder="wallet" /></label><label><span>{t("status")}</span><input name="status" defaultValue={financialFilter.status} placeholder="COMPLETE" /></label><label><span>{t("type")}</span><input name="type" defaultValue={financialFilter.type} placeholder="admin_adjust" /></label></>}
-      <Button type="submit" size="sm" variant="outline">{t("filter")}</Button>
-    </form>
-    {query.isLoading && <AdminState><span className="loading-skeleton loading-skeleton-table" aria-label={t("loading")}>{t("loading")}</span></AdminState>}
-    {query.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
-    {tab === "financial" && financial.data && <>
-      {financial.data.data.list.length === 0 ? <AdminState>{t("noFinancialEvents")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-financial-table"><thead><tr><th>{t("createdTime")}</th><th>{t("source")}</th><th>{t("type")}</th><th>{t("status")}</th><th>{t("amount")}</th><th>{t("balanceChange")}</th><th>{t("reference")}</th><th>{t("auditDetail")}</th></tr></thead><tbody>{financial.data.data.list.map((entry) => <tr key={`${entry.source}:${entry.id}`}><td>{displayDate(entry.createdAt, locale)}</td><td><code>{entry.source}</code></td><td><strong>{entry.type}</strong></td><td><span className={`status-pill ${successStatus(entry.status) ? "is-active" : ""}`}>{entry.status}</span></td><td className={Number(entry.amount) >= 0 ? "positive" : "negative"}>{entry.amount === null ? "—" : `$${formatDecimal(entry.amount)}`}</td><td>{entry.balanceBefore === null || entry.balanceAfter === null ? "—" : `${formatDecimal(entry.balanceBefore)} → ${formatDecimal(entry.balanceAfter)}`}</td><td><code>{entry.referenceId ?? "—"}</code></td><td><details className="admin-json"><summary>{t("viewSnapshot")}</summary><code>{JSON.stringify(entry.detail)}</code></details></td></tr>)}</tbody></table></div>}
-      <CustomerRecordPager page={financial.data.data.page} pageSize={financial.data.data.pageSize} total={financial.data.data.total} onPage={(page) => setFinancialFilter((current) => ({ ...current, page }))} />
-    </>}
-    {tab === "deposits" && deposits.data && <>
-      {deposits.data.data.list.length === 0 ? <AdminState>{t("noCustomerDeposits")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-deposit-table"><thead><tr><th>{t("createdTime")}</th><th>{t("orderNumber")}</th><th>{t("depositNetwork")}</th><th>{t("requestedAndExpected")}</th><th>{t("receivedAndCredited")}</th><th>{t("status")}</th><th>{t("depositDetailedLog")}</th></tr></thead><tbody>{deposits.data.data.list.map((entry) => <tr key={entry.gatewayRef}><td>{displayDate(entry.createdAt, locale)}</td><td><code>{entry.gatewayRef}</code>{entry.transactionHashMasked && <small>{entry.transactionHashMasked}</small>}</td><td><strong>{entry.network}</strong><small>{entry.currency}</small></td><td><strong>{t("requestedAmount")}: {formatDecimal(entry.requestedAmount ?? "—")}</strong><small>{t("expectedPaymentAmount")}: {formatDecimal(entry.expectedAmount ?? "—")}</small></td><td><strong>{t("receivedAmount")}: {formatDecimal(entry.actualAmount ?? "—")}</strong><small>{t("creditedAmount")}: {formatDecimal(entry.creditedAmount ?? "—")}</small></td><td><span className={`status-pill ${entry.status === "confirmed" ? "is-active" : ""}`}>{t(`depositStatus.${entry.status}`)}</span>{entry.confirmedAt && <small>{displayDate(entry.confirmedAt, locale)}</small>}</td><td><details className="admin-customer-deposit-log"><summary>{t("viewDepositLog")}</summary><span>{displayDate(entry.createdAt, locale)} · {t("depositLogCreated")}</span><span>{displayDate(entry.expiredAt, locale)} · {t("depositLogExpires")}</span>{entry.reservedUntil && <span>{displayDate(entry.reservedUntil, locale)} · {t("depositLogReviewUntil")}</span>}{entry.confirmedAt && <span>{displayDate(entry.confirmedAt, locale)} · {t("depositLogConfirmed", { amount: formatDecimal(entry.creditedAmount ?? "—") })}</span>}<span>{t("depositLogCurrentStatus")}: {t(`depositStatus.${entry.status}`)}</span></details></td></tr>)}</tbody></table></div>}
-      <CustomerRecordPager page={deposits.data.data.page} pageSize={deposits.data.data.pageSize} total={deposits.data.data.total} onPage={(page) => setDepositFilter((current) => ({ ...current, page }))} />
-    </>}
-    {tab === "spending" && spending.data && <>
-      {spending.data.data.list.length === 0 ? <AdminState>{t("noCardTransactions")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-spending-table"><thead><tr><th>{t("createdTime")}</th><th>{t("cardNumber")}</th><th>{t("merchant")}</th><th>{t("status")}</th><th>{t("authorizedAmount")}</th><th>{t("settledAmount")}</th><th>{t("location")}</th><th>{t("reference")}</th></tr></thead><tbody>{spending.data.data.list.map((entry) => <tr key={`${entry.providerId}:${entry.cardId}:${entry.authId}`}><td>{displayDate(entry.occurredAt, locale)}</td><td><strong>{entry.cardNumberMasked}</strong><small>#{entry.cardId} · {entry.cardStatus}</small></td><td><strong>{entry.merchantName || entry.description || t("unknownMerchant")}</strong><details className="admin-customer-lifecycle"><summary>{t("transactionLifecycle")} · {entry.events.length}</summary>{entry.events.map((event) => <span key={event.id}>{displayDate(event.authTime, locale)} · {event.type}/{event.status} · {formatDecimal(event.type === "Authorization" ? event.authAmount : event.settleAmount)} {event.type === "Authorization" ? event.authCurrency : event.settleCurrency}</span>)}</details></td><td><span className={`status-pill ${entry.status === "SETTLED" ? "is-active" : ""}`}>{entry.status}</span>{entry.failedReason && <small className="negative">{entry.failedReason}</small>}</td><td>{formatDecimal(entry.authorizedAmount)} {entry.authCurrency}</td><td>{formatDecimal(entry.settledAmount)} {entry.settleCurrency}</td><td>{[entry.merchantLocation, entry.merchantRegion, entry.merchantCountry].filter(Boolean).join(" · ") || "—"}</td><td><code>{entry.authId}</code></td></tr>)}</tbody></table></div>}
-      <CustomerRecordPager page={spending.data.data.page} pageSize={spending.data.data.pageSize} total={spending.data.data.total} onPage={(page) => setSpendingFilter((current) => ({ ...current, page }))} />
-    </>}
-    {tab === "audit" && audit.data && <>
-      {audit.data.data.list.length === 0 ? <AdminState>{t("noAuditLogs")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-audit-table"><thead><tr><th>{t("createdTime")}</th><th>{t("administrator")}</th><th>{t("auditAction")}</th><th>{t("auditOutcome")}</th><th>{t("auditSource")}</th><th>{t("auditTarget")}</th><th>{t("auditDetail")}</th></tr></thead><tbody>{audit.data.data.list.map((entry) => <tr key={entry.id}><td>{displayDate(entry.createdAt, locale)}</td><td>{adminAccountLabel(entry.actorEmail, entry.actorUserId ?? undefined)}<small>{entry.actorType}</small></td><td><code>{entry.action}</code></td><td><span className={`status-pill ${entry.outcome === "success" ? "is-active" : ""}`}>{entry.outcome}</span></td><td>{entry.sourceIp ?? "—"}<small>{entry.requestId.slice(0, 8)}</small></td><td>{entry.targetType ?? "—"}<small>{entry.targetId ?? "—"}</small></td><td><details className="admin-json"><summary>{t("viewSnapshot")}</summary><code>{JSON.stringify({ ...entry.detail, userAgent: entry.userAgent })}</code></details></td></tr>)}</tbody></table></div>}
-      <CustomerRecordPager page={audit.data.data.page} pageSize={audit.data.data.pageSize} total={audit.data.data.total} onPage={(page) => setAuditFilter((current) => ({ ...current, page }))} />
-    </>}
+    <div className="admin-customer-record-toolbar">
+      <nav className="admin-customer-record-tabs" aria-label={t("customerRecords")}>
+        {(["financial", "deposits", "spending", "audit"] as CustomerRecordTab[]).map((item) => (
+          <button type="button" key={item} aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)}>{t(`customerRecordTab.${item}`)}</button>
+        ))}
+      </nav>
+      <form className="admin-customer-record-filters" key={tab} onSubmit={submit}>
+        <label className="is-search"><span>{t("search")}</span><input name="q" defaultValue={searchDefault} placeholder={t("customerRecordSearch")} /></label>
+        {tab === "financial" && <>
+          <label className="is-field"><span>{t("source")}</span><input name="source" defaultValue={financialFilter.source} placeholder="wallet" /></label>
+          <label className="is-field"><span>{t("status")}</span><input name="status" defaultValue={financialFilter.status} placeholder="COMPLETE" /></label>
+          <label className="is-field"><span>{t("type")}</span><input name="type" defaultValue={financialFilter.type} placeholder="admin_adjust" /></label>
+        </>}
+        {tab === "deposits" && <>
+          <label className="is-field"><span>{t("depositNetwork")}</span><select name="network" defaultValue={depositFilter.network}><option value="">{t("allNetworks")}</option>{["TRON", "BSC", "SOL", "ETH", "XLAYER"].map((value) => <option key={value}>{value}</option>)}</select></label>
+          <label className="is-field"><span>{t("status")}</span><select name="status" defaultValue={depositFilter.status}><option value="">{t("allStatuses")}</option>{["pending", "confirmed", "expired", "failed", "cancelled"].map((value) => <option key={value} value={value}>{t(`depositStatus.${value}`)}</option>)}</select></label>
+        </>}
+        {tab === "spending" && <>
+          <label className="is-field"><span>{t("status")}</span><select name="status" defaultValue={spendingFilter.status}><option value="">{t("allOptions")}</option>{["PENDING", "SETTLED", "DECLINED", "REFUNDED", "PARTIALLY_REFUNDED", "REVERSED"].map((value) => <option key={value}>{value}</option>)}</select></label>
+          <label className="is-field"><span>{t("cardStatus")}</span><select name="cardStatus" defaultValue={spendingFilter.cardStatus}><option value="">{t("allOptions")}</option>{["ACTIVE", "FROZEN", "DELETED"].map((value) => <option key={value}>{value}</option>)}</select></label>
+          <label className="is-date"><span>{t("startDate")}</span><input name="from" type="date" defaultValue={spendingFilter.from} /></label>
+          <label className="is-date"><span>{t("endDate")}</span><input name="to" type="date" defaultValue={spendingFilter.to} /></label>
+        </>}
+        {tab === "audit" && <>
+          <label className="is-field"><span>{t("auditAction")}</span><input name="action" defaultValue={auditFilter.action} placeholder="adjust_wallet" /></label>
+          <label className="is-field"><span>{t("auditOutcome")}</span><select name="outcome" defaultValue={auditFilter.outcome}><option value="">{t("allOptions")}</option><option value="success">success</option><option value="failure">failure</option><option value="blocked">blocked</option></select></label>
+        </>}
+        <Button type="submit" size="sm" className="is-action">{t("filter")}</Button>
+      </form>
+    </div>
+    <div className="admin-customer-record-body" data-tab={tab}>
+      {query.isLoading && <AdminState><span className="loading-skeleton loading-skeleton-table" aria-label={t("loading")}>{t("loading")}</span></AdminState>}
+      {query.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
+      {tab === "financial" && financial.data && <>
+        {financial.data.data.list.length === 0 ? <AdminState>{t("noFinancialEvents")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-financial-table"><thead><tr><th>{t("createdTime")}</th><th>{t("type")}</th><th>{t("status")}</th><th>{t("amount")}</th><th>{t("balanceChange")}</th><th>{t("reference")}</th><th>{t("auditDetail")}</th></tr></thead><tbody>{financial.data.data.list.map((entry) => <tr key={`${entry.source}:${entry.id}`}><td><strong>{displayDate(entry.createdAt, locale)}</strong><small>{entry.source}</small></td><td><strong>{entry.type}</strong></td><td><span className={`status-pill ${successStatus(entry.status) ? "is-active" : ""}`}>{entry.status}</span></td><td className={Number(entry.amount) >= 0 ? "positive" : "negative"}>{entry.amount === null ? "—" : `$${formatDecimal(entry.amount)}`}</td><td className="is-mono">{entry.balanceBefore === null || entry.balanceAfter === null ? "—" : `${formatDecimal(entry.balanceBefore)} → ${formatDecimal(entry.balanceAfter)}`}</td><td><code>{entry.referenceId ?? "—"}</code></td><td><details className="admin-json"><summary>{t("viewSnapshot")}</summary><code>{JSON.stringify(entry.detail)}</code></details></td></tr>)}</tbody></table></div>}
+        <CustomerRecordPager page={financial.data.data.page} pageSize={financial.data.data.pageSize} total={financial.data.data.total} onPage={(page) => setFinancialFilter((current) => ({ ...current, page }))} />
+      </>}
+      {tab === "deposits" && deposits.data && <>
+        {deposits.data.data.list.length === 0 ? <AdminState>{t("noCustomerDeposits")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-deposit-table"><thead><tr><th>{t("createdTime")}</th><th>{t("orderNumber")}</th><th>{t("depositNetwork")}</th><th>{t("amount")}</th><th>{t("status")}</th><th>{t("depositDetailedLog")}</th></tr></thead><tbody>{deposits.data.data.list.map((entry) => <tr key={entry.gatewayRef}><td><strong>{displayDate(entry.createdAt, locale)}</strong>{entry.confirmedAt && <small>{displayDate(entry.confirmedAt, locale)}</small>}</td><td><code>{entry.gatewayRef}</code>{entry.transactionHashMasked && <small>{entry.transactionHashMasked}</small>}</td><td><strong>{entry.network}</strong><small>{entry.currency}</small></td><td className="admin-customer-record-amounts"><strong>${formatDecimal(entry.creditedAmount ?? entry.actualAmount ?? entry.requestedAmount ?? "—")}</strong><small>{t("requestedAmount")} {formatDecimal(entry.requestedAmount ?? "—")} · {t("receivedAmount")} {formatDecimal(entry.actualAmount ?? "—")}</small></td><td><span className={`status-pill ${entry.status === "confirmed" ? "is-active" : ""}`}>{t(`depositStatus.${entry.status}`)}</span></td><td><details className="admin-customer-deposit-log"><summary>{t("viewDepositLog")}</summary><span>{displayDate(entry.createdAt, locale)} · {t("depositLogCreated")}</span><span>{displayDate(entry.expiredAt, locale)} · {t("depositLogExpires")}</span>{entry.reservedUntil && <span>{displayDate(entry.reservedUntil, locale)} · {t("depositLogReviewUntil")}</span>}{entry.confirmedAt && <span>{displayDate(entry.confirmedAt, locale)} · {t("depositLogConfirmed", { amount: formatDecimal(entry.creditedAmount ?? "—") })}</span>}<span>{t("depositLogCurrentStatus")}: {t(`depositStatus.${entry.status}`)}</span></details></td></tr>)}</tbody></table></div>}
+        <CustomerRecordPager page={deposits.data.data.page} pageSize={deposits.data.data.pageSize} total={deposits.data.data.total} onPage={(page) => setDepositFilter((current) => ({ ...current, page }))} />
+      </>}
+      {tab === "spending" && spending.data && <>
+        {spending.data.data.list.length === 0 ? <AdminState>{t("noCardTransactions")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-spending-table"><thead><tr><th>{t("createdTime")}</th><th>{t("cardNumber")}</th><th>{t("merchant")}</th><th>{t("status")}</th><th>{t("amount")}</th><th>{t("reference")}</th></tr></thead><tbody>{spending.data.data.list.map((entry) => <tr key={`${entry.providerId}:${entry.cardId}:${entry.authId}`}><td><strong>{displayDate(entry.occurredAt, locale)}</strong></td><td><strong>{entry.cardNumberMasked}</strong><small>#{entry.cardId} · {entry.cardStatus}</small></td><td><strong>{entry.merchantName || entry.description || t("unknownMerchant")}</strong><small>{[entry.merchantLocation, entry.merchantRegion, entry.merchantCountry].filter(Boolean).join(" · ") || "—"}</small>{entry.events.length > 0 && <details className="admin-customer-lifecycle"><summary>{t("transactionLifecycle")} · {entry.events.length}</summary>{entry.events.map((event) => <span key={event.id}>{displayDate(event.authTime, locale)} · {event.type}/{event.status} · {formatDecimal(event.type === "Authorization" ? event.authAmount : event.settleAmount)} {event.type === "Authorization" ? event.authCurrency : event.settleCurrency}</span>)}</details>}</td><td><span className={`status-pill ${entry.status === "SETTLED" ? "is-active" : ""}`}>{entry.status}</span>{entry.failedReason && <small className="negative">{entry.failedReason}</small>}</td><td className="admin-customer-record-amounts"><strong>{formatDecimal(entry.settledAmount)} {entry.settleCurrency}</strong><small>{t("authorizedAmount")} {formatDecimal(entry.authorizedAmount)} {entry.authCurrency}</small></td><td><code>{entry.authId}</code></td></tr>)}</tbody></table></div>}
+        <CustomerRecordPager page={spending.data.data.page} pageSize={spending.data.data.pageSize} total={spending.data.data.total} onPage={(page) => setSpendingFilter((current) => ({ ...current, page }))} />
+      </>}
+      {tab === "audit" && audit.data && <>
+        {audit.data.data.list.length === 0 ? <AdminState>{t("noAuditLogs")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-audit-table"><thead><tr><th>{t("createdTime")}</th><th>{t("administrator")}</th><th>{t("auditAction")}</th><th>{t("auditOutcome")}</th><th>{t("auditTarget")}</th><th>{t("auditDetail")}</th></tr></thead><tbody>{audit.data.data.list.map((entry) => <tr key={entry.id}><td><strong>{displayDate(entry.createdAt, locale)}</strong><small>{entry.sourceIp ?? "—"}</small></td><td><strong>{adminAccountLabel(entry.actorEmail, entry.actorUserId ?? undefined)}</strong><small>{entry.actorType}</small></td><td><code>{entry.action}</code></td><td><span className={`status-pill ${entry.outcome === "success" ? "is-active" : ""}`}>{entry.outcome}</span></td><td><strong>{entry.targetType ?? "—"}</strong><small>{entry.targetId ?? entry.requestId.slice(0, 8)}</small></td><td><details className="admin-json"><summary>{t("viewSnapshot")}</summary><code>{JSON.stringify({ ...entry.detail, userAgent: entry.userAgent })}</code></details></td></tr>)}</tbody></table></div>}
+        <CustomerRecordPager page={audit.data.data.page} pageSize={audit.data.data.pageSize} total={audit.data.data.total} onPage={(page) => setAuditFilter((current) => ({ ...current, page }))} />
+      </>}
+    </div>
   </section>;
 }
 
@@ -270,43 +292,57 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
     <section className="admin-surface admin-customer-identity">
       <div className="admin-customer-detail-profile">
         <span className="admin-customer-detail-avatar"><Users /></span>
-        <div><strong>{accountLabel}</strong><small>#{profile.id} · {profile.role} · {membershipName}</small></div>
-        <span className={`status-pill ${profile.status === "active" ? "is-active" : "is-inactive"}`} data-status={profile.status}>{t(`accountStatus.${profile.status}`, { defaultValue: profile.status })}</span>
+        <div>
+          <strong>{accountLabel}</strong>
+          <small>#{profile.id} · {profile.role} · {membershipName}</small>
+        </div>
+        <div className="admin-customer-profile-badges">
+          <span className={`status-pill ${profile.status === "active" ? "is-active" : "is-inactive"}`} data-status={profile.status}>{t(`accountStatus.${profile.status}`, { defaultValue: profile.status })}</span>
+          {profile.riskHold && <span className="status-pill is-warning">{t("riskHoldStatus")}</span>}
+          {profile.telegram.bound && <span className="status-pill">{t("telegramBoundReady")}</span>}
+        </div>
       </div>
-      <dl className="admin-customer-detail-metrics">
+      <dl className="admin-customer-facts">
         <div><dt>{t("inviteCode")}</dt><dd>{profile.inviteCode}</dd></div>
         <div><dt>{t("createdTime")}</dt><dd>{displayDate(profile.createdAt, locale)}</dd></div>
         <div><dt>{t("telegramAccount")}</dt><dd>{profile.telegram.bound ? (profile.telegram.username ? `@${profile.telegram.username.replace(/^@/, "")}` : t("telegramBoundReady")) : t("telegramNotBound")}</dd></div>
         <div><dt>{t("telegramVerifiedAt")}</dt><dd>{displayDate(profile.telegram.verifiedAt, locale)}</dd></div>
-        <div><dt>{t("invitedBy")}</dt><dd>{profile.inviter ? <button type="button" className="admin-customer-inviter" data-testid="admin-customer-inviter" onClick={() => onSelectCustomer(profile.inviter!.id)} aria-label={t("viewCustomerDetails", { email: profile.inviter.email ?? `#${profile.inviter.id}` })}><span>{profile.inviter.email ?? `#${profile.inviter.id}`}</span><ArrowRight /></button> : "—"}</dd></div>
+        <div className="is-wide"><dt>{t("invitedBy")}</dt><dd>{profile.inviter ? <button type="button" className="admin-customer-inviter" data-testid="admin-customer-inviter" onClick={() => onSelectCustomer(profile.inviter!.id)} aria-label={t("viewCustomerDetails", { email: profile.inviter.email ?? `#${profile.inviter.id}` })}><span>{profile.inviter.email ?? `#${profile.inviter.id}`}</span><ArrowRight /></button> : "—"}</dd></div>
       </dl>
     </section>
 
     <section className="admin-surface admin-customer-funds" data-testid="admin-customer-funds">
-      <div className="admin-section-heading"><div><h3><WalletCards />{t("customerFunds")}</h3><p>{t("customerFundsHint")}</p></div>
+      <div className="admin-section-heading">
+        <div><span className="admin-kicker">WALLET</span><h3><WalletCards />{t("customerFunds")}</h3><p>{t("customerFundsHint")}</p></div>
         <span className={`status-pill ${paymentRisk?.reserveActive ? "is-warning" : "is-active"}`}>{t(paymentRisk?.reserveActive ? "paymentReserveActive" : "paymentReserveInactive")}</span>
       </div>
-      <dl className="admin-customer-fund-metrics">
-        <div><dt>{t("totalBalance")}</dt><dd>${formatDecimal(profile.walletBalance)}</dd></div>
-        <div className={Number(lockedBalance) > 0 ? "is-locked" : undefined}><dt>{t("riskLockedBalance")}</dt><dd>${formatDecimal(lockedBalance)}</dd></div>
-        <div className="is-spendable"><dt>{t("spendableBalance")}</dt><dd>${formatDecimal(spendableBalance)}</dd></div>
-        <div><dt>{t("promoBalance")}</dt><dd>${formatDecimal(profile.promoBalance)}</dd></div>
-        <div><dt>{t("cumulativeRecharge")}</dt><dd>${formatDecimal(profile.cumulativeRecharge)}</dd></div>
-      </dl>
-      {paymentRisk?.enabled && <p className="payment-risk-boundary">{t("paymentRiskReleaseBoundary", { rate: formatRateBps(paymentRisk.releaseThresholdBps) })}</p>}
-      {successShare !== null && <div className="payment-risk-meter" aria-hidden="true"><span className="payment-risk-meter-success" style={{ width: `${successShare}%` }} /></div>}
-      <dl className="admin-customer-fund-rates">
-        <div><dt>{t("paymentAttempts")}</dt><dd>{paymentRisk?.attempts ?? 0}</dd></div>
-        <div className="is-success"><dt>{t("paymentSuccessRate")}</dt><dd>{paymentSuccessRate ?? t("paymentNoSample")}</dd></div>
-        {paymentRisk?.enabled && <div className="is-decline"><dt>{t("paymentDeclineRate")}</dt><dd>{paymentDeclineRate ?? t("paymentNoSample")}</dd></div>}
-        {paymentRisk?.enabled && <div><dt>{t("riskReserveRatio")}</dt><dd>{formatRateBps(paymentRisk.reserveBps)}</dd></div>}
-      </dl>
-      <nav className="admin-customer-fund-links" aria-label={t("customerFunds")}>
-        <a href="#admin-customer-records">{t("customerRecords")}</a>
-        <a href="#admin-customer-deposits">{t("customerDeposits")} · {detail.deposits.total}</a>
-        <a href="#admin-customer-operations">{t("customerOperations")} · {detail.operations.total}</a>
-        <button type="button" onClick={() => onView("cards")}>{t("customerCardWorkspace")} · {detail.cards.total}</button>
-      </nav>
+      <div className="admin-customer-fund-hero">
+        <div className="admin-customer-fund-primary">
+          <span>{t("spendableBalance")}</span>
+          <strong>${formatDecimal(spendableBalance)}</strong>
+          <small>{t("totalBalance")} ${formatDecimal(profile.walletBalance)}{Number(lockedBalance) > 0 ? ` · ${t("riskLockedBalance")} $${formatDecimal(lockedBalance)}` : ""}</small>
+        </div>
+        <dl className="admin-customer-fund-metrics">
+          <div className={Number(lockedBalance) > 0 ? "is-locked" : undefined}><dt>{t("riskLockedBalance")}</dt><dd>${formatDecimal(lockedBalance)}</dd></div>
+          <div><dt>{t("promoBalance")}</dt><dd>${formatDecimal(profile.promoBalance)}</dd></div>
+          <div><dt>{t("cumulativeRecharge")}</dt><dd>${formatDecimal(profile.cumulativeRecharge)}</dd></div>
+        </dl>
+      </div>
+      <div className="admin-customer-fund-side">
+        {paymentRisk?.enabled && <p className="payment-risk-boundary">{t("paymentRiskReleaseBoundary", { rate: formatRateBps(paymentRisk.releaseThresholdBps) })}</p>}
+        {successShare !== null && <div className="payment-risk-meter" aria-hidden="true"><span className="payment-risk-meter-success" style={{ width: `${successShare}%` }} /></div>}
+        <dl className="admin-customer-fund-rates">
+          <div><dt>{t("paymentAttempts")}</dt><dd>{paymentRisk?.attempts ?? 0}</dd></div>
+          <div className="is-success"><dt>{t("paymentSuccessRate")}</dt><dd>{paymentSuccessRate ?? t("paymentNoSample")}</dd></div>
+          {paymentRisk?.enabled && <div className="is-decline"><dt>{t("paymentDeclineRate")}</dt><dd>{paymentDeclineRate ?? t("paymentNoSample")}</dd></div>}
+          {paymentRisk?.enabled && <div><dt>{t("riskReserveRatio")}</dt><dd>{formatRateBps(paymentRisk.reserveBps)}</dd></div>}
+        </dl>
+        <nav className="admin-customer-fund-links" aria-label={t("customerFunds")}>
+          <a href="#admin-customer-records">{t("customerRecords")}</a>
+          <a href="#admin-customer-operations">{t("customerOperations")} · {detail.operations.total}</a>
+          <button type="button" onClick={() => onView("cards")}>{t("customerCardWorkspace")} · {detail.cards.total}</button>
+        </nav>
+      </div>
       <form className="admin-customer-fund-adjust" data-testid="admin-customer-wallet-adjust" onSubmit={(event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
@@ -318,8 +354,6 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
         <Button type="submit" disabled={legacyAction.isPending}>{t("confirmAdjustment")}</Button>
       </form>
     </section>
-
-    <CustomerRecords key={`${profile.id}:${view}`} userId={profile.id} locale={locale} token={token} initialTab={view === "cards" ? "spending" : "financial"} />
 
     <section className="admin-surface" data-testid="admin-customer-management">
       <div className="admin-section-heading"><div><h3><Users />{t("manageCustomer")}</h3><p>{t("adminCustomerManagementHint")}</p></div></div>
@@ -389,16 +423,17 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
     </section>
 
     <section className="admin-surface admin-customer-risk" data-testid="admin-customer-risk">
-      <div className="admin-section-heading"><div><h3><ShieldCheck />{t("customerRiskManagement")}</h3><p>{t("customerRiskManagementHint")}</p></div></div>
-      <dl className="admin-customer-detail-metrics">
-        <div><dt>{t("riskHoldStatus")}</dt><dd>{t(profile.riskHold ? "yes" : "no")}</dd></div>
+      <div className="admin-section-heading">
+        <div><h3><ShieldCheck />{t("customerRiskManagement")}</h3><p>{t("customerRiskManagementHint")}</p></div>
+        <span className={`status-pill ${profile.riskHold ? "is-warning" : "is-active"}`}>{t("riskHoldStatus")} · {t(profile.riskHold ? "yes" : "no")}</span>
+      </div>
+      <dl className="admin-customer-facts">
+        <div><dt>{t("unsettledRiskCharges")}</dt><dd>{detail.risk.owedCharges.count}</dd></div>
+        <div><dt>{t("unsettledRiskAmount")}</dt><dd>${formatDecimal(detail.risk.owedCharges.total)}</dd></div>
         <div><dt>{t("paymentAttempts")}</dt><dd>{paymentRisk?.attempts ?? 0}</dd></div>
         <div><dt>{t("paymentSuccessRate")}</dt><dd>{paymentSuccessRate ?? t("paymentNoSample")}</dd></div>
         {paymentRisk?.enabled && <div><dt>{t("paymentDeclineRate")}</dt><dd>{paymentDeclineRate ?? t("paymentNoSample")}</dd></div>}
         {paymentRisk?.enabled && <div><dt>{t("riskReserveRatio")}</dt><dd>{formatRateBps(paymentRisk.reserveBps)}</dd></div>}
-        {paymentRisk?.enabled && <div><dt>{t("paymentReserveStatus")}</dt><dd>{t(paymentRisk.reserveActive ? "paymentReserveActive" : "paymentReserveInactive")}</dd></div>}
-        <div><dt>{t("unsettledRiskCharges")}</dt><dd>{detail.risk.owedCharges.count}</dd></div>
-        <div><dt>{t("unsettledRiskAmount")}</dt><dd>${formatDecimal(detail.risk.owedCharges.total)}</dd></div>
       </dl>
       {detail.risk.holdReasons.length > 0 && <div className="admin-customer-detail-list">
         <article className="admin-customer-detail-item"><div><strong>{t("riskReasons")}</strong><small>{detail.risk.holdReasons.join(" · ")}</small></div></article>
@@ -499,20 +534,14 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
       })}
     </CustomerDetailSection>
 
-    <div className="admin-customer-detail-grid">
-      <CustomerDetailSection title={t("customerDeposits")} count={detail.deposits.total} icon={WalletCards} empty={t("noCustomerDeposits")} testId="admin-customer-deposits">
-        {detail.deposits.list.map((deposit) => <article className="admin-customer-detail-item" key={deposit.gatewayRef}>
-          <div><strong>{deposit.network} · {deposit.status}</strong><small>{t("requestedAmount")}: ${formatDecimal(deposit.requestedAmount ?? "—")} · {t("receivedAmount")}: ${formatDecimal(deposit.actualAmount ?? "—")}</small><small>{deposit.transactionHashMasked || "—"} · {displayDate(deposit.confirmedAt ?? deposit.createdAt, locale)}</small></div>
-          <span><small>{t("creditedAmount")}</small><strong>${formatDecimal(deposit.creditedAmount ?? "—")}</strong></span>
-        </article>)}
-      </CustomerDetailSection>
-      <CustomerDetailSection title={t("customerOperations")} count={detail.operations.total} icon={ClipboardList} empty={t("noCustomerOperations")} testId="admin-customer-operations">
-        {detail.operations.list.map((operation) => <article className="admin-customer-detail-item" key={operation.id}>
-          <div><strong>{operation.type} · {operation.status}</strong><small>{operation.cardId ? `${t("cardNumber")} #${operation.cardId} · ` : operation.openedCardIds.length > 0 ? `${t("cards")} #${operation.openedCardIds.join(", #")} · ` : ""}{displayDate(operation.completedAt ?? operation.createdAt, locale)}</small><small>{t("serviceFee")}: ${formatDecimal(operation.fee)} · {t("customerCharge")}: ${formatDecimal(operation.customerCharge)}</small></div>
-          <strong>${formatDecimal(operation.amount)}</strong>
-        </article>)}
-      </CustomerDetailSection>
-    </div>
+    <CustomerDetailSection title={t("customerOperations")} count={detail.operations.total} icon={ClipboardList} empty={t("noCustomerOperations")} testId="admin-customer-operations">
+      {detail.operations.list.map((operation) => <article className="admin-customer-detail-item" key={operation.id}>
+        <div><strong>{operation.type} · {operation.status}</strong><small>{operation.cardId ? `${t("cardNumber")} #${operation.cardId} · ` : operation.openedCardIds.length > 0 ? `${t("cards")} #${operation.openedCardIds.join(", #")} · ` : ""}{displayDate(operation.completedAt ?? operation.createdAt, locale)}</small><small>{t("serviceFee")}: ${formatDecimal(operation.fee)} · {t("customerCharge")}: ${formatDecimal(operation.customerCharge)}</small></div>
+        <strong>${formatDecimal(operation.amount)}</strong>
+      </article>)}
+    </CustomerDetailSection>
+
+    <CustomerRecords key={`${profile.id}:${view}`} userId={profile.id} locale={locale} token={token} initialTab={view === "cards" ? "spending" : "financial"} />
   </div>;
 }
 
@@ -637,21 +666,31 @@ export function AdminCustomersPanel({ token, customerId, cardId, customerView, r
       {users.isLoading && <AdminState><span className="loading-skeleton loading-skeleton-table" aria-label={t("loading")}>{t("loading")}</span></AdminState>}
       {users.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
       {users.data?.data.list.length === 0 && <AdminState>{t("noCustomers")}</AdminState>}
-      <div className="admin-list">{users.data?.data.list.map((user) => <article className="admin-customer-row" key={user.id}>
-        <div className="admin-list-row transaction-row">
-          <div className="transaction-icon"><Users /></div>
+      <div className="admin-list admin-customer-list">{users.data?.data.list.map((user) => <article className="admin-customer-row" key={user.id}>
+        <div className="admin-customer-list-row">
           <button type="button" className="admin-customer-summary" onClick={() => onSelectCustomer(user.id)} aria-label={t("viewCustomerDetails", { email: adminAccountLabel(user.email, user.id, user.telegram.username) })}>
-            <strong>{adminAccountLabel(user.email, user.id, user.telegram.username)}</strong>
-            <small>{user.role} · {t(`accountStatus.${user.status}`, { defaultValue: user.status })} · {user.memberTier} · {user.cardCount} {t("cards")} ({user.activeCardCount} {t("active")}) · {user.referralCount} {t("customerReferrals")}</small>
-            <small>{t("cumulativeRecharge")}: ${formatDecimal(user.cumulativeRecharge)} · {t("inviteCode")}: {user.inviteCode}</small>
-            <small>{t("telegramAccount")}: {user.telegram.bound ? (user.telegram.username ? `@${user.telegram.username.replace(/^@/, "")}` : t("telegramBoundReady")) : t("telegramNotBound")}{user.riskHold ? ` · ${t("riskHoldStatus")}` : ""}</small>
+            <span className="admin-customer-list-avatar" aria-hidden="true"><Users /></span>
+            <span className="admin-customer-list-copy">
+              <strong>{adminAccountLabel(user.email, user.id, user.telegram.username)}</strong>
+              <span className="admin-customer-list-meta">
+                <span className={`status-pill ${user.status === "active" ? "is-active" : ""}`}>{t(`accountStatus.${user.status}`, { defaultValue: user.status })}</span>
+                <span>{user.role}</span>
+                <span>{user.memberTier}</span>
+                {user.riskHold && <span className="is-risk">{t("riskHoldStatus")}</span>}
+              </span>
+              <small>{user.activeCardCount}/{user.cardCount} {t("cards")} · {user.referralCount} {t("customerReferrals")} · {t("inviteCode")} {user.inviteCode} · {user.telegram.bound ? (user.telegram.username ? `@${user.telegram.username.replace(/^@/, "")}` : t("telegramBoundReady")) : t("telegramNotBound")}</small>
+            </span>
           </button>
           <div className="admin-customer-row-aside">
             <div className="admin-customer-wallet">
               <span>{t("walletBalance")}</span>
               <strong>${formatDecimal(user.walletBalance)}</strong>
+              <small>{t("cumulativeRecharge")} ${formatDecimal(user.cumulativeRecharge)}</small>
             </div>
-            <div className="admin-card-actions"><Button size="xs" variant="outline" onClick={() => onSelectCustomer(user.id, "cards")}><CreditCard />{t("viewCustomerCards")}</Button><Button size="xs" variant="outline" onClick={() => onSelectCustomer(user.id)}>{t("viewDetails")}</Button></div>
+            <div className="admin-customer-row-actions">
+              <Button size="sm" variant="outline" onClick={() => onSelectCustomer(user.id, "cards")}><CreditCard />{t("viewCustomerCards")}</Button>
+              <Button size="sm" onClick={() => onSelectCustomer(user.id)}>{t("viewDetails")}</Button>
+            </div>
           </div>
         </div>
       </article>)}</div>

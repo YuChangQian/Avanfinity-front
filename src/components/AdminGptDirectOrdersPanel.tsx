@@ -60,7 +60,7 @@ function DirectOrdersPanel({ token, onOpenCustomer, onOpenCard }: Props) {
         <label><span>{t("search")}</span><input name="q" defaultValue={query.q} placeholder={t("searchGptDirectOrders")} /></label>
         <label><span>{t("gptPlanLabel")}</span><select name="plan" defaultValue={query.plan}><option value="">{t("allPlans")}</option>{plans.filter(Boolean).map((plan) => <option key={plan} value={plan}>{t(`gptPlan.${plan}`, { defaultValue: plan })}</option>)}</select></label>
         <label><span>{t("status")}</span><select name="status" defaultValue={query.status}><option value="">{t("allStatuses")}</option>{statuses.filter(Boolean).map((status) => <option key={status} value={status}>{statusLabel(status)}</option>)}</select></label>
-        <Button type="submit" size="sm" variant="outline">{t("filter")}</Button>
+        <Button type="submit" size="sm">{t("filter")}</Button>
       </form>
     </div>
     <section className="admin-surface">

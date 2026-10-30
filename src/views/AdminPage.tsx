@@ -4,10 +4,11 @@ import { AdminProfitPanel } from "../components/AdminProfitPanel";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Navigate } from "@tanstack/react-router";
+import { Link, Navigate } from "@tanstack/react-router";
 import { Dialog } from "radix-ui";
 import {
   Activity,
+  ArrowLeft,
   ArrowRight,
   Bot,
   Boxes,
@@ -33,6 +34,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
+import { BrandIcon } from "@/components/BrandIcon";
+import { LanguageButton } from "../components/LanguageButton";
 import { StableSwap } from "../components/StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminProductsPanel } from "../components/AdminProductsPanel";
@@ -185,20 +188,20 @@ function AdminTrendChart({ data }: { data: AdminOverviewTrend[] }) {
     <div className="admin-trend-plot">
       <ResponsiveContainer width="100%" height="100%" debounce={80}>
         <ComposedChart data={days} margin={{ top: 12, right: 6, bottom: 2, left: 0 }} accessibilityLayer>
-          <defs><linearGradient id="admin-money-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#b85f45" stopOpacity=".28" /><stop offset="100%" stopColor="#b85f45" stopOpacity=".02" /></linearGradient></defs>
-          <CartesianGrid vertical={false} stroke="#e7e2da" strokeDasharray="4 7" />
+          <defs><linearGradient id="admin-money-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#171717" stopOpacity=".18" /><stop offset="100%" stopColor="#171717" stopOpacity=".02" /></linearGradient></defs>
+          <CartesianGrid vertical={false} stroke="#e5e5e2" strokeDasharray="4 7" />
           <XAxis dataKey="date" axisLine={false} tickLine={false} minTickGap={36} tickFormatter={(value: string) => value.slice(5).replace("-", "/")} />
           <YAxis yAxisId="count" axisLine={false} tickLine={false} allowDecimals={false} width={34} />
           <YAxis yAxisId="money" orientation="right" axisLine={false} tickLine={false} width={56} tickFormatter={(value: number) => `$${compact(value)}`} />
-          <Tooltip cursor={{ stroke: "#9f9890", strokeDasharray: "3 4" }} content={({ active, payload, label }) => active && payload?.length ? <div className="admin-trend-tooltip">
+          <Tooltip cursor={{ stroke: "#b0b0b0", strokeDasharray: "3 4" }} content={({ active, payload, label }) => active && payload?.length ? <div className="admin-trend-tooltip">
             <strong>{label}</strong>
             <span><i className="is-users" />新增客户<b>{payload.find((item) => item.dataKey === "registrationCount")?.value ?? 0}</b></span>
             <span><i className="is-cards" />新增卡片<b>{payload.find((item) => item.dataKey === "cardCount")?.value ?? 0}</b></span>
             <span><i className="is-money" />确认入账<b>${formatDecimal(Number(payload.find((item) => item.dataKey === "deposit")?.value ?? 0).toFixed(2))}</b></span>
           </div> : null} />
-          <Area yAxisId="money" type="monotone" dataKey="deposit" name="确认入账" stroke="#b85f45" strokeWidth={3} fill="url(#admin-money-area)" dot={false} activeDot={{ r: 5, fill: "#fff", stroke: "#b85f45", strokeWidth: 3 }} />
+          <Area yAxisId="money" type="monotone" dataKey="deposit" name="确认入账" stroke="#171717" strokeWidth={3} fill="url(#admin-money-area)" dot={false} activeDot={{ r: 5, fill: "#fff", stroke: "#171717", strokeWidth: 3 }} />
           <Line yAxisId="count" type="monotone" dataKey="registrationCount" name="新增客户" stroke="#222" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#fff", stroke: "#222", strokeWidth: 2.5 }} />
-          <Line yAxisId="count" type="monotone" dataKey="cardCount" name="新增卡片" stroke="#d19a32" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#fff", stroke: "#d19a32", strokeWidth: 2.5 }} />
+          <Line yAxisId="count" type="monotone" dataKey="cardCount" name="新增卡片" stroke="#888" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#fff", stroke: "#888", strokeWidth: 2.5 }} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
@@ -751,44 +754,73 @@ export function AdminPage() {
       <div className="admin-provider-grid">{upstreams.data?.data.map((provider) => {
         const operational = upstreamIsHealthy(provider);
         const canCall = provider.runtimeActive && provider.configured;
+        const connectionLabel = provider.connectionHealth === "healthy" ? (i18n.language === "en" ? "OK" : "正常") : provider.connectionHealth;
+        const productLabel = provider.productHealth === "healthy" ? (i18n.language === "en" ? "OK" : "正常") : provider.productHealth === "degraded" ? (i18n.language === "en" ? "Retrying" : "同步重试中") : (i18n.language === "en" ? "Stale" : "已过期");
+        const balanceLabel = provider.balanceHealth === "healthy" ? (i18n.language === "en" ? "OK" : "正常") : (i18n.language === "en" ? "Pending" : "待同步");
         return <article className="admin-surface admin-provider-card" key={provider.code} data-testid={`upstream-${provider.code}`}>
-        <div className="admin-provider-head"><div className="admin-provider-mark"><Landmark /></div><div><span className="admin-kicker">{provider.environment}</span><h2>{provider.name}</h2><p><span className={`admin-dot ${operational ? "is-ok" : ""}`} />{provider.enabled ? t("enabled") : t("disabled")} · {provider.credentialSource}</p></div><span className={`status-pill ${operational ? "is-active" : ""}`}>{operational ? t("connected") : t("attention")}</span></div>
-        <div className="admin-runtime-flags"><span className={provider.runtimeActive ? "is-on" : ""}>{provider.runtimeActive ? t("runtimeActive") : t("runtimeInactive")}</span><span className={provider.configured ? "is-on" : ""}>{provider.configured ? t("credentialsConfigured") : t("credentialsMissing")}</span><span className={provider.writeEnabled ? "is-warning" : ""}>{provider.writeEnabled ? t("realWritesEnabled") : t("realWritesDisabled")}</span></div>
-        <div className="admin-upstream-health-grid">
-          <span className={provider.connectionHealth === "healthy" ? "is-ok" : ""}>连接：{provider.connectionHealth === "healthy" ? "正常" : provider.connectionHealth}</span>
-          <span className={provider.productHealth === "healthy" ? "is-ok" : provider.productHealth === "degraded" ? "is-warning" : ""}>产品：{provider.productHealth === "healthy" ? "正常" : provider.productHealth === "degraded" ? "同步重试中" : "已过期"}</span>
-          <span className={provider.balanceHealth === "healthy" ? "is-ok" : ""}>余额：{provider.balanceHealth === "healthy" ? "正常" : "待同步"}</span>
+        <div className="admin-provider-head">
+          <div className="admin-provider-mark"><Landmark /></div>
+          <div>
+            <span className="admin-kicker">{provider.environment}</span>
+            <h2>{provider.name}</h2>
+            <p>
+              <span className={`admin-dot ${operational ? "is-ok" : ""}`} />
+              {provider.enabled ? t("enabled") : t("disabled")}
+              <span aria-hidden="true">·</span>{provider.credentialSource}
+              <span aria-hidden="true">·</span>{provider.runtimeActive ? t("runtimeActive") : t("runtimeInactive")}
+              <span aria-hidden="true">·</span>{provider.configured ? t("credentialsConfigured") : t("credentialsMissing")}
+              <span aria-hidden="true">·</span>{provider.writeEnabled ? t("realWritesEnabled") : t("realWritesDisabled")}
+            </p>
+          </div>
+          <span className={`status-pill ${operational ? "is-active" : ""}`}>{operational ? t("connected") : t("attention")}</span>
         </div>
-        <dl className="admin-metrics">
+        <dl className="admin-provider-balances">
           <div><dt>{t("upstreamBalance")}</dt><dd>{provider.currency ?? "USD"} {formatDecimal(provider.balance ?? "—")}</dd></div>
           <div><dt>{t("spendableBalance")}</dt><dd>{provider.currency ?? "USD"} {formatDecimal(provider.spendableBalance ?? "—")}</dd></div>
           <div><dt>{t("reserveAmount")}</dt><dd>{provider.currency ?? "USD"} {formatDecimal(provider.reserveAmount ?? "—")}</dd></div>
-          <div><dt>{t("upstreamTier")}</dt><dd>{provider.upstreamTier ?? t("tierUnknown")}</dd></div>
-          <div><dt>{t("upstreamRechargeRate")}</dt><dd>{displayRate(provider.upstreamRechargeRate)}</dd></div>
-          <div><dt>{t("credentialFingerprint")}</dt><dd><code>{provider.credentialMask || "—"}</code></dd></div>
-          <div><dt>{t("credentialVersion")}</dt><dd>{provider.configured && provider.credentialMask ? `v${provider.credentialVersion}` : "—"}</dd></div>
-          <div><dt>{t("lastHealthCheck")}</dt><dd>{displayDate(provider.lastHealthAt, locale)}</dd></div>
-          <div><dt>{t("lastProductSync")}</dt><dd>{displayDate(provider.lastProductSyncAt, locale)}</dd></div>
-          <div><dt>最近产品尝试</dt><dd>{displayDate(provider.lastProductAttemptAt, locale)}</dd></div>
-          <div><dt>连续失败</dt><dd>{provider.productFailureCount}</dd></div>
-          <div><dt>下次重试</dt><dd>{displayDate(provider.nextProductRetryAt, locale)}</dd></div>
-          <div><dt>{t("lastBalanceSync")}</dt><dd>{displayDate(provider.lastBalanceSyncAt, locale)}</dd></div>
         </dl>
-        <p className="admin-alert is-neutral"><ShieldCheck />{t("credentialRotationHint")}</p>
+        <div className="admin-provider-body">
+          <section>
+            <h3>{i18n.language === "en" ? "Provider" : "卡台信息"}</h3>
+            <dl className="admin-provider-facts">
+              <div><dt>{t("upstreamTier")}</dt><dd>{provider.upstreamTier ?? t("tierUnknown")}</dd></div>
+              <div><dt>{t("upstreamRechargeRate")}</dt><dd>{displayRate(provider.upstreamRechargeRate)}</dd></div>
+              <div><dt>{t("credentialFingerprint")}</dt><dd><code>{provider.credentialMask || "—"}</code></dd></div>
+              <div><dt>{t("credentialVersion")}</dt><dd>{provider.configured && provider.credentialMask ? `v${provider.credentialVersion}` : "—"}</dd></div>
+              <div><dt>{i18n.language === "en" ? "Connection" : "连接"}</dt><dd className={provider.connectionHealth === "healthy" ? "is-ok" : ""}>{connectionLabel}</dd></div>
+              <div><dt>{i18n.language === "en" ? "Products" : "产品"}</dt><dd className={provider.productHealth === "healthy" ? "is-ok" : provider.productHealth === "degraded" ? "is-warning" : ""}>{productLabel}</dd></div>
+              <div><dt>{i18n.language === "en" ? "Balance health" : "余额状态"}</dt><dd className={provider.balanceHealth === "healthy" ? "is-ok" : ""}>{balanceLabel}</dd></div>
+            </dl>
+          </section>
+          <section>
+            <h3>{i18n.language === "en" ? "Sync timeline" : "同步记录"}</h3>
+            <dl className="admin-provider-facts">
+              <div><dt>{t("lastHealthCheck")}</dt><dd>{displayDate(provider.lastHealthAt, locale)}</dd></div>
+              <div><dt>{t("lastProductSync")}</dt><dd>{displayDate(provider.lastProductSyncAt, locale)}</dd></div>
+              <div><dt>{i18n.language === "en" ? "Last product attempt" : "最近产品尝试"}</dt><dd>{displayDate(provider.lastProductAttemptAt, locale)}</dd></div>
+              <div><dt>{i18n.language === "en" ? "Failures" : "连续失败"}</dt><dd>{provider.productFailureCount}</dd></div>
+              <div><dt>{i18n.language === "en" ? "Next retry" : "下次重试"}</dt><dd>{displayDate(provider.nextProductRetryAt, locale)}</dd></div>
+              <div><dt>{t("lastBalanceSync")}</dt><dd>{displayDate(provider.lastBalanceSyncAt, locale)}</dd></div>
+            </dl>
+          </section>
+        </div>
+        <p className="admin-provider-note">{t("credentialRotationHint")}</p>
         {provider.lastError && <p className="admin-alert is-error">{provider.lastError}</p>}
         {provider.lastProductError && <p className="admin-alert is-warning">{i18n.language === "en" ? "Product sync retrying" : "产品同步重试中"} · {provider.lastProductError}</p>}
         {!provider.lastError && provider.enabled && provider.runtimeActive && provider.configured && !operational && <p className="admin-alert is-neutral">{t("healthCheckStale")}</p>}
         {!canCall && <p className="admin-alert is-neutral"><RefreshCw />{t("runtimeRestartHint")}</p>}
-        <form className="admin-upstream-settings" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); upstreamUpdate.mutate({ code: provider.code, enabled: data.get("enabled") === "on", priority: Number(data.get("priority")), version: provider.version }); }}>
-          <label className="admin-check"><input name="enabled" type="checkbox" defaultChecked={provider.enabled} /><span>{t("providerEnabled")}</span></label>
-          <label>{t("providerPriority")}<input name="priority" type="number" min="-1000" max="1000" defaultValue={provider.priority} required /></label>
-          <Button size="sm" variant="outline" type="submit" disabled={upstreamUpdate.isPending}><StableSwap state={upstreamUpdate.isPending ? "busy" : "idle"} labels={{ idle: t("saveProvider"), busy: t("processing") }} /></Button>
-        </form>
-        <div className="admin-card-actions">
-          <Button size="sm" variant="outline" aria-pressed={upstreamCode === provider.code} onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); }}>{t("selectProvider")}</Button>
-          <Button size="sm" onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); upstreamAction.mutate({ code: provider.code, action: "test" }); }} disabled={upstreamAction.isPending || !canCall}><Wifi />{t("testConnection")}</Button>
-          <Button size="sm" variant="outline" onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); upstreamAction.mutate({ code: provider.code, action: "products" }); }} disabled={upstreamAction.isPending || !canCall}><Boxes />{t("syncProducts")}</Button>
-          <Button size="sm" variant="outline" onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); upstreamAction.mutate({ code: provider.code, action: "logs" }); }} disabled={upstreamAction.isPending || !canCall}><RefreshCw />{t("syncBalanceLogs")}</Button>
+        <div className="admin-provider-foot">
+          <form className="admin-upstream-settings" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); upstreamUpdate.mutate({ code: provider.code, enabled: data.get("enabled") === "on", priority: Number(data.get("priority")), version: provider.version }); }}>
+            <label className="admin-check"><input name="enabled" type="checkbox" defaultChecked={provider.enabled} /><span>{t("providerEnabled")}</span></label>
+            <label>{t("providerPriority")}<input name="priority" type="number" min="-1000" max="1000" defaultValue={provider.priority} required /></label>
+            <Button size="sm" variant="outline" type="submit" disabled={upstreamUpdate.isPending}><StableSwap state={upstreamUpdate.isPending ? "busy" : "idle"} labels={{ idle: t("saveProvider"), busy: t("processing") }} /></Button>
+          </form>
+          <div className="admin-card-actions">
+            <Button size="sm" variant="outline" aria-pressed={upstreamCode === provider.code} onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); }}>{t("selectProvider")}</Button>
+            <Button size="sm" onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); upstreamAction.mutate({ code: provider.code, action: "test" }); }} disabled={upstreamAction.isPending || !canCall}><Wifi />{t("testConnection")}</Button>
+            <Button size="sm" variant="outline" onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); upstreamAction.mutate({ code: provider.code, action: "products" }); }} disabled={upstreamAction.isPending || !canCall}><Boxes />{t("syncProducts")}</Button>
+            <Button size="sm" variant="outline" onClick={() => { setSelectedUpstreamCode(provider.code); setBalanceLogPage(1); upstreamAction.mutate({ code: provider.code, action: "logs" }); }} disabled={upstreamAction.isPending || !canCall}><RefreshCw />{t("syncBalanceLogs")}</Button>
+          </div>
         </div>
       </article>})}</div>
       <section className="admin-surface">
@@ -826,7 +858,7 @@ export function AdminPage() {
         <label><span>{t("provider")}</span><select name="provider" defaultValue={cardQuery.provider}><option value="">{t("allProviders")}</option>{upstreams.data?.data.map((provider) => <option key={provider.code} value={provider.code}>{provider.name}</option>)}</select></label>
         <label><span>{t("status")}</span><select name="status" defaultValue={cardQuery.status}><option value="">{t("allStatuses")}</option><option value="ACTIVE">ACTIVE</option><option value="FROZEN">FROZEN</option><option value="DELETED">DELETED</option></select></label>
         <label><span>{t("pendingOperation")}</span><select name="pending" defaultValue={cardQuery.pending === undefined ? "" : String(cardQuery.pending)}><option value="">{t("allStatuses")}</option><option value="true">{t("pendingOnly")}</option><option value="false">{t("settledOnly")}</option></select></label>
-        <Button type="submit" size="sm" variant="outline">{t("filter")}</Button>
+        <Button type="submit" size="sm">{t("filter")}</Button>
       </form>} />
       <section className="admin-surface">
         {actionMessage && <p className={`admin-alert ${adminCardDelete.isError || adminCardUnfreeze.isError ? "is-error" : "is-success"}`} role={adminCardDelete.isError || adminCardUnfreeze.isError ? "alert" : "status"}>{actionMessage}</p>}
@@ -882,7 +914,7 @@ export function AdminPage() {
         <label><span>{t("provider")}</span><select name="provider" defaultValue={moneyQuery.provider}><option value="">{t("allProviders")}</option>{upstreams.data?.data.map((provider) => <option key={provider.code} value={provider.code}>{provider.name}</option>)}</select></label>
         <label><span>{t("status")}</span><select name="status" defaultValue={moneyQuery.status}><option value="">{t("allStatuses")}</option>{["PENDING", "DEBITED", "SUBMITTED", "SUCCEEDED", "RECONCILE_REQUIRED", "FAILED", "COMPENSATED"].map((status) => <option value={status} key={status}>{operationStatusLabel(status, i18n.language === "en")}</option>)}</select></label>
         <label><span>{t("type")}</span><select name="type" defaultValue={moneyQuery.type}><option value="">{t("allTypes")}</option>{["OPEN_CARD", "RECHARGE", "REFUND", "FREEZE", "UNFREEZE", "DELETE", "GPT_DIRECT", "TG_DIRECT"].map((type) => <option value={type} key={type}>{operationTypeLabel(type, i18n.language === "en")}</option>)}</select></label>
-        <Button type="submit" size="sm" variant="outline">{t("filter")}</Button>
+        <Button type="submit" size="sm">{t("filter")}</Button>
       </form>} />
       {actionMessage && <p className={`admin-alert ${resolve.isError || deleteReconciliationAction.isError || manualConfirmDeposit.isError ? "is-error" : "is-success"}`} role={resolve.isError || deleteReconciliationAction.isError || manualConfirmDeposit.isError ? "alert" : "status"}>{actionMessage}</p>}
       <section className="admin-surface" data-testid="admin-deposit-orders">
@@ -895,7 +927,7 @@ export function AdminPage() {
           <label><span>{t("search")}</span><input name="q" defaultValue={depositQuery.q} placeholder={t("searchDepositOrders")} /></label>
           <label><span>{t("depositNetwork")}</span><select name="network" defaultValue={depositQuery.network}><option value="">{t("allNetworks")}</option><option value="TRON">TRON</option><option value="BSC">BSC</option><option value="SOL">SOL</option><option value="ETH">ETH</option><option value="XLAYER">XLAYER</option></select></label>
           <label><span>{t("status")}</span><select name="status" defaultValue={depositQuery.status}><option value="">{t("allStatuses")}</option><option value="pending">{t("depositStatus.pending")}</option><option value="confirmed">{t("depositStatus.confirmed")}</option><option value="expired">{t("depositStatus.expired")}</option><option value="failed">{t("depositStatus.failed")}</option><option value="cancelled">{t("depositStatus.cancelled")}</option></select></label>
-          <Button type="submit" size="sm" variant="outline">{t("filter")}</Button>
+          <Button type="submit" size="sm">{t("filter")}</Button>
         </form>
         {deposits.isLoading && <AdminRowsSkeleton />}
         {deposits.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
@@ -1086,7 +1118,7 @@ export function AdminPage() {
         {announcementHistory.data && <div className="admin-list">{announcementHistory.data.data.list.map((item) => <article className="admin-list-row announcement-admin-row" key={item.id}>
           <div className="transaction-icon"><Megaphone /></div>
           <div><strong>{item.title}</strong><p>{item.content}</p><small>{displayDate(item.createdAt, locale)} · {t("announcementReadCount", { count: item.readCount ?? 0 })}{item.telegramDelivery ? ` · ${t("announcementTelegramDelivery", { group: item.telegramDelivery.groupTitle, status: item.telegramDelivery.status })}` : ""}</small></div>
-          <div className="admin-card-actions"><span className={`status-pill ${item.isActive ? "is-active" : ""}`}>{item.isActive ? t("published") : t("withdrawn")}</span>{item.isActive && <Button size="xs" variant="outline" onClick={() => { if (window.confirm(t("withdrawAnnouncementConfirm"))) retractAnnouncement.mutate(item.id); }} disabled={retractAnnouncement.isPending}>{t("withdrawAnnouncement")}</Button>}</div>
+          <div className="admin-list-row-actions"><span className={`status-pill ${item.isActive ? "is-active" : ""}`}>{item.isActive ? t("published") : t("withdrawn")}</span>{item.isActive && <Button size="xs" variant="outline" onClick={() => { if (window.confirm(t("withdrawAnnouncementConfirm"))) retractAnnouncement.mutate(item.id); }} disabled={retractAnnouncement.isPending}>{t("withdrawAnnouncement")}</Button>}</div>
         </article>)}</div>}
         {announcementHistory.data && announcementHistory.data.data.total > announcementHistory.data.data.pageSize && <div className="admin-pagination"><span>{t("totalItems", { count: announcementHistory.data.data.total })}</span><div><Button size="xs" variant="outline" onClick={() => setAnnouncementPage((page) => page - 1)} disabled={announcementPage <= 1}>{t("previousPage")}</Button><span>{announcementPage}</span><Button size="xs" variant="outline" onClick={() => setAnnouncementPage((page) => page + 1)} disabled={announcementPage * announcementHistory.data.data.pageSize >= announcementHistory.data.data.total}>{t("nextPage")}</Button></div></div>}
       </section>
@@ -1097,7 +1129,7 @@ export function AdminPage() {
         <label><span>{t("search")}</span><input name="q" defaultValue={auditQuery.q} placeholder={t("searchAudit")} /></label>
         <label><span>{t("auditAction")}</span><input name="action" defaultValue={auditQuery.action} placeholder="adjust_wallet" /></label>
         <label><span>{t("auditTargetType")}</span><input name="targetType" defaultValue={auditQuery.targetType} placeholder="user / upstream" /></label>
-        <Button type="submit" size="sm" variant="outline">{t("filter")}</Button>
+        <Button type="submit" size="sm">{t("filter")}</Button>
       </form>} />
       <section className="admin-surface">
         {auditLogs.isLoading && <AdminRowsSkeleton />}
@@ -1121,35 +1153,102 @@ export function AdminPage() {
     panel = <div className="admin-panel-stack"><AdminSystemSettingsPanel token={token} /><AdminLegalDocumentsPanel token={token} /></div>;
   }
 
-  return <PageShell eyebrow="OPERATIONS" title={t("adminTitle")} description={t("adminDesc")} className="admin-page">
-    <div className="admin-workspace" data-testid="admin-workspace">
-      <aside className="admin-local-sidebar">
-        <div className="admin-local-brand"><span><ShieldCheck /></span><div><strong>{t("adminWorkspace")}</strong><small>{t("liveControls")}</small></div></div>
-        <nav aria-label={t("adminNavigation")} data-testid="admin-local-nav">
-          {adminSections.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { selectPanel(id); setActionMessage(""); }} aria-current={activePanel === id ? "page" : undefined} data-testid={`admin-nav-${id}`}><Icon /><span>{t(label)}</span>{id === "support" && adminSupportUnreadCount > 0 && <b className="sidebar-badge" aria-label={t("unreadSupportMessages", { count: adminSupportUnreadCount })}>{adminSupportUnreadCount > 99 ? "99+" : adminSupportUnreadCount}</b>}</button>)}
-        </nav>
-        <div className="admin-local-foot"><ShieldCheck /><span><strong>{t("auditEnabled")}</strong><small>{t("allActionsRecorded")}</small></span></div>
-      </aside>
-      <section className="admin-panel" aria-live="polite">{panel}</section>
-    </div>
+  return <div className="admin-shell" data-testid="admin-shell">
+    <a className="skip-link" href="#main-content">{t("skipToContent")}</a>
+    <aside className="admin-local-sidebar">
+      <div className="admin-local-brand"><span><BrandIcon /></span><div><strong>AVANFINITY</strong><small>{t("adminWorkspace")}</small></div></div>
+      <nav aria-label={t("adminNavigation")} data-testid="admin-local-nav">
+        {adminSections.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { selectPanel(id); setActionMessage(""); }} aria-current={activePanel === id ? "page" : undefined} data-testid={`admin-nav-${id}`}><Icon /><span>{t(label)}</span>{id === "support" && adminSupportUnreadCount > 0 && <b className="sidebar-badge" aria-label={t("unreadSupportMessages", { count: adminSupportUnreadCount })}>{adminSupportUnreadCount > 99 ? "99+" : adminSupportUnreadCount}</b>}</button>)}
+      </nav>
+      <div className="admin-local-foot">
+        <LanguageButton />
+        <Link to="/dashboard" className="admin-back-link" data-testid="admin-back-to-app"><ArrowLeft /><span>{t("adminBackToApp")}</span></Link>
+        <div className="admin-local-audit"><ShieldCheck /><span><strong>{t("auditEnabled")}</strong><small>{t("allActionsRecorded")}</small></span></div>
+      </div>
+    </aside>
+    <div className="admin-shell-content" id="main-content" tabIndex={-1} data-testid="admin-workspace">
+      <PageShell eyebrow="OPERATIONS" title={t("adminTitle")} description={t("adminDesc")} className="admin-page">
+        <section className="admin-panel" aria-live="polite">{panel}</section>
+      </PageShell>
     <Dialog.Root open={Boolean(selectedMoneyId)} onOpenChange={(open) => !open && setSelectedMoneyId(null)}>
       <Dialog.Portal><div className="dialog-overlay" data-state={selectedMoneyId ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedMoneyId(null)} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-observability-drawer">
         <div className="card-transaction-drawer-head"><div><span><WalletCards /></span><div><Dialog.Title>资金操作详情</Dialog.Title><Dialog.Description>{selectedMoneyId}</Dialog.Description></div></div><Dialog.Close asChild><Button size="icon" variant="ghost" aria-label={t("close")}><X /></Button></Dialog.Close></div>
         {moneyOperationDetail.isLoading && <div className="admin-observability-body" aria-busy="true"><dl className="admin-metrics wide">{[0, 1, 2, 3].map((item) => <div key={item}><dt><DataSkeleton /></dt><dd><DataSkeleton /></dd></div>)}</dl><AdminRowsSkeleton /></div>}
         {moneyOperationDetail.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
         {moneyOperationDetail.data && <div className="admin-observability-body">
-          <dl className="transaction-detail-grid"><div><dt>客户</dt><dd><button type="button" className="admin-detail-link" onClick={() => openCustomer(moneyOperationDetail.data!.data.operation.userId, activePanel)}>{adminAccountLabel(moneyOperationDetail.data.data.operation.email, moneyOperationDetail.data.data.operation.userId)}</button></dd></div><div><dt>时间</dt><dd>{displayDate(moneyOperationDetail.data.data.operation.createdAt, locale)}</dd></div><div><dt>类型</dt><dd>{operationTypeLabel(moneyOperationDetail.data.data.operation.type, i18n.language === "en")}</dd></div><div><dt>状态</dt><dd>{operationStatusLabel(moneyOperationDetail.data.data.operation.status, i18n.language === "en")}</dd></div><div><dt>上游金额</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.upstreamCost ?? "—")}</dd></div><div><dt>客户扣款</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.customerCharge ?? "—")}</dd></div><div><dt>费用</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.customerFee ?? "—")}</dd></div><div><dt>调度状态</dt><dd>{dispatchStateLabel(moneyOperationDetail.data.data.operation.dispatchState, i18n.language === "en")}</dd></div></dl>
+          <div className="admin-drawer-hero">
+            <div>
+              <span className="admin-drawer-hero-kicker">CHARGE</span>
+              <div className="admin-drawer-hero-status"><span className="status-pill is-active">{operationStatusLabel(moneyOperationDetail.data.data.operation.status, i18n.language === "en")}</span></div>
+              <p className="admin-drawer-hero-amount">{formatDecimal(moneyOperationDetail.data.data.operation.customerCharge ?? "—")}<small>客户扣款 · 费用 {formatDecimal(moneyOperationDetail.data.data.operation.customerFee ?? "—")}</small></p>
+            </div>
+            <div className="admin-drawer-hero-side">
+              <span className="admin-drawer-hero-kicker">OPERATION</span>
+              <dl>
+                <div><dt>类型</dt><dd>{operationTypeLabel(moneyOperationDetail.data.data.operation.type, i18n.language === "en")}</dd></div>
+                <div><dt>上游金额</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.upstreamCost ?? "—")}</dd></div>
+                <div><dt>调度</dt><dd>{dispatchStateLabel(moneyOperationDetail.data.data.operation.dispatchState, i18n.language === "en")}</dd></div>
+              </dl>
+            </div>
+          </div>
+          <section className="admin-drawer-section">
+            <header><span>SUMMARY</span><h3>基础信息</h3></header>
+            <dl className="admin-drawer-facts">
+              <div className="is-wide"><dt>客户</dt><dd><button type="button" className="admin-detail-link" onClick={() => openCustomer(moneyOperationDetail.data!.data.operation.userId, activePanel)}>{adminAccountLabel(moneyOperationDetail.data.data.operation.email, moneyOperationDetail.data.data.operation.userId)}</button></dd></div>
+              <div><dt>时间</dt><dd>{displayDate(moneyOperationDetail.data.data.operation.createdAt, locale)}</dd></div>
+              <div><dt>调度状态</dt><dd>{dispatchStateLabel(moneyOperationDetail.data.data.operation.dispatchState, i18n.language === "en")}</dd></div>
+              <div className="is-emphasis"><dt>客户扣款</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.customerCharge ?? "—")}</dd></div>
+              <div className="is-emphasis"><dt>上游金额</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.upstreamCost ?? "—")}</dd></div>
+              <div className="is-emphasis"><dt>费用</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.customerFee ?? "—")}</dd></div>
+            </dl>
+          </section>
           {moneyOperationDetail.data.data.operation.lastError && <p className="admin-alert is-error">{moneyOperationDetail.data.data.operation.lastError}</p>}
-          <details className="admin-json" open><summary>定价快照与核对证据</summary><pre>{JSON.stringify({ pricingSnapshot: moneyOperationDetail.data.data.operation.pricingSnapshot, reconciliation: moneyOperationDetail.data.data.reconciliation, upstreamEvidence: moneyOperationDetail.data.data.upstreamEvidence }, null, 2)}</pre></details>
-          {moneyOperationDetail.data.data.operation.gptDirect?.recentEvents.length ? <section className="transaction-lifecycle"><h3>GPT 事件时间线</h3>{moneyOperationDetail.data.data.operation.gptDirect.recentEvents.map((event) => <article key={event.eventId}><i /><div><strong>{event.message || event.type}</strong><span>{displayDate(event.occurredAt, locale)}</span><p>{[event.stage, event.status, event.step].filter(Boolean).join(" · ")}</p></div></article>)}</section> : null}
+          <section className="admin-drawer-section">
+            <header><span>EVIDENCE</span><h3>定价快照与核对证据</h3></header>
+            <details className="admin-json" open><summary>查看 JSON</summary><pre>{JSON.stringify({ pricingSnapshot: moneyOperationDetail.data.data.operation.pricingSnapshot, reconciliation: moneyOperationDetail.data.data.reconciliation, upstreamEvidence: moneyOperationDetail.data.data.upstreamEvidence }, null, 2)}</pre></details>
+          </section>
+          {moneyOperationDetail.data.data.operation.gptDirect?.recentEvents.length ? <section className="admin-drawer-section"><header><span>TIMELINE</span><h3>GPT 事件时间线</h3></header><div className="transaction-lifecycle">{moneyOperationDetail.data.data.operation.gptDirect.recentEvents.map((event) => <article key={event.eventId}><i /><div><strong>{event.message || event.type}</strong><span>{displayDate(event.occurredAt, locale)}</span><p>{[event.stage, event.status, event.step].filter(Boolean).join(" · ")}</p></div></article>)}</div></section> : null}
         </div>}
       </Dialog.Content></Dialog.Portal>
     </Dialog.Root>
     <Dialog.Root open={Boolean(selectedAudit)} onOpenChange={(open) => !open && setSelectedAudit(null)}>
       <Dialog.Portal><div className="dialog-overlay" data-state={selectedAudit ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedAudit(null)} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-observability-drawer">
         <div className="card-transaction-drawer-head"><div><span><ClipboardList /></span><div><Dialog.Title>{selectedAudit ? auditActionCopy(selectedAudit.action, i18n.language === "en").label : "审计详情"}</Dialog.Title><Dialog.Description>{selectedAudit?.requestId}</Dialog.Description></div></div><Dialog.Close asChild><Button size="icon" variant="ghost" aria-label={t("close")}><X /></Button></Dialog.Close></div>
-        {selectedAudit && <div className="admin-observability-body"><p>{auditActionCopy(selectedAudit.action, i18n.language === "en").description}</p><dl className="transaction-detail-grid"><div><dt>原始操作代码</dt><dd><code>{selectedAudit.action}</code></dd></div><div><dt>结果</dt><dd>{selectedAudit.outcome === "success" && i18n.language !== "en" ? "成功" : selectedAudit.outcome}</dd></div><div><dt>时间</dt><dd>{displayDate(selectedAudit.createdAt, locale)}</dd></div><div><dt>来源 IP</dt><dd>{selectedAudit.sourceIp ?? "—"}</dd></div><div><dt>目标</dt><dd>{selectedAudit.targetType ?? "—"} · {selectedAudit.targetId ?? "—"}</dd></div><div><dt>请求 ID</dt><dd><code>{selectedAudit.requestId}</code></dd></div></dl><details className="admin-json" open><summary>脱敏详情</summary><pre>{JSON.stringify({ ...selectedAudit.detail, userAgent: selectedAudit.userAgent }, null, 2)}</pre></details></div>}
+        {selectedAudit && <div className="admin-observability-body">
+          <div className="admin-drawer-hero">
+            <div>
+              <span className="admin-drawer-hero-kicker">AUDIT</span>
+              <div className="admin-drawer-hero-status"><span className="status-pill is-active">{selectedAudit.outcome === "success" && i18n.language !== "en" ? "成功" : selectedAudit.outcome}</span></div>
+              <p className="admin-drawer-hero-amount">{auditActionCopy(selectedAudit.action, i18n.language === "en").label}<small>{displayDate(selectedAudit.createdAt, locale)}</small></p>
+            </div>
+            <div className="admin-drawer-hero-side">
+              <span className="admin-drawer-hero-kicker">CONTEXT</span>
+              <dl>
+                <div><dt>目标</dt><dd>{selectedAudit.targetType ?? "—"} · {selectedAudit.targetId ?? "—"}</dd></div>
+                <div><dt>来源 IP</dt><dd>{selectedAudit.sourceIp ?? "—"}</dd></div>
+                <div><dt>代码</dt><dd><code>{selectedAudit.action}</code></dd></div>
+              </dl>
+            </div>
+          </div>
+          <p className="admin-drawer-note">{auditActionCopy(selectedAudit.action, i18n.language === "en").description}</p>
+          <section className="admin-drawer-section">
+            <header><span>DETAILS</span><h3>请求信息</h3></header>
+            <dl className="admin-drawer-facts">
+              <div><dt>原始操作代码</dt><dd><code>{selectedAudit.action}</code></dd></div>
+              <div><dt>结果</dt><dd>{selectedAudit.outcome === "success" && i18n.language !== "en" ? "成功" : selectedAudit.outcome}</dd></div>
+              <div><dt>时间</dt><dd>{displayDate(selectedAudit.createdAt, locale)}</dd></div>
+              <div><dt>来源 IP</dt><dd>{selectedAudit.sourceIp ?? "—"}</dd></div>
+              <div className="is-wide"><dt>目标</dt><dd>{selectedAudit.targetType ?? "—"} · {selectedAudit.targetId ?? "—"}</dd></div>
+              <div className="is-wide"><dt>请求 ID</dt><dd><code>{selectedAudit.requestId}</code></dd></div>
+            </dl>
+          </section>
+          <section className="admin-drawer-section">
+            <header><span>PAYLOAD</span><h3>脱敏详情</h3></header>
+            <details className="admin-json" open><summary>查看 JSON</summary><pre>{JSON.stringify({ ...selectedAudit.detail, userAgent: selectedAudit.userAgent }, null, 2)}</pre></details>
+          </section>
+        </div>}
       </Dialog.Content></Dialog.Portal>
     </Dialog.Root>
-  </PageShell>;
+    </div>
+  </div>;
 }

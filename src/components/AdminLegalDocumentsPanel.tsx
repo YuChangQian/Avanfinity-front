@@ -7,8 +7,23 @@ import { StableSwap } from "./StableSwap";
 
 export function AdminLegalDocumentsPanel({ token }: { token: string }) {
   const documents = useQuery({ queryKey: ["legal-documents"], queryFn: getLegalDocuments, retry: false });
-  if (documents.isLoading) return <section className="admin-surface legal-editor" aria-busy="true">正在加载服务条款与用户协议…</section>;
-  if (documents.isError || !documents.data) return <section className="admin-surface legal-editor"><p role="alert">协议内容加载失败。</p><Button size="sm" variant="outline" onClick={() => void documents.refetch()}>重试</Button></section>;
+  if (documents.isLoading) {
+    return (
+      <section className="admin-surface legal-editor" aria-busy="true">
+        <div className="admin-state">正在加载服务条款与用户协议…</div>
+      </section>
+    );
+  }
+  if (documents.isError || !documents.data) {
+    return (
+      <section className="admin-surface legal-editor">
+        <div className="admin-state is-error" role="alert">
+          <span>协议内容加载失败。</span>
+          <Button size="sm" variant="outline" onClick={() => void documents.refetch()}>重试</Button>
+        </div>
+      </section>
+    );
+  }
   return <LegalDocumentsForm token={token} initial={documents.data.data} />;
 }
 

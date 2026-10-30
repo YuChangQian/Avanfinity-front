@@ -59,7 +59,7 @@ export function AdminSupportTicketsPanel({ token }: { token: string }) {
     <div className="admin-panel-heading"><div><span className="admin-kicker">SUPPORT</span><h2>{t("adminSupportTickets")}</h2><p>{t("adminSupportTicketsDesc")}</p></div></div>
     <section className="admin-surface support-admin-filters">
       <div className="support-status-filters">{statuses.map((value) => <Button key={value || "all"} size="sm" variant={status === value ? "default" : "outline"} onClick={() => setStatus(value)}>{value ? t(`supportStatus.${value}`) : t("allSupportTickets")}</Button>)}</div>
-      <form onSubmit={(event) => { event.preventDefault(); setSearch(query.trim()); }}><input value={query} onChange={(event) => setQuery(event.target.value)} maxLength={120} placeholder={t("searchSupportTickets")} /><Button type="submit" variant="outline"><Search />{t("search")}</Button></form>
+      <form onSubmit={(event) => { event.preventDefault(); setSearch(query.trim()); }}><input value={query} onChange={(event) => setQuery(event.target.value)} maxLength={120} placeholder={t("searchSupportTickets")} /><Button type="submit"><Search />{t("search")}</Button></form>
     </section>
     <section className="support-workspace is-admin">
       <aside className="support-ticket-list">

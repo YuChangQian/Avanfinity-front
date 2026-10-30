@@ -97,7 +97,7 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
         <label>{en ? "TG username" : "TG 用户名"}<input name="recipient" maxLength={33} pattern="@?[A-Za-z0-9_]{0,32}" placeholder="@username" /></label>
         <label>{en ? "User ID" : "用户 ID"}<input name="userId" type="number" min="1" step="1" /></label>
         <label>{en ? "Order status" : "订单状态"}<Select value={status} onValueChange={setStatus}><SelectTrigger aria-label={en ? "Order status" : "订单状态"}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">{t("allStatuses")}</SelectItem>{Object.keys(statuses).filter(value => value !== "preparing" && value !== "prepared").map(value => <SelectItem key={value} value={value}>{statusLabel(value)}</SelectItem>)}</SelectContent></Select></label>
-        <Button type="submit" size="sm" variant="outline">{t("filter")}</Button>
+        <Button type="submit" size="sm">{t("filter")}</Button>
       </form>
       {orders.isLoading && <p className="admin-state" aria-busy="true">{t("loading")}</p>}
       {orders.isError && <p className="admin-state is-error" role="alert">{en ? "Unable to load orders. Refresh records to retry." : "订单加载失败，请刷新记录重试。"}</p>}
@@ -119,29 +119,57 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
     <Dialog.Root open={Boolean(selectedId)} onOpenChange={open => { if (!open) setSelectedId(null); }}><Dialog.Portal>
       <div className="dialog-overlay" data-state={selectedId ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedId(null)} />
       <Dialog.Content className="dialog-content admin-gpt-order-drawer">
-        <div className="card-transaction-drawer-head"><div><Dialog.Title>{en ? "TG order details" : "TG 直充订单详情"}</Dialog.Title><Dialog.Description>{selectedId}</Dialog.Description></div><Dialog.Close asChild><Button type="button" variant="ghost" size="icon" aria-label={t("close")}><X /></Button></Dialog.Close></div>
+        <div className="card-transaction-drawer-head"><div><span><CircleDollarSign /></span><div><Dialog.Title>{en ? "TG order details" : "TG 直充订单详情"}</Dialog.Title><Dialog.Description>{selectedId}</Dialog.Description></div></div><Dialog.Close asChild><Button type="button" variant="ghost" size="icon" aria-label={t("close")}><X /></Button></Dialog.Close></div>
         {detail.isLoading && <p className="admin-state">{t("loading")}</p>}
         {detail.isError && <p className="admin-state is-error" role="alert">{en ? "Unable to load order details." : "订单详情加载失败。"}</p>}
         <div className="admin-gpt-order-detail-body">
-          <Button type="button" size="sm" variant="outline" disabled={detail.isFetching} onClick={() => void detail.refetch()}><RefreshCw />{en ? "Refresh saved details" : "刷新已保存详情"}</Button>
+          <div className="admin-drawer-toolbar">
+            <Button type="button" size="sm" variant="outline" disabled={detail.isFetching} onClick={() => void detail.refetch()}><RefreshCw />{en ? "Refresh saved details" : "刷新已保存详情"}</Button>
+          </div>
           {order && <>
-            <dl className="transaction-detail-grid">
-              <div><dt>{t("customer")}</dt><dd>{order.ownerEmail || "—"} · #{order.ownerUserId}</dd></div>
-              <div><dt>{en ? "TG account" : "TG 账号"}</dt><dd>@{order.recipient}</dd></div>
-              <div><dt>{en ? "Plan" : "套餐"}</dt><dd>{planLabel(order.plan)}</dd></div>
-              <div><dt>{t("status")}</dt><dd>{en ? statusLabel(order.status) : tgOrderStatus(order)}</dd></div>
-              <div><dt>{en ? "Official card amount" : "官方扣卡金额"}</dt><dd>{officialAmount(order)}</dd></div>
-              <div><dt>{en ? "USD estimate" : "美元参考金额"}</dt><dd>{order.estimatedUsd ? `${en ? "Approx." : "约"} USD ${formatDecimal(order.estimatedUsd)}` : "—"}</dd></div>
-              <div><dt>{en ? "Wallet service fee" : "钱包服务费"}</dt><dd>USD {formatDecimal(order.serviceFee)}</dd></div>
-              <div><dt>{en ? "Service fee status" : "服务费状态"}</dt><dd>{feeLabel(order.serviceFeeStatus)}</dd></div>
-              <div><dt>{en ? "Payment attempted" : "是否尝试支付"}</dt><dd>{order.paymentAttempted === true ? (en ? "Yes" : "是") : order.paymentAttempted === false ? (en ? "No" : "否") : "—"}</dd></div>
-              <div><dt>{en ? "Payment card" : "支付卡"}</dt><dd>#{order.cardId}{/^\d{4}$/.test(order.cardLast4 ?? "") ? ` · **** ${order.cardLast4}` : ""}</dd></div>
-              <div><dt>{t("createdTime")}</dt><dd>{dateLabel(order.createdAt)}</dd></div>
-            </dl>
+            <div className="admin-drawer-hero">
+              <div>
+                <span className="admin-drawer-hero-kicker">CHARGE</span>
+                <div className="admin-drawer-hero-status"><span className="status-pill is-active">{en ? statusLabel(order.status) : tgOrderStatus(order)}</span></div>
+                <p className="admin-drawer-hero-amount">{officialAmount(order)}<small>{en ? "Official card amount" : "官方扣卡金额"} · {order.estimatedUsd ? `${en ? "Approx." : "约"} USD ${formatDecimal(order.estimatedUsd)}` : "—"}</small></p>
+              </div>
+              <div className="admin-drawer-hero-side">
+                <span className="admin-drawer-hero-kicker">ORDER</span>
+                <dl>
+                  <div><dt>{en ? "Plan" : "套餐"}</dt><dd>{planLabel(order.plan)}</dd></div>
+                  <div><dt>{en ? "Service fee" : "服务费"}</dt><dd>USD {formatDecimal(order.serviceFee)}</dd></div>
+                  <div><dt>@{order.recipient}</dt><dd>{dateLabel(order.createdAt)}</dd></div>
+                </dl>
+              </div>
+            </div>
             {tgOrderExplanation(order) && <p className="admin-alert is-warning">{tgOrderExplanation(order)}</p>}
-            <TgOrderTiming order={order} />
-            <p className="admin-settings-note">{en ? "The card statement determines the final charge. Uncertain payments remain pending review; do not submit another payment." : "最终扣卡金额以卡片账单为准。结果不明的支付保持待核对，请勿重复支付。"}</p>
-            <section className="admin-gpt-invoices"><h3>{en ? "Gift delivery" : "赠送到账"}</h3><p>{order.deliveryStatus === "delivered" ? (en ? "Delivery verified" : "已核验到账") : (en ? "Delivery not yet verified" : "尚未核验到账")}{order.giftMessageId ? ` #${order.giftMessageId}` : ""}{order.giftDays ? ` · ${order.giftDays} ${en ? "days" : "天"}` : ""}</p></section>
+            <section className="admin-drawer-section">
+              <header><span>ACCOUNT</span><h3>{en ? "Customer & payment" : "客户与支付"}</h3></header>
+              <dl className="admin-drawer-facts">
+                <div className="is-wide"><dt>{t("customer")}</dt><dd>{order.ownerEmail || "—"} · #{order.ownerUserId}</dd></div>
+                <div><dt>{en ? "TG account" : "TG 账号"}</dt><dd>@{order.recipient}</dd></div>
+                <div><dt>{en ? "Payment card" : "支付卡"}</dt><dd>#{order.cardId}{/^\d{4}$/.test(order.cardLast4 ?? "") ? ` · **** ${order.cardLast4}` : ""}</dd></div>
+                <div><dt>{en ? "Payment attempted" : "是否尝试支付"}</dt><dd>{order.paymentAttempted === true ? (en ? "Yes" : "是") : order.paymentAttempted === false ? (en ? "No" : "否") : "—"}</dd></div>
+                <div><dt>{en ? "Service fee status" : "服务费状态"}</dt><dd>{feeLabel(order.serviceFeeStatus)}</dd></div>
+              </dl>
+            </section>
+            <section className="admin-drawer-section">
+              <header><span>AMOUNTS</span><h3>{en ? "Settlement" : "金额核对"}</h3></header>
+              <dl className="admin-drawer-facts">
+                <div className="is-emphasis"><dt>{en ? "Official card amount" : "官方扣卡金额"}</dt><dd>{officialAmount(order)}</dd></div>
+                <div className="is-emphasis"><dt>{en ? "USD estimate" : "美元参考金额"}</dt><dd>{order.estimatedUsd ? `${en ? "Approx." : "约"} USD ${formatDecimal(order.estimatedUsd)}` : "—"}</dd></div>
+                <div className="is-emphasis"><dt>{en ? "Wallet service fee" : "钱包服务费"}</dt><dd>USD {formatDecimal(order.serviceFee)}</dd></div>
+                <div><dt>{t("createdTime")}</dt><dd>{dateLabel(order.createdAt)}</dd></div>
+              </dl>
+              <TgOrderTiming order={order} />
+              <p className="admin-drawer-note">{en ? "The card statement determines the final charge. Uncertain payments remain pending review; do not submit another payment." : "最终扣卡金额以卡片账单为准。结果不明的支付保持待核对，请勿重复支付。"}</p>
+            </section>
+            <section className="admin-drawer-section">
+              <header><span>DELIVERY</span><h3>{en ? "Gift delivery" : "赠送到账"}</h3></header>
+              <dl className="admin-drawer-facts">
+                <div className="is-wide is-emphasis"><dt>{en ? "Delivery" : "到账状态"}</dt><dd>{order.deliveryStatus === "delivered" ? (en ? "Delivery verified" : "已核验到账") : (en ? "Delivery not yet verified" : "尚未核验到账")}{order.giftMessageId ? ` #${order.giftMessageId}` : ""}{order.giftDays ? ` · ${order.giftDays} ${en ? "days" : "天"}` : ""}</dd></div>
+              </dl>
+            </section>
           </>}
         </div>
       </Dialog.Content>

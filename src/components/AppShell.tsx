@@ -37,6 +37,7 @@ export function AppShell() {
   const { t } = useTranslation();
   const pathname = useLocation({ select: (location) => location.pathname });
   const isPublicCdkRoute = pathname === "/cdk/redeem" || pathname === "/x-cdk/redeem" || pathname === "/tg-cdk/redeem";
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const [session, setSession] = useAtom(sessionAtom);
   const setGptDirectDraft = useSetAtom(gptDirectDraftAtom);
   const [dismissedAnnouncementIds, setDismissedAnnouncementIds] = useState<number[]>([]);
@@ -119,6 +120,7 @@ export function AppShell() {
     <p>{profile.error instanceof Error ? profile.error.message : "Request failed"}</p>
     <Button type="button" variant="outline" onClick={() => void profile.refetch()}>{t("retry")}</Button>
   </div></main>;
+  if (isAdminRoute) return <Outlet />;
   const accountLabel = profile.data?.displayName ?? profile.data?.email ?? session.displayName ?? session.email ?? `#${session.userId}`;
 
   const signOut = async () => {

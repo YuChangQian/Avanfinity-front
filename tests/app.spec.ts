@@ -8327,6 +8327,7 @@ test("admin-created products stay unavailable until bound to a healthy upstream"
   await expect(adminProduct).toContainText("MASTERCARD");
   await expect(adminProduct.getByRole("button", { name: "停用", exact: true })).toBeVisible();
 
+  await page.getByTestId("admin-back-to-app").click();
   await page.getByTestId("app-sidebar").getByRole("link", { name: "开卡中心", exact: true }).click();
   await expect(page.getByTestId(`product-${code}`)).toHaveCount(0);
   const rejectedOpen = await page.request.post("/api/cards/open", {

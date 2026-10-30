@@ -95,17 +95,17 @@ function DashboardTrend({ balance, spend }: { balance: Array<{ date: string; bal
       <ResponsiveContainer width="100%" height="100%" debounce={80}>
         <ComposedChart data={days} margin={{ top: 10, right: 4, bottom: 2, left: 0 }} accessibilityLayer>
           <defs><linearGradient id="dashboard-balance-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#252525" stopOpacity=".2" /><stop offset="100%" stopColor="#252525" stopOpacity=".02" /></linearGradient></defs>
-          <CartesianGrid vertical={false} stroke="#e7e2da" strokeDasharray="4 7" />
+          <CartesianGrid vertical={false} stroke="#e5e5e2" strokeDasharray="4 7" />
           <XAxis dataKey="date" axisLine={false} tickLine={false} minTickGap={34} tickFormatter={(value: string) => value.slice(5).replace("-", "/")} />
           <YAxis yAxisId="balance" axisLine={false} tickLine={false} width={49} tickFormatter={(value: number) => `$${formatDecimal(value)}`} />
           <YAxis yAxisId="spend" orientation="right" axisLine={false} tickLine={false} width={45} tickFormatter={(value: number) => `$${formatDecimal(value)}`} />
-          <Tooltip cursor={{ stroke: "#9f9890", strokeDasharray: "3 4" }} content={({ active, payload, label }) => active && payload?.length ? <div className="admin-trend-tooltip dashboard-trend-tooltip">
+          <Tooltip cursor={{ stroke: "#b0b0b0", strokeDasharray: "3 4" }} content={({ active, payload, label }) => active && payload?.length ? <div className="admin-trend-tooltip dashboard-trend-tooltip">
             <strong>{label}</strong>
             <span><i className="is-balance" />账户余额<b>${formatDecimal(Number(payload.find((item) => item.dataKey === "balance")?.value ?? 0))}</b></span>
             <span><i className="is-spend" />当日消费<b>${formatDecimal(Number(payload.find((item) => item.dataKey === "spend")?.value ?? 0))}</b></span>
           </div> : null} />
           <Area yAxisId="balance" type="monotone" dataKey="balance" name="账户余额" stroke="#252525" strokeWidth={3} fill="url(#dashboard-balance-area)" dot={false} activeDot={{ r: 5, fill: "#fff", stroke: "#252525", strokeWidth: 3 }} />
-          <Line yAxisId="spend" type="monotone" dataKey="spend" name="每日消费" stroke="#b7543d" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#fff", stroke: "#b7543d", strokeWidth: 2.5 }} />
+          <Line yAxisId="spend" type="monotone" dataKey="spend" name="每日消费" stroke="#888" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#fff", stroke: "#888", strokeWidth: 2.5 }} />
         </ComposedChart>
       </ResponsiveContainer>
     </div>

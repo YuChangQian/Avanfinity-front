@@ -52,21 +52,28 @@ export function AdminCdkOrdersPanel({ token, onOpenCustomer, onOpenCard }: { tok
     <AdminGptOrderDetail selectedId={selected} order={detail.data?.data.order} events={detail.data?.data.events}
       title={en ? "CDK direct order details" : "CDK 直充订单详情"} isLoading={detail.isLoading} isError={detail.isError}
       onRetry={() => detail.refetch()} onClose={() => setSelected(null)} onOpenCustomer={onOpenCustomer} onOpenCard={onOpenCard}>
-      {detail.data && <section className="admin-gpt-invoices">
-          <h3>{en ? "Funding calculation" : "补款计算依据"}</h3>
-          {detail.data.data.order.fundingQuote ? <dl className="transaction-detail-grid">
-            <div><dt>{en ? "Quote in USD" : "本次报价折美元"}</dt><dd>${formatDecimal(detail.data.data.order.fundingQuote.amountUsd)}</dd></div>
-            <div><dt>{en ? "Safety buffer" : "安全余量"}</dt><dd>${formatDecimal(detail.data.data.order.fundingQuote.bufferUsd)}</dd></div>
-            <div><dt>{en ? "Required balance" : "所需卡片余额"}</dt><dd>${formatDecimal(detail.data.data.order.fundingQuote.requiredUsd)}</dd></div>
+      {detail.data && <>
+        <section className="admin-drawer-section">
+          <header><span>FUNDING</span><h3>{en ? "Funding calculation" : "补款计算依据"}</h3></header>
+          {detail.data.data.order.fundingQuote ? <dl className="admin-drawer-facts">
+            <div className="is-emphasis"><dt>{en ? "Quote in USD" : "本次报价折美元"}</dt><dd>${formatDecimal(detail.data.data.order.fundingQuote.amountUsd)}</dd></div>
+            <div className="is-emphasis"><dt>{en ? "Safety buffer" : "安全余量"}</dt><dd>${formatDecimal(detail.data.data.order.fundingQuote.bufferUsd)}</dd></div>
+            <div className="is-emphasis"><dt>{en ? "Required balance" : "所需卡片余额"}</dt><dd>${formatDecimal(detail.data.data.order.fundingQuote.requiredUsd)}</dd></div>
             <div><dt>{en ? "FX rate" : "美元换算汇率"}</dt><dd>{detail.data.data.order.fundingQuote.usdPerUnit}</dd></div>
-          </dl> : <p>{en ? "No calculation snapshot was saved for this historical attempt." : "此历史订单未保存补款计算快照，不能精确还原当时依据。"}</p>}
-          <h3>{en ? "Linked card top-ups" : "已关联的卡片补款记录"}</h3>
-          <p>{en ? "Older retries may have no retained funding association. This list is not a complete card ledger." : "旧版重新兑换可能未保留补款关联；此列表不代表卡片全部资金流水。"}</p>
-          {detail.data.data.funding.map(f => <article key={f.id} className="admin-surface">
-            <strong>{en ? "Card" : "卡片"} #{f.cardId} · ${formatDecimal(f.amountUsd)} · {f.status}</strong>
-            <p>{en ? "Balance before / after" : "补款前 / 补款后余额"}: {f.balanceBeforeUsd ?? "—"} / {f.balanceAfterUsd ?? "—"}</p><small>{date(f.createdAt)} · {f.id}</small>
-          </article>)}
-      </section>}
+          </dl> : <p className="admin-drawer-note">{en ? "No calculation snapshot was saved for this historical attempt." : "此历史订单未保存补款计算快照，不能精确还原当时依据。"}</p>}
+        </section>
+        <section className="admin-drawer-section">
+          <header><span>TOP-UPS</span><h3>{en ? "Linked card top-ups" : "已关联的卡片补款记录"}</h3></header>
+          <p className="admin-drawer-note">{en ? "Older retries may have no retained funding association. This list is not a complete card ledger." : "旧版重新兑换可能未保留补款关联；此列表不代表卡片全部资金流水。"}</p>
+          <div className="admin-drawer-funding-list">
+            {detail.data.data.funding.map(f => <article key={f.id}>
+              <strong>{en ? "Card" : "卡片"} #{f.cardId} · ${formatDecimal(f.amountUsd)} · {f.status}</strong>
+              <p>{en ? "Balance before / after" : "补款前 / 补款后余额"}: {f.balanceBeforeUsd ?? "—"} / {f.balanceAfterUsd ?? "—"}</p>
+              <small>{date(f.createdAt)} · {f.id}</small>
+            </article>)}
+          </div>
+        </section>
+      </>}
     </AdminGptOrderDetail>
   </div>;
 }

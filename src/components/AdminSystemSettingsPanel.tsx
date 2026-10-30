@@ -60,10 +60,16 @@ export function AdminSystemSettingsPanel({ token }: { token: string }) {
     <div className="admin-panel-heading"><div><span className="admin-kicker">PLATFORM</span><h2>{t("adminSystemSettings")}</h2><p>{t("adminSystemSettingsDesc")}</p></div></div>
     {[[Mail, "SMTP", "smtpSettings", "smtpSettingsHint"], [RadioTower, "USDT", "depositMonitorSettings", "depositMonitorSettingsHint"], [SlidersHorizontal, "FEATURES", "featureSettings", "featureSettingsHint"]].map(([Icon, kicker, title, hint]) => <section className="admin-surface admin-system-section" key={title as string}><div className="admin-section-heading"><div><span className="admin-kicker">{kicker as string}</span><h2><Icon />{t(title as string)}</h2><p>{t(hint as string)}</p></div><DataSkeleton /></div><form className="admin-system-form"><label className="admin-settings-toggle"><input type="checkbox" disabled /><span><strong><DataSkeleton /></strong><small><DataSkeleton /></small></span></label><div className="admin-system-form-grid">{[0, 1, 2, 3].map((field) => <label key={field}><DataSkeleton /><input disabled /></label>)}</div><div className="admin-form-actions"><Button disabled><Save />{t("save")}</Button></div></form></section>)}
   </div>;
-  if (settings.isError || !settings.data) return <div className="admin-state is-error" role="alert">
-    <span>{t("systemSettingsLoadFailed")}</span>
-    <Button size="sm" variant="outline" onClick={() => void settings.refetch()}>{t("retry")}</Button>
-  </div>;
+  if (settings.isError || !settings.data) {
+    return (
+      <section className="admin-surface">
+        <div className="admin-state is-error" role="alert">
+          <span>{t("systemSettingsLoadFailed")}</span>
+          <Button size="sm" variant="outline" onClick={() => void settings.refetch()}>{t("retry")}</Button>
+        </div>
+      </section>
+    );
+  }
 
   return <SystemSettingsForms token={token} initial={settings.data.data} />;
 }

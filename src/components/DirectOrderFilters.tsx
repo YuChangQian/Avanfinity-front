@@ -16,7 +16,7 @@ export function DirectOrderFilters({ query, statuses, maxUsername, total, busy, 
       <label>订单状态<Select value={status} onValueChange={setStatus}><SelectTrigger aria-label="订单状态"><SelectValue /></SelectTrigger><SelectContent>
         <SelectItem value="all">全部状态</SelectItem>{Object.entries(statuses).filter(([value]) => !["preparing", "prepared"].includes(value)).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
       </SelectContent></Select></label>
-      <Button type="submit" size="sm" variant="outline" disabled={busy}>筛选</Button>
+      <Button type="submit" size="sm" disabled={busy}>筛选</Button>
       <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => { setRecipient(""); setStatus("all"); onChange({ recipient: "", status: "", page: 1 }); }}>重置</Button>
     </form>
     {total !== undefined && <div className="admin-pagination"><span>共 {total} 笔订单</span><div>
