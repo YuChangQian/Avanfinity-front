@@ -23,8 +23,10 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
   const [sort, setSort] = useState("price_asc");
   const query = useQuery({ queryKey: ["gpt-price-catalog"], queryFn: () => getGptPriceCatalog(token), retry: false, staleTime: 60_000, refetchInterval: 60_000 });
   const countries = query.data?.data.countries ?? [];
+  const primaryPrice = (price: GptCatalogPrice) => price.pspTax === "exclusive" && price.pspAmountMajor ? price.pspAmountMajor : price.amountMajor;
   const amount = (price?: GptCatalogPrice) => {
-    const n = Number(price?.amountUsd);
+    // Reuse the catalog FX rate for the same local amount shown as the primary price.
+    const n = price ? Number(price.amountUsd) * Number(primaryPrice(price)) / Number(price.amountMajor) : NaN;
     return price?.amountUsd != null && Number.isFinite(n) && n > 0 ? n : null;
   };
   const label = (country: string) => names.of(country) ?? country;
@@ -45,7 +47,7 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
 
   return <section className="gpt-price-catalog" aria-labelledby="gpt-catalog-title">
     <div className="gpt-catalog-heading"><div><span className="eyebrow">REGIONAL PRICES</span><h2 id="gpt-catalog-title">{en ? "Prices by country and region" : "各国家地区价格"}</h2></div><span>{en ? `${countries.length} regions collected` : `已采集 ${countries.length} 个地区`}</span></div>
-    <p className="gpt-catalog-note">{en ? "Browse without a Session or preflight. Monthly catalog prices retain their tax basis; USD conversions are estimates, not final checkout amounts. A listed price does not establish purchase eligibility." : "无需填写 Session 或预检即可查看。以下为月度目录参考价，各地区税费口径可能不同；美元为汇率估算，最终金额及购买资格以账户结账为准。"}</p>
+    <p className="gpt-catalog-note">{en ? "Browse without a Session or preflight. The main price and sorting use the tax-exclusive price when returned, otherwise the returned final price. Tax-inclusive prices appear below in small text. USD conversions are estimates; final amounts and eligibility depend on checkout." : "无需填写 Session 或预检即可查看。主价格及排序优先使用返回的未税价，没有未税价则使用返回的最终价；含税价以小字展示。美元为汇率估算，最终金额及购买资格以账户结账为准。"}</p>
     <div className="gpt-catalog-filters">
       <label>{en ? "Plan filter" : "套餐筛选"}<select value={plan} onChange={event => setPlan(event.target.value)}>
         <option value="all">{en ? "All plans" : "全部套餐"}</option>{planOrder.map(key => <option key={key} value={key}>{planLabels[key]}</option>)}
@@ -59,14 +61,16 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
     </div>
     {query.isError && <p className="gpt-catalog-error" role="alert">{en ? "Prices could not be loaded." : "价格暂时无法加载。"}<Button size="sm" variant="outline" onClick={() => void query.refetch()}>{en ? "Retry" : "重试"}</Button></p>}
     {query.isLoading ? <p role="status">{en ? "Loading prices…" : "正在加载地区价格…"}</p> : <div className="gpt-catalog-scroll" tabIndex={0} role="region" aria-label={en ? "Regional price table" : "地区价格表"}>
-      <table><thead><tr>{[en ? "Country / region" : "国家 / 地区", en ? "Plan" : "套餐", en ? "Monthly catalog price" : "月度目录价", en ? "USD estimate" : "美元估算", en ? "Updated / status" : "更新时间 / 状态", en ? "Checkout" : "充值"].map(title => <th key={title} scope="col">{title}</th>)}</tr></thead>
+      <table><thead><tr>{[en ? "Country / region" : "国家 / 地区", en ? "Plan" : "套餐", en ? "Monthly reference price" : "月度参考价", en ? "USD estimate" : "美元估算", en ? "Updated / status" : "更新时间 / 状态", en ? "Checkout" : "充值"].map(title => <th key={title} scope="col">{title}</th>)}</tr></thead>
         <tbody>{rows.map(({ country, price }) => {
           const available = price && enabledPlans.includes(price.plan) && regions.some(region => region.country === price.country && region.currency === price.currency);
-          const tax = price?.tax === "inclusive" ? (en ? "Tax included" : "含税") : price?.tax === "exclusive" ? (en ? "Tax excluded" : "未含税") : (en ? "Tax unspecified" : "税费待确认");
+          const untaxed = price?.tax === "exclusive" || (price?.pspTax === "exclusive" && !!price.pspAmountMajor);
+          const inclusive = price?.tax === "inclusive" ? price.amountMajor : price?.pspTax === "inclusive" ? price.pspAmountMajor : null;
+          const tax = untaxed ? (en ? "Tax excluded" : "未含税") : price?.tax === "inclusive" ? (en ? "Final price · tax included" : "最终价 · 含税") : (en ? "Tax unspecified" : "税费待确认");
           return <tr key={`${country.country}:${price?.plan ?? "unavailable"}`}>
             <th scope="row"><strong>{label(country.country)}</strong><small>{country.country}{price?.pricingScope === "usd_reference" ? (en ? " · USD reference" : " · 美元参考价") : ""}</small></th>
             <td>{price ? planLabels[price.plan] ?? price.plan : "—"}</td>
-            <td>{price ? <><strong>{money(price.amountMajor, price.currency)}</strong><small>{price.currency} · {tax}</small>{price.pspAmountMajor && <small>{en ? "PSP reference: " : "支付渠道参考："}{money(price.pspAmountMajor, price.currency)} · {price.pspTax === "exclusive" ? (en ? "tax excluded" : "未含税") : price.pspTax === "inclusive" ? (en ? "tax included" : "含税") : (en ? "tax unspecified" : "税费待确认")}</small>}</> : "—"}</td>
+            <td>{price ? <><strong>{money(primaryPrice(price), price.currency)}</strong><small>{price.currency} · {tax}</small>{inclusive && <small>{en ? "Tax-inclusive reference: " : "含税参考价："}{money(inclusive, price.currency)}</small>}</> : "—"}</td>
             <td>{amount(price) !== null ? <strong>≈ ${amount(price)!.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> : <span>{en ? "No FX estimate" : "暂无汇率估算"}</span>}{price?.fxDate && <small>{en ? "FX " : "汇率 "}{price.fxDate}</small>}</td>
             <td>{price ? <><time dateTime={new Date(price.fetchedAt).toISOString()}>{new Date(price.fetchedAt).toLocaleString(locale)}</time>{country.stale && <small className="gpt-catalog-stale">{en ? "Reference price is stale" : "参考价已过期"}</small>}</> : <span>{en ? "Unavailable" : "暂不可用"}</span>}</td>
             <td>{price ? <><Button size="sm" variant="outline" disabled={disabled || !available || country.stale} aria-label={`${en ? "Select" : "选择"} ${label(country.country)} ${planLabels[price.plan] ?? price.plan}`} onClick={() => onSelect(price.plan, price.country, price.currency)}>{en ? "Select" : "选择"}</Button>{!available && <small>{en ? "Checkout not offered here" : "本站暂未开放"}</small>}</> : "—"}</td>

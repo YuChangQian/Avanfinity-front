@@ -14,7 +14,7 @@ async function setup(page: Page, unavailable = false) {
     else if (path.endsWith('/plans')) data = { version: 2, checkoutCountries: [{ country: 'PH', currency: 'PHP' }, { country: 'US', currency: 'USD' }], plans: ['plus', 'pro_5x'].map(key => ({ key, label: key, enabled: true, serviceFeeUsdMinor: 100, customerServiceFee: '1' })) };
     else if (path.endsWith('/price-catalog')) {
       if (unavailable) return route.fulfill({ status: 503, json: { error: 'Unavailable' } });
-      const row = (country: string, currency: string, plan: string, amountMajor: string, amountUsd: string | null) => ({ country, currency, plan, amountMajor, amountUsd, tax: 'inclusive', pspAmountMajor: '900', pspTax: 'exclusive', fetchedAt: Date.now(), pricingScope: 'regional', minorUnitExponent: 2, fxDate: '2026-10-30' });
+      const row = (country: string, currency: string, plan: string, amountMajor: string, amountUsd: string | null) => ({ country, currency, plan, amountMajor, amountUsd, tax: 'exclusive', pspAmountMajor: null, pspTax: 'unknown', fetchedAt: Date.now(), pricingScope: 'regional', minorUnitExponent: 2, fxDate: '2026-10-30' });
       data = { countries: [
         { country: 'US', stale: false, lastError: null, rows: [row('US', 'USD', 'plus', '20', '20'), row('US', 'USD', 'pro_5x', '100', '100')] },
         { country: 'PH', stale: false, lastError: null, rows: [row('PH', 'PHP', 'plus', '1100', '18.8')] },
@@ -56,6 +56,38 @@ test('GPT regional catalog sorts converted prices, filters type, and selects onl
   expect(writes).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await catalog.screenshot({ path: `../artifacts/gpt-regional-catalog-${test.info().project.name}.png` });
+});
+
+test('GPT regional catalog uses untaxed primary prices and falls back to final prices for sorting', async ({ page }) => {
+  const writes = await setup(page);
+  await page.route('**/api/gpt-direct/price-catalog', route => route.fulfill({ json: { code: 0, data: { countries: [
+    { country: 'MX', currency: 'MXN', gross: ['1700', '8500'], usd: ['90.8412', '454.206'], net: null, tax: 'exclusive', psp: ['1972', '9860'] },
+    { country: 'EG', currency: 'EGP', gross: ['5400', '27000'], usd: ['96.309', '481.545'], net: ['4736.84', '23684.21'], tax: 'inclusive', psp: null },
+    { country: 'PH', currency: 'PHP', gross: ['6490', '32490'], usd: ['101.57499', '508.50099'], net: ['5794.64', '29008.93'], tax: 'inclusive', psp: null },
+    { country: 'JP', currency: 'JPY', gross: ['12000', '60000'], usd: ['80', '400'], net: null, tax: 'inclusive', psp: null },
+  ].map(country => ({ country: country.country, stale: false, lastError: null, rows: ['pro_5x', 'pro_25x'].map((plan, i) => ({
+    country: country.country, currency: country.currency, plan, amountMajor: country.gross[i], amountUsd: country.usd[i], tax: country.tax,
+    pspAmountMajor: country.net?.[i] ?? country.psp?.[i] ?? null, pspTax: country.net ? 'exclusive' : country.psp ? 'inclusive' : 'unknown',
+    fetchedAt: Date.now(), pricingScope: 'regional', minorUnitExponent: 2, fxDate: '2026-10-30',
+  })) })) } } }));
+  await page.goto('/gpt-direct');
+  const catalog = page.getByRole('region', { name: '各国家地区价格' });
+  const rows = catalog.locator('tbody tr');
+  for (const [plan, net, gross, usd] of [['pro_5x', '4,736.84', '5,400', '84.48'], ['pro_25x', '23,684.21', '27,000', '422.41']]) {
+    await catalog.getByLabel('套餐筛选').selectOption(plan);
+    await catalog.getByLabel('价格排序').selectOption('price_asc');
+    await expect(rows).toHaveCount(4);
+    for (const [i, name] of ['日本', '埃及', '菲律宾', '墨西哥'].entries()) await expect(rows.nth(i)).toContainText(name);
+    const egyptPrice = rows.nth(1).locator('td').nth(1);
+    await expect(egyptPrice.locator('strong')).toContainText(net);
+    await expect(egyptPrice.locator('small').filter({ hasText: '含税参考价' })).toContainText(gross);
+    await expect(rows.nth(1).locator('td').nth(2).locator('strong')).toContainText(usd);
+    await expect(rows.nth(0).locator('td').nth(1).locator('small').first()).toContainText('最终价');
+    await catalog.getByLabel('价格排序').selectOption('price_desc');
+    for (const [i, name] of ['墨西哥', '菲律宾', '埃及', '日本'].entries()) await expect(rows.nth(i)).toContainText(name);
+    await expect(rows.nth(0).locator('td').nth(1).locator('small').filter({ hasText: '含税参考价' })).toContainText(plan === 'pro_5x' ? '1,972' : '9,860');
+  }
+  expect(writes).toEqual([]);
 });
 
 test('GPT regional catalog shows a retryable fetch failure without starting preflight', async ({ page }) => {
