@@ -333,7 +333,7 @@ function GptDirectContent() {
     enabled: Boolean(session && flags.gptDirect),
   });
   const productsQuery = useQuery({ queryKey: ["products"], queryFn: () => getProducts(session!.token), enabled: Boolean(session && flags.gptDirect && flags.cardOpening) });
-  const observedQuotesQuery = useQuery({ queryKey: ["gpt-observed-quotes"], queryFn: () => getGptObservedQuotes(session!.token), enabled: Boolean(session && flags.gptDirect), retry: false });
+  const observedQuotesQuery = useQuery({ queryKey: ["gpt-observed-quotes"], queryFn: () => getGptObservedQuotes(session!.token), enabled: Boolean(session && flags.gptDirect), retry: false, refetchInterval: 60_000 });
   const cardSuccessesQuery = useQuery({ queryKey: ["gpt-card-successes"], queryFn: () => getGptCardSuccesses(session!.token), enabled: Boolean(session && flags.gptDirect), retry: false });
   const openAiPricesQuery = useQuery({ queryKey: ["openai-prices"], queryFn: () => getOpenAiPrices(session!.token), enabled: Boolean(session && flags.gptDirect && flags.cardOpening), retry: false });
   const ordersQuery = useQuery({

@@ -2523,7 +2523,7 @@ test("GPT direct region prices follow the selected country and currency without 
   const observed = page.locator(".gpt-observed-quote");
   await expect(observed).toContainText("PHP");
   await expect(observed).toContainText("999.5");
-  for (const [region, price] of [["美国 (USD)", "US$20"], ["日本 (JPY)", "该套餐暂无有效近期报价"], ["菲律宾 (PHP)", "999.5"]]) {
+  for (const [region, price] of [["美国 (USD)", "US$20"], ["日本 (JPY)", "该套餐尚无成功报价记录"], ["菲律宾 (PHP)", "999.5"]]) {
     await page.getByRole("combobox", { name: "付款地区", exact: true }).click();
     await page.getByRole("option", { name: region, exact: true }).click();
     await expect(observed).toContainText(price);
@@ -2566,7 +2566,7 @@ test("GPT direct recent quote has an explicit empty state without enabling check
   await mockAuthenticatedShell(page, "customer");
   await mockGptDirect(page, { observedQuote: false, cardSuccess: false });
   await page.goto("/gpt-direct");
-  await expect(page.locator(".gpt-observed-quote")).toContainText("该套餐暂无有效近期报价");
+  await expect(page.locator(".gpt-observed-quote")).toContainText("该套餐尚无成功报价记录");
   await expect(page.getByRole("button", { name: "提交开通", exact: true })).toBeDisabled();
   await expect(page.getByRole("combobox", { name: "支付卡片" })).toContainText("暂无样本");
 });
