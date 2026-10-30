@@ -28,11 +28,50 @@ async function setup(page: Page, unavailable = false) {
   return writes;
 }
 
-test('GPT regional catalog sorts converted prices, filters type, and selects only available regions', async ({ page }) => {
+async function selectFilter(page: Page, label: string, option: string) {
+  await page.getByRole('combobox', { name: label, exact: true }).click();
+  await page.getByRole('option', { name: option, exact: true }).click();
+}
+
+async function openCatalog(page: Page) {
+  const catalog = page.getByRole('region', { name: '各国家地区价格' });
+  await catalog.getByRole('button', { name: '展开各国家地区价格', exact: true }).click();
+  return catalog;
+}
+
+test('GPT regional catalog starts collapsed while lowest prices stay open and both toggle independently', async ({ page }) => {
   const writes = await setup(page);
   await page.goto('/gpt-direct');
   const catalog = page.getByRole('region', { name: '各国家地区价格' });
+  const picks = page.getByRole('region', { name: '各套餐低价地区' });
+  await expect(picks.locator('.gpt-lowest-prices-grid')).toBeVisible();
+  await expect(catalog.locator('.gpt-catalog-filters')).toBeHidden();
+  await picks.getByRole('button', { name: '收起各套餐低价地区', exact: true }).click();
+  await expect(picks.locator('.gpt-lowest-prices-grid')).toBeHidden();
+  await openCatalog(page);
+  await selectFilter(page, '套餐筛选', '全部套餐');
+  await catalog.getByRole('button', { name: '收起各国家地区价格', exact: true }).click();
+  await expect(catalog.locator('.gpt-catalog-filters')).toBeHidden();
+  await openCatalog(page);
+  await expect(catalog.getByRole('combobox', { name: '套餐筛选' })).toContainText('全部套餐');
+  await expect(picks.locator('.gpt-lowest-prices-grid')).toBeHidden();
+  await picks.getByRole('button', { name: '展开各套餐低价地区', exact: true }).click();
+  await expect(picks.locator('.gpt-lowest-prices-grid')).toBeVisible();
+  expect(writes).toEqual([]);
+});
+
+test('GPT regional catalog sorts converted prices, filters type, and selects only available regions', async ({ page }) => {
+  const writes = await setup(page);
+  await page.goto('/gpt-direct');
+  const catalog = await openCatalog(page);
   await expect(catalog).toBeVisible();
+  await expect(catalog.getByRole('combobox', { name: '套餐筛选' })).toHaveAttribute('data-slot', 'select-trigger');
+  await expect(catalog.getByRole('combobox', { name: '价格排序' })).toHaveAttribute('data-slot', 'select-trigger');
+  await catalog.getByRole('combobox', { name: '套餐筛选' }).click();
+  await expect(page.getByRole('listbox')).toBeVisible();
+  await page.screenshot({ path: `../artifacts/gpt-catalog-select-${test.info().project.name}.png`, animations: 'disabled' });
+  await page.keyboard.press('Escape');
+  await expect(catalog.getByRole('combobox', { name: '套餐筛选' })).toBeFocused();
   const rows = catalog.locator('tbody tr');
   await expect(rows).toHaveCount(5);
   await expect(rows.nth(0)).toContainText('菲律宾');
@@ -43,11 +82,11 @@ test('GPT regional catalog sorts converted prices, filters type, and selects onl
   await expect(catalog.getByText('参考价已过期', { exact: true })).toHaveCount(1);
   await expect(catalog.getByText('暂不可用', { exact: true })).toHaveCount(1);
   await catalog.screenshot({ path: `../artifacts/gpt-regional-catalog-${test.info().project.name}-overview.png` });
-  await catalog.getByLabel('价格排序').selectOption('price_desc');
+  await selectFilter(page, '价格排序', '美元估算：从高到低');
   await expect(rows.nth(0)).toContainText('美国');
-  await catalog.getByLabel('套餐筛选').selectOption('all');
+  await selectFilter(page, '套餐筛选', '全部套餐');
   await expect(rows).toHaveCount(6);
-  await catalog.getByLabel('价格排序').selectOption('type');
+  await selectFilter(page, '价格排序', '套餐类型，再按价格');
   await expect(rows.nth(4)).toContainText('Pro 5x');
   await catalog.getByLabel('搜索国家或地区').fill('PH');
   await expect(rows).toHaveCount(1);
@@ -71,11 +110,11 @@ test('GPT regional catalog uses untaxed primary prices and falls back to final p
     fetchedAt: Date.now(), pricingScope: 'regional', minorUnitExponent: 2, fxDate: '2026-10-30',
   })) })) } } }));
   await page.goto('/gpt-direct');
-  const catalog = page.getByRole('region', { name: '各国家地区价格' });
+  const catalog = await openCatalog(page);
   const rows = catalog.locator('tbody tr');
   for (const [plan, net, gross, usd] of [['pro_5x', '4,736.84', '5,400', '84.48'], ['pro_25x', '23,684.21', '27,000', '422.41']]) {
-    await catalog.getByLabel('套餐筛选').selectOption(plan);
-    await catalog.getByLabel('价格排序').selectOption('price_asc');
+    await selectFilter(page, '套餐筛选', plan === 'pro_5x' ? 'Pro 5x' : 'Pro 25x');
+    await selectFilter(page, '价格排序', '美元估算：从低到高');
     await expect(rows).toHaveCount(4);
     for (const [i, name] of ['日本', '埃及', '菲律宾', '墨西哥'].entries()) await expect(rows.nth(i)).toContainText(name);
     const egyptPrice = rows.nth(1).locator('td').nth(1);
@@ -83,7 +122,7 @@ test('GPT regional catalog uses untaxed primary prices and falls back to final p
     await expect(egyptPrice.locator('small').filter({ hasText: '含税参考价' })).toContainText(gross);
     await expect(rows.nth(1).locator('td').nth(2).locator('strong')).toContainText(usd);
     await expect(rows.nth(0).locator('td').nth(1).locator('small').first()).toContainText('最终价');
-    await catalog.getByLabel('价格排序').selectOption('price_desc');
+    await selectFilter(page, '价格排序', '美元估算：从高到低');
     for (const [i, name] of ['墨西哥', '菲律宾', '埃及', '日本'].entries()) await expect(rows.nth(i)).toContainText(name);
     await expect(rows.nth(0).locator('td').nth(1).locator('small').filter({ hasText: '含税参考价' })).toContainText(plan === 'pro_5x' ? '1,972' : '9,860');
   }
@@ -93,7 +132,7 @@ test('GPT regional catalog uses untaxed primary prices and falls back to final p
 test('GPT regional catalog shows a retryable fetch failure without starting preflight', async ({ page }) => {
   const writes = await setup(page, true);
   await page.goto('/gpt-direct');
-  const catalog = page.getByRole('region', { name: '各国家地区价格' });
+  const catalog = await openCatalog(page);
   await expect(catalog.getByRole('alert')).toContainText('价格暂时无法加载');
   await expect(catalog.getByRole('button', { name: '重试' })).toBeVisible();
   expect(writes).toEqual([]);

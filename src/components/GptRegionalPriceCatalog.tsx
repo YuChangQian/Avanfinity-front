@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { getGptPriceCatalog, type GptCatalogPrice } from "../api";
 import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 const planLabels: Record<string, string> = { go: "Go", plus: "Plus", pro_5x: "Pro 5x", pro_20x: "Pro 20x", pro_25x: "Pro 25x" };
 const planOrder = Object.keys(planLabels);
@@ -21,6 +22,7 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
   const [plan, setPlan] = useState("plus");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("price_asc");
+  const [open, setOpen] = useState(false);
   const query = useQuery({ queryKey: ["gpt-price-catalog"], queryFn: () => getGptPriceCatalog(token), retry: false, staleTime: 60_000, refetchInterval: 60_000 });
   const countries = query.data?.data.countries ?? [];
   const primaryPrice = (price: GptCatalogPrice) => price.pspTax === "exclusive" && price.pspAmountMajor ? price.pspAmountMajor : price.amountMajor;
@@ -46,17 +48,22 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
   const money = (value: string, currency: string) => new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 3 }).format(Number(value));
 
   return <section className="gpt-price-catalog" aria-labelledby="gpt-catalog-title">
-    <div className="gpt-catalog-heading"><div><span className="eyebrow">REGIONAL PRICES</span><h2 id="gpt-catalog-title">{en ? "Prices by country and region" : "各国家地区价格"}</h2></div><span>{en ? `${countries.length} regions collected` : `已采集 ${countries.length} 个地区`}</span></div>
+    <div className="gpt-catalog-heading"><div><span className="eyebrow">REGIONAL PRICES</span><h2 id="gpt-catalog-title">{en ? "Prices by country and region" : "各国家地区价格"}</h2></div><span>{en ? `${countries.length} regions collected` : `已采集 ${countries.length} 个地区`}</span><Button size="sm" variant="outline" aria-expanded={open} aria-controls="gpt-catalog-content" aria-label={en ? `${open ? "Collapse" : "Expand"} regional prices` : `${open ? "收起" : "展开"}各国家地区价格`} onClick={() => setOpen(value => !value)}>{en ? (open ? "Collapse" : "Expand") : (open ? "收起" : "展开")}</Button></div>
+    <div id="gpt-catalog-content" hidden={!open}>
     <p className="gpt-catalog-note">{en ? "Browse without a Session or preflight. The main price and sorting use the tax-exclusive price when returned, otherwise the returned final price. Tax-inclusive prices appear below in small text. USD conversions are estimates; final amounts and eligibility depend on checkout." : "无需填写 Session 或预检即可查看。主价格及排序优先使用返回的未税价，没有未税价则使用返回的最终价；含税价以小字展示。美元为汇率估算，最终金额及购买资格以账户结账为准。"}</p>
     <div className="gpt-catalog-filters">
-      <label>{en ? "Plan filter" : "套餐筛选"}<select value={plan} onChange={event => setPlan(event.target.value)}>
-        <option value="all">{en ? "All plans" : "全部套餐"}</option>{planOrder.map(key => <option key={key} value={key}>{planLabels[key]}</option>)}
-      </select></label>
-      <label>{en ? "Sort prices" : "价格排序"}<select value={sort} onChange={event => setSort(event.target.value)}>
-        <option value="price_asc">{en ? "USD estimate: low to high" : "美元估算：从低到高"}</option>
-        <option value="price_desc">{en ? "USD estimate: high to low" : "美元估算：从高到低"}</option>
-        <option value="type">{en ? "Plan type, then price" : "套餐类型，再按价格"}</option>
-      </select></label>
+      <label>{en ? "Plan filter" : "套餐筛选"}<Select value={plan} onValueChange={setPlan}>
+        <SelectTrigger aria-label={en ? "Plan filter" : "套餐筛选"}><SelectValue /></SelectTrigger>
+        <SelectContent><SelectItem value="all">{en ? "All plans" : "全部套餐"}</SelectItem>{planOrder.map(key => <SelectItem key={key} value={key}>{planLabels[key]}</SelectItem>)}</SelectContent>
+      </Select></label>
+      <label>{en ? "Sort prices" : "价格排序"}<Select value={sort} onValueChange={setSort}>
+        <SelectTrigger aria-label={en ? "Sort prices" : "价格排序"}><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="price_asc">{en ? "USD estimate: low to high" : "美元估算：从低到高"}</SelectItem>
+          <SelectItem value="price_desc">{en ? "USD estimate: high to low" : "美元估算：从高到低"}</SelectItem>
+          <SelectItem value="type">{en ? "Plan type, then price" : "套餐类型，再按价格"}</SelectItem>
+        </SelectContent>
+      </Select></label>
       <label>{en ? "Search countries or regions" : "搜索国家或地区"}<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={en ? "Country name or code" : "国家名称或代码，例如 JP"} /></label>
     </div>
     {query.isError && <p className="gpt-catalog-error" role="alert">{en ? "Prices could not be loaded." : "价格暂时无法加载。"}<Button size="sm" variant="outline" onClick={() => void query.refetch()}>{en ? "Retry" : "重试"}</Button></p>}
@@ -79,5 +86,6 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
       </table>
       {!rows.length && !query.isError && <p className="gpt-catalog-empty">{en ? "No matching prices yet. The administrator can configure automatic collection." : "暂无匹配报价，管理员配置自动采集后会陆续显示。"}</p>}
     </div>}
+    </div>
   </section>;
 }

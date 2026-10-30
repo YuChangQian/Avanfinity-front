@@ -246,6 +246,7 @@ function GptDirectContent() {
   const [externalCardHolder, setExternalCardHolder] = useState("");
   const [customProxyUrl, setCustomProxyUrl] = useState("");
   const [creditsCustomActive, setCreditsCustomActive] = useState(false);
+  const [lowestPricesOpen, setLowestPricesOpen] = useState(true);
   const [telegramIntentId, setTelegramIntentId] = useState(() => handoff?.id ?? "");
   const identity = sessionIdentity(session);
   const [savedProgress] = useState(() => readProgress(identity));
@@ -1152,7 +1153,9 @@ function GptDirectContent() {
       <div className="gpt-lowest-prices-heading">
         <div><span className="eyebrow">REGION PICKS</span><h2 id="gpt-lowest-prices-title">{t("gptLowestPricesTitle")}</h2></div>
         <span>{t("gptLowestPricesCompare")}</span>
+        <Button size="sm" variant="outline" aria-expanded={lowestPricesOpen} aria-controls="gpt-lowest-prices-content" aria-label={i18n.language === "en" ? `${lowestPricesOpen ? "Collapse" : "Expand"} lowest regional prices` : `${lowestPricesOpen ? "收起" : "展开"}各套餐低价地区`} onClick={() => setLowestPricesOpen(value => !value)}>{i18n.language === "en" ? (lowestPricesOpen ? "Collapse" : "Expand") : (lowestPricesOpen ? "收起" : "展开")}</Button>
       </div>
+      <div id="gpt-lowest-prices-content" hidden={!lowestPricesOpen}>
       <div className="gpt-lowest-prices-grid">
         {lowestRegionPrices.map(({ plan, quote }) => {
           const selected = selectedPlanKey === plan.key && selectedPaymentRegion.country === quote?.country && selectedPaymentRegion.currency === quote?.currency;
@@ -1174,6 +1177,7 @@ function GptDirectContent() {
         })}
       </div>
       <p className="gpt-lowest-prices-note">{t("gptLowestPricesHint")}</p>
+      </div>
     </section>}
 
     {flags.gptDirect && session && <GptRegionalPriceCatalog token={session.token} regions={paymentRegions}

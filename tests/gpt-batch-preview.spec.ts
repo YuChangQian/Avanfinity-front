@@ -100,7 +100,7 @@ test("GPT lowest regional prices show an honest empty state", async ({ page }) =
   await page.goto("/gpt-direct");
   const section = page.getByRole("region", { name: "各套餐低价地区" });
   await expect(section.getByText("暂无可比较报价")).toHaveCount(4);
-  await expect(section.getByRole("button")).toHaveCount(0);
+  await expect(section.locator(".gpt-lowest-prices-grid").getByRole("button")).toHaveCount(0);
 });
 
 test("GPT batch preview shows membership and quotes without creating any order", async ({ page }) => {
