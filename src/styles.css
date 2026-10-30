@@ -2531,6 +2531,10 @@ html body[data-scroll-locked] { margin-right: 0 !important; padding-right: 0 !im
 .gpt-lowest-prices-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
 .gpt-lowest-prices-heading h2 { margin: 4px 0 0; color: #191919; font-size: 18px; font-weight: 650; }
 .gpt-lowest-prices-heading > span, .gpt-lowest-prices-note { color: #777; font-size: 12px; line-height: 1.6; }
+.gpt-price-disclosure { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows .24s cubic-bezier(.22, 1, .36, 1), opacity .18s ease, visibility 0s linear .24s; }
+.gpt-price-disclosure[data-open="true"] { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition-delay: 0s; }
+.gpt-price-disclosure > div { min-height: 0; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .gpt-price-disclosure { transition: none; } }
 .gpt-lowest-prices-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 10px; }
 .gpt-lowest-price { min-width: 0; display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 16px; border: 1px solid #e4e4e1; border-radius: 11px; color: #191919; background: #fafaf8; text-align: left; font: inherit; }
 button.gpt-lowest-price { cursor: pointer; transition: border-color .18s ease, background .18s ease; }

@@ -1155,7 +1155,7 @@ function GptDirectContent() {
         <span>{t("gptLowestPricesCompare")}</span>
         <Button size="sm" variant="outline" aria-expanded={lowestPricesOpen} aria-controls="gpt-lowest-prices-content" aria-label={i18n.language === "en" ? `${lowestPricesOpen ? "Collapse" : "Expand"} lowest regional prices` : `${lowestPricesOpen ? "收起" : "展开"}各套餐低价地区`} onClick={() => setLowestPricesOpen(value => !value)}>{i18n.language === "en" ? (lowestPricesOpen ? "Collapse" : "Expand") : (lowestPricesOpen ? "收起" : "展开")}</Button>
       </div>
-      <div id="gpt-lowest-prices-content" hidden={!lowestPricesOpen}>
+      <div id="gpt-lowest-prices-content" className="gpt-price-disclosure" data-open={lowestPricesOpen} aria-hidden={!lowestPricesOpen} inert={!lowestPricesOpen}><div>
       <div className="gpt-lowest-prices-grid">
         {lowestRegionPrices.map(({ plan, quote }) => {
           const selected = selectedPlanKey === plan.key && selectedPaymentRegion.country === quote?.country && selectedPaymentRegion.currency === quote?.currency;
@@ -1177,7 +1177,7 @@ function GptDirectContent() {
         })}
       </div>
       <p className="gpt-lowest-prices-note">{t("gptLowestPricesHint")}</p>
-      </div>
+      </div></div>
     </section>}
 
     {flags.gptDirect && session && <GptRegionalPriceCatalog token={session.token} regions={paymentRegions}

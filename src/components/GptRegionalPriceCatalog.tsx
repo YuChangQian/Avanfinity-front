@@ -49,7 +49,7 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
 
   return <section className="gpt-price-catalog" aria-labelledby="gpt-catalog-title">
     <div className="gpt-catalog-heading"><div><span className="eyebrow">REGIONAL PRICES</span><h2 id="gpt-catalog-title">{en ? "Prices by country and region" : "各国家地区价格"}</h2></div><span>{en ? `${countries.length} regions collected` : `已采集 ${countries.length} 个地区`}</span><Button size="sm" variant="outline" aria-expanded={open} aria-controls="gpt-catalog-content" aria-label={en ? `${open ? "Collapse" : "Expand"} regional prices` : `${open ? "收起" : "展开"}各国家地区价格`} onClick={() => setOpen(value => !value)}>{en ? (open ? "Collapse" : "Expand") : (open ? "收起" : "展开")}</Button></div>
-    <div id="gpt-catalog-content" hidden={!open}>
+    <div id="gpt-catalog-content" className="gpt-price-disclosure" data-open={open} aria-hidden={!open} inert={!open}><div>
     <p className="gpt-catalog-note">{en ? "Browse without a Session or preflight. The main price and sorting use the tax-exclusive price when returned, otherwise the returned final price. Tax-inclusive prices appear below in small text. USD conversions are estimates; final amounts and eligibility depend on checkout." : "无需填写 Session 或预检即可查看。主价格及排序优先使用返回的未税价，没有未税价则使用返回的最终价；含税价以小字展示。美元为汇率估算，最终金额及购买资格以账户结账为准。"}</p>
     <div className="gpt-catalog-filters">
       <label>{en ? "Plan filter" : "套餐筛选"}<Select value={plan} onValueChange={setPlan}>
@@ -86,6 +86,6 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
       </table>
       {!rows.length && !query.isError && <p className="gpt-catalog-empty">{en ? "No matching prices yet. The administrator can configure automatic collection." : "暂无匹配报价，管理员配置自动采集后会陆续显示。"}</p>}
     </div>}
-    </div>
+    </div></div>
   </section>;
 }

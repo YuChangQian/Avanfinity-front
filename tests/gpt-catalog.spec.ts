@@ -45,6 +45,8 @@ test('GPT regional catalog starts collapsed while lowest prices stay open and bo
   const catalog = page.getByRole('region', { name: '各国家地区价格' });
   const picks = page.getByRole('region', { name: '各套餐低价地区' });
   await expect(picks.locator('.gpt-lowest-prices-grid')).toBeVisible();
+  await expect(catalog.locator('#gpt-catalog-content')).toHaveCSS('transition-property', /grid-template-rows/);
+  await expect(picks.locator('#gpt-lowest-prices-content')).toHaveCSS('transition-property', /grid-template-rows/);
   await expect(catalog.locator('.gpt-catalog-filters')).toBeHidden();
   await picks.getByRole('button', { name: '收起各套餐低价地区', exact: true }).click();
   await expect(picks.locator('.gpt-lowest-prices-grid')).toBeHidden();
@@ -58,6 +60,22 @@ test('GPT regional catalog starts collapsed while lowest prices stay open and bo
   await picks.getByRole('button', { name: '展开各套餐低价地区', exact: true }).click();
   await expect(picks.locator('.gpt-lowest-prices-grid')).toBeVisible();
   expect(writes).toEqual([]);
+});
+
+test('GPT regional catalog respects reduced motion and keeps collapsed controls inactive', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await setup(page);
+  await page.goto('/gpt-direct');
+  const catalog = page.getByRole('region', { name: '各国家地区价格' });
+  const content = catalog.locator('#gpt-catalog-content');
+  await expect(content).toHaveJSProperty('inert', true);
+  await openCatalog(page);
+  await expect(content).toHaveCSS('transition-duration', '0s');
+  await expect(content).toHaveJSProperty('inert', false);
+  await expect(page.locator('#gpt-lowest-prices-content')).toHaveCSS('transition-duration', '0s');
+  await catalog.getByRole('button', { name: '收起各国家地区价格', exact: true }).click();
+  await expect(content).toHaveJSProperty('inert', true);
+  await expect(catalog.locator('.gpt-catalog-filters')).toBeHidden();
 });
 
 test('GPT regional catalog sorts converted prices, filters type, and selects only available regions', async ({ page }) => {
