@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal } from "../decimal";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -153,7 +154,7 @@ function CustomerRecords({ userId, locale, token, initialTab = "financial" }: { 
         <CustomerRecordPager page={financial.data.data.page} pageSize={financial.data.data.pageSize} total={financial.data.data.total} onPage={(page) => setFinancialFilter((current) => ({ ...current, page }))} />
       </>}
       {tab === "deposits" && deposits.data && <>
-        {deposits.data.data.list.length === 0 ? <AdminState>{t("noCustomerDeposits")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-deposit-table"><thead><tr><th>{t("createdTime")}</th><th>{t("orderNumber")}</th><th>{t("depositNetwork")}</th><th>{t("amount")}</th><th>{t("status")}</th><th>{t("depositDetailedLog")}</th></tr></thead><tbody>{deposits.data.data.list.map((entry) => <tr key={entry.gatewayRef}><td><strong>{displayDate(entry.createdAt, locale)}</strong>{entry.confirmedAt && <small>{displayDate(entry.confirmedAt, locale)}</small>}</td><td><code>{entry.gatewayRef}</code>{entry.transactionHashMasked && <small>{entry.transactionHashMasked}</small>}</td><td><strong>{entry.network}</strong><small>{entry.currency}</small></td><td className="admin-customer-record-amounts"><strong>${formatDecimal(entry.creditedAmount ?? entry.actualAmount ?? entry.requestedAmount ?? "—")}</strong><small>{t("requestedAmount")} {formatDecimal(entry.requestedAmount ?? "—")} · {t("receivedAmount")} {formatDecimal(entry.actualAmount ?? "—")}</small></td><td><span className={`status-pill ${entry.status === "confirmed" ? "is-active" : ""}`}>{t(`depositStatus.${entry.status}`)}</span></td><td><details className="admin-customer-deposit-log"><summary>{t("viewDepositLog")}</summary><span>{displayDate(entry.createdAt, locale)} · {t("depositLogCreated")}</span><span>{displayDate(entry.expiredAt, locale)} · {t("depositLogExpires")}</span>{entry.reservedUntil && <span>{displayDate(entry.reservedUntil, locale)} · {t("depositLogReviewUntil")}</span>}{entry.confirmedAt && <span>{displayDate(entry.confirmedAt, locale)} · {t("depositLogConfirmed", { amount: formatDecimal(entry.creditedAmount ?? "—") })}</span>}<span>{t("depositLogCurrentStatus")}: {t(`depositStatus.${entry.status}`)}</span></details></td></tr>)}</tbody></table></div>}
+        {deposits.data.data.list.length === 0 ? <AdminState>{t("noCustomerDeposits")}</AdminState> : <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-customer-deposit-table"><thead><tr><th>{t("createdTime")}</th><th>{t("orderNumber")}</th><th>{t("depositNetwork")}</th><th>{t("amount")}</th><th>{t("status")}</th><th>{t("depositDetailedLog")}</th></tr></thead><tbody>{deposits.data.data.list.map((entry) => <tr key={entry.gatewayRef}><td><strong>{displayDate(entry.createdAt, locale)}</strong>{entry.confirmedAt && <small>{displayDate(entry.confirmedAt, locale)}</small>}</td><td><code>{entry.gatewayRef}</code>{entry.transactionHashMasked && <small>{entry.transactionHashMasked}</small>}</td><td><strong>{entry.network}</strong><small>{entry.currency}</small></td><td className="admin-customer-record-amounts"><strong>${formatDecimal(entry.creditedAmount ?? entry.actualAmount ?? entry.requestedAmount ?? "—")}</strong><small>{t("requestedAmount")} {formatDecimal(entry.requestedAmount ?? "—")} · {t("expectedPaymentAmount")} {formatDecimal(entry.expectedAmount ?? "—")} · {t("receivedAmount")} {formatDecimal(entry.actualAmount ?? "—")}</small></td><td><span className={`status-pill ${entry.status === "confirmed" ? "is-active" : ""}`}>{t(`depositStatus.${entry.status}`)}</span></td><td><details className="admin-customer-deposit-log"><summary>{t("viewDepositLog")}</summary><span>{displayDate(entry.createdAt, locale)} · {t("depositLogCreated")}</span><span>{displayDate(entry.expiredAt, locale)} · {t("depositLogExpires")}</span>{entry.reservedUntil && <span>{displayDate(entry.reservedUntil, locale)} · {t("depositLogReviewUntil")}</span>}{entry.confirmedAt && <span>{displayDate(entry.confirmedAt, locale)} · {t("depositLogConfirmed", { amount: formatDecimal(entry.creditedAmount ?? "—") })}</span>}<span>{t("depositLogCurrentStatus")}: {t(`depositStatus.${entry.status}`)}</span></details></td></tr>)}</tbody></table></div>}
         <CustomerRecordPager page={deposits.data.data.page} pageSize={deposits.data.data.pageSize} total={deposits.data.data.total} onPage={(page) => setDepositFilter((current) => ({ ...current, page }))} />
       </>}
       {tab === "spending" && spending.data && <>
@@ -169,6 +170,7 @@ function CustomerRecords({ userId, locale, token, initialTab = "financial" }: { 
 }
 
 function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onView, returnPanel, token, view }: { detail: AdminUserDetail; initialCardId: number | null; locale: string; onSelectCustomer: (id: number) => void; onView: (view: AdminCustomerView) => void; returnPanel: string; token: string; view: AdminCustomerView }) {
+  const confirm = useConfirm();
   const { t, i18n } = useTranslation();
   const client = useQueryClient();
   const { profile } = detail;
@@ -383,16 +385,16 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
         </form>
         </div>
         <div className="admin-customer-management-group is-security"><header><strong>{i18n.language === "en" ? "Account security" : "账号安全"}</strong><small>{i18n.language === "en" ? "Binding and login credentials" : "处理绑定关系与登录凭据"}</small></header>
-        <form className="admin-product-form" data-testid="admin-customer-telegram-unbind-form" onSubmit={(event) => {
+        <form className="admin-product-form" data-testid="admin-customer-telegram-unbind-form" onSubmit={async (event) => {
           event.preventDefault(); const data = new FormData(event.currentTarget);
-          if (!window.confirm(t("adminTelegramUnbindConfirm"))) return;
+          if (!await confirm(t("adminTelegramUnbindConfirm"))) return;
           profileAction.mutate({ key: commandKeys.unbindTelegram, input: { action: "unbindTelegram", reason: String(data.get("reason")).trim() } });
         }}>
           <div><strong>{t("unbindTelegram")}</strong><small>{t(profile.emailLoginAvailable ? "adminTelegramUnbindHint" : "adminTelegramUnbindBlocked")}</small></div>
           <label>{t("operationReason")}<input name="reason" minLength={10} maxLength={200} required /></label>
           <Button type="submit" variant="destructive" disabled={profileAction.isPending || !profile.telegram.bound || !profile.emailLoginAvailable}>{t("unbindTelegram")}</Button>
         </form>
-        {profile.role !== "admin" && <form className="admin-product-form" data-testid="admin-customer-password-reset-form" onSubmit={(event) => {
+        {profile.role !== "admin" && <form className="admin-product-form" data-testid="admin-customer-password-reset-form" onSubmit={async (event) => {
           event.preventDefault();
           const form = event.currentTarget;
           const data = new FormData(form);
@@ -400,7 +402,7 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
           const confirmPassword = String(data.get("confirmPassword"));
           if (password !== confirmPassword) { setManagementMessage(t("passwordConfirmationMismatch")); return; }
           if (password.length < 12 || password.length > 72 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) { setManagementMessage(t("passwordResetRequirements")); return; }
-          if (!window.confirm(t("adminResetPasswordConfirm"))) return;
+          if (!await confirm(t("adminResetPasswordConfirm"))) return;
           passwordResetAction.mutate({ password, confirmPassword }, { onSuccess: () => form.reset() });
         }}>
           <div><strong>{t("adminResetPassword")}</strong><small>{t(profile.emailLoginAvailable ? "adminResetPasswordHint" : "adminResetPasswordTelegramHint")}</small></div>
@@ -486,7 +488,7 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
               <div className="admin-customer-card-inline-actions">
                 <Button type="button" size="xs" variant="outline" data-testid={`admin-customer-card-sensitive-${card.id}`} disabled={revealed?.loading || card.status === "DELETED"} onClick={() => { if (revealed?.data) clearSensitive(); else { setExpandedCardId(card.id); void revealSensitive(card.id); } }}>{revealed?.data ? t("hideDetails") : t("showDetails")}</Button>
                 {card.status === "FROZEN" && <Button type="button" size="xs" variant="outline" disabled={cardAction.isPending} onClick={() => cardAction.mutate({ cardId: card.id, action: "unfreeze" })}>{t("unfreeze")}</Button>}
-                {card.status === "ACTIVE" && <Button type="button" size="xs" variant="destructive" disabled={cardAction.isPending} onClick={() => { if (window.confirm(t("confirmDeleteCard"))) cardAction.mutate({ cardId: card.id, action: "delete" }); }}>{t("deleteCard")}</Button>}
+                {card.status === "ACTIVE" && <Button type="button" size="xs" variant="destructive" disabled={cardAction.isPending} onClick={async () => { if (await confirm(t("confirmDeleteCard"))) cardAction.mutate({ cardId: card.id, action: "delete" }); }}>{t("deleteCard")}</Button>}
               </div>
               <span><span className={`status-pill ${card.status === "ACTIVE" ? "is-active" : ""}`}>{card.status}</span><strong>${formatDecimal(card.balance)}</strong><small className="admin-customer-card-action">{t(expanded ? "hideCardTransactions" : "viewCardTransactions")}</small></span>
             </div>

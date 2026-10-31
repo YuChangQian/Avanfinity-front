@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal } from "../decimal";
 import { GPT_SESSION_MAX_BYTES } from "../gptSession";
 import { useState, type FormEvent } from "react";
@@ -33,6 +34,7 @@ function quoted(minor: number | null | undefined, currency: string | null | unde
 }
 
 function QuoteRefreshForm({ token, settings }: { token: string; settings: AdminGptQuoteRefreshSettings }) {
+  const confirm = useConfirm();
   const { t, i18n } = useTranslation();
   const locale = i18n.language === "en" ? "en-US" : "zh-CN";
   const client = useQueryClient();
@@ -78,8 +80,8 @@ function QuoteRefreshForm({ token, settings }: { token: string; settings: AdminG
       <label className="admin-cdk-toggle"><input name="enabled" type="checkbox" defaultChecked={settings.enabled} disabled={pending} />{t("cdkRefreshEnabled")}</label>
       <div className="admin-cdk-refresh-actions">
         <Button type="submit" size="sm" disabled={pending}>{t("save")}</Button>
-        {settings.configured && <Button type="button" size="sm" variant="destructive" disabled={pending} onClick={() => {
-          if (window.confirm(t("cdkDeleteRefreshConfirm"))) remove.mutate();
+        {settings.configured && <Button type="button" size="sm" variant="destructive" disabled={pending} onClick={async () => {
+          if (await confirm(t("cdkDeleteRefreshConfirm"))) remove.mutate();
         }}><Trash2 />{t("delete")}</Button>}
       </div>
     </form>

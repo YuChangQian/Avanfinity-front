@@ -41,7 +41,7 @@ export function LedgerFilters({ id, types, wallet = false, applied = {}, onApply
     <label><span>{t("startDate")}</span><input type="date" value={draft.startDate} max={draft.endDate || undefined} onChange={event => set("startDate", event.target.value)} /></label>
     <label><span>{t("endDate")}</span><input type="date" value={draft.endDate} min={draft.startDate || undefined} onChange={event => set("endDate", event.target.value)} /></label>
     <label><span>{t("ledgerKeyword")}</span><input maxLength={100} value={draft.q} onChange={event => set("q", event.target.value)} /></label>
-    <Button type="submit" size="sm">{t("filter")}</Button>
-    <Button type="button" size="sm" variant="outline" onClick={() => {setDraft({ type: "", direction: "", startDate: "", endDate: "", q: "", feeKind: "" });onApply({});}}>{t("ledgerReset")}</Button>
+    <div className="ledger-filter-actions"><Button type="submit" size="sm">{t("filter")}</Button>
+    <Button type="button" size="sm" variant="outline" onClick={() => {setDraft({ type: "", direction: "", startDate: "", endDate: "", q: "", feeKind: "" });onApply({});}}>{t("ledgerReset")}</Button></div>
   </form>;
 }

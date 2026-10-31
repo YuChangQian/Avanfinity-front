@@ -1,3 +1,8 @@
+import { useState } from 'react';
+import { ChevronDown, Globe2 } from 'lucide-react';
+import { ApiCodeBlock } from './ApiCodeBlock';
+import './CdkRegionGuide.css';
+
 const example = `// BASE_URL 例如 https://www.avanfinity.com/api/v1；仅在服务端保存密钥。
 const base = process.env.BASE_URL;
 const headers = { "X-App-Id": process.env.APP_ID, "X-App-Secret": process.env.APP_SECRET, "Content-Type": "application/json" };
@@ -31,8 +36,9 @@ console.log(batch.checkoutRegion); // 例如 { country: "US", currency: "USD" }
 // 改地区、套餐、数量或开卡策略，须创建新的请求键。`;
 
 export function CdkRegionGuide() {
-  return <section data-testid="cdk-region-guide">
-    <h2>CDK 生成前选区</h2>
+  const [expanded, setExpanded] = useState(false);
+  return <section className="developer-guide-card cdk-region-guide" data-testid="cdk-region-guide">
+    <div className="developer-guide-heading"><Globe2 aria-hidden="true" /><div><h3>CDK 生成前选区</h3><p>查询可选地区 → 选择国家 → 生成并核对结果</p></div></div>
     <p>统一使用 API v1。需要 <code>gpt:read</code> 与 <code>cdk:purchase</code> 权限；生成请求需要 IP 白名单。</p>
     <ol>
       <li><strong>先查询地区：</strong><code>GET /api/v1/gpt-direct/plans</code> 返回 <code>checkoutCountries</code> 和 <code>cdkRegionSelectionEnabled</code>。</li>
@@ -42,6 +48,6 @@ export function CdkRegionGuide() {
     <p>点数 CDK 支持 250、1,000、2,500、5,000 点及自定义 250–9,999,999 整数点；使用 <code>plan: "credits_N"</code>，<code>quantity</code> 是张数。点数与地区生成后固定，充值不变更订阅套餐。</p>
     <p>选区仅适用于 GPT CDK。未指定国家时保存生成当时的默认地区；未开放手动选区的服务须省略该字段。当前地区以每次查询结果为准。</p>
     <p><a href="/api/v1/openapi.json" target="_blank" rel="noreferrer">统一 API OpenAPI</a> · <a href="/docs/avanfinity-downstream-api.md" download>下载完整对接文档</a></p>
-    <pre style={{ overflowX: 'auto', maxWidth: '100%' }}><code>{example}</code></pre>
+    <div className="cdk-guide-example"><button type="button" className="cdk-guide-example-toggle" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>查看 TypeScript 完整示例<ChevronDown aria-hidden="true" /></button><div hidden={!expanded}><ApiCodeBlock language="TypeScript" code={example} /></div></div>
   </section>;
 }

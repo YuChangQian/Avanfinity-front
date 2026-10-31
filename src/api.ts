@@ -917,6 +917,8 @@ export type DeveloperKeyScope =
   | "gpt:write"
   | "x-direct:read"
   | "x-direct:write"
+  | "sms:read"
+  | "sms:write"
   | "tg-direct:read"
   | "tg-direct:write"
   | "cdk:read"
@@ -2774,3 +2776,30 @@ export const publicTgCdkPreview = (input: { code: string; deviceToken: string })
 export const publicTgCdkPreflight = (input: { code: string; deviceToken: string; recipient: string; clientRequestId: string }) => request<{ code: number; data: PublicTgCdkResult }>("/public/tg-cdk/preflight", { method: "POST", signal: AbortSignal.timeout(430_000), body: JSON.stringify(input) });
 export const publicTgCdkRedeem = (input: { code: string; deviceToken: string; clientRequestId: string; expectedAmountMinor: number; currency: string }) => request<{ code: number; data: PublicTgCdkResult }>("/public/tg-cdk/redeem", { method: "POST", signal: AbortSignal.timeout(430_000), body: JSON.stringify(input) });
 export const publicTgCdkResult = (input: { code: string; deviceToken: string; clientRequestId: string }) => request<{ code: number; data: PublicTgCdkResult }>("/public/tg-cdk/result", { method: "POST", signal: AbortSignal.timeout(430_000), body: JSON.stringify(input) });
+
+export type SmsMessage = { id: string; code: string | null; text: string | null; receivedAt: string };
+export type SmsOrder = { originalPrice?: string; durationHours?: number | null; canCancel: boolean; cancelAvailableAt: string | null; cancellationDeadline?: string | null; id: string; service: string; country: number; status: string; price: string; refundedAmount: string; currency: 'USD'; phone: string | null; expiresAt: string | null; createdAt: string; messages: SmsMessage[] };
+export type SmsOrderList = { list: SmsOrder[]; page: number; hasMore: boolean };
+export type SmsCatalog = { enabled: boolean; currency: 'USD'; services: Array<{ code: string; name: string }>; countries: Array<{ id: number; name: string }> };
+export type SmsOffers = { currency: 'USD'; services?: Array<{ service: string; price: string; count: number; popularityRank?: number }>; countries?: Array<{ country: number; price: string; count: number; qualityRank?: number; popularityRank?: number; durationHours?: number | null }>; unavailableServices?: string[] };
+export const getSmsOffers = (token: string, service?: string) => request<{ code: number; data: SmsOffers }>(`/sms/offers${service ? `?service=${encodeURIComponent(service)}` : ''}`, { headers: smsHeaders(token) });
+export type SmsQuote = { durationHours?: number | null; id: string; price: string; currency: 'USD'; expiresAt: string };
+export type SmsSettings = { enabled: boolean; markupPercent: string; version: number; currency: 'USD'; configured: boolean; purchasesReady: boolean };
+export type AdminSmsOrder = SmsOrder & { ownerUserId: number; cost?: string | null; costLimit?: string; actualCost?: string | null; markupPercent: string; activationId: string | null };
+const smsHeaders = (token: string) => ({ authorization: `Bearer ${token}` });
+export const getSmsCatalog = (token: string) => request<{ code: number; data: SmsCatalog }>('/sms/catalog', { headers: smsHeaders(token) });
+export const getSmsQuote = (token: string, service: string, country: number, durationHours?: number) => request<{ code: number; data: SmsQuote }>('/sms/quotes', { method: 'POST', headers: smsHeaders(token), body: JSON.stringify({ service, country, ...(durationHours !== undefined ? { durationHours } : {}) }) });
+export const createSmsOrder = (token: string, quoteId: string, key: string) => request<{ code: number; data: SmsOrder }>('/sms/orders', { method: 'POST', headers: { ...smsHeaders(token), 'idempotency-key': key }, body: JSON.stringify({ quoteId }) }, true);
+export const getSmsOrders = (token: string, page = 1) => request<{ code: number; data: SmsOrderList }>(`/sms/orders?page=${page}`, { headers: smsHeaders(token) });
+export const getSmsOrder = (token: string, id: string) => request<{ code: number; data: SmsOrder }>(`/sms/orders/${encodeURIComponent(id)}`, { headers: smsHeaders(token) });
+export const smsOrderAction = (token: string, id: string, action: 'cancel' | 'finish') => request<{ code: number; data: SmsOrder }>(`/sms/orders/${encodeURIComponent(id)}/${action}`, { method: 'POST', headers: smsHeaders(token), body: '{}' }, true);
+export const getAdminSmsSettings = (token: string) => request<{ code: number; data: SmsSettings }>('/admin/sms/settings', { headers: smsHeaders(token) });
+export const updateAdminSmsSettings = (token: string, input: { enabled: boolean; markupPercent: string; version: number }) => request<{ code: number; data: SmsSettings }>('/admin/sms/settings', { method: 'PATCH', headers: smsHeaders(token), body: JSON.stringify(input) });
+export const getAdminSmsOrders = (token: string, filters: { page: number; status?: string; userId?: number }) => {
+  const q = new URLSearchParams({ page: String(filters.page) });
+  if (filters.status) q.set('status', filters.status);
+  if (filters.userId) q.set('userId', String(filters.userId));
+  return request<{ code: number; data: Omit<SmsOrderList, 'list'> & { list: AdminSmsOrder[] } }>(`/admin/sms/orders?${q}`, { headers: smsHeaders(token) });
+};
+export const getAdminSmsOrder = (token: string, id: string) => request<{ code: number; data: AdminSmsOrder }>(`/admin/sms/orders/${encodeURIComponent(id)}`, { headers: smsHeaders(token) });
+export const resolveAdminSmsOrder = (token: string, id: string, input: { activationId?: string; note: string; confirmNoPurchase?: boolean }) => request<{ code: number; data: AdminSmsOrder }>(`/admin/sms/orders/${encodeURIComponent(id)}/resolve`, { method: 'POST', headers: smsHeaders(token), body: JSON.stringify(input) });

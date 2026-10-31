@@ -1,6 +1,6 @@
 import { formatDecimal } from "../decimal";
 import { isCreditPlan, parseCreditQuantity } from "../gptDirect/plans";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Clock3, KeyRound, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
@@ -160,7 +160,7 @@ export function GptCdkRedeemPage() {
   const [renewalPending, setRenewalPending] = useState(false);
   const [renewalError, setRenewalError] = useState("");
 
-  function applyReceipt(data: RecordValue) {
+  const applyReceipt = useCallback((data: RecordValue) => {
     const nextStatus = boundedString(data.status, 32);
     if (!nextStatus || !statuses.has(nextStatus)) throw new Error("invalid");
     const nextPlan = boundedString(data.plan, 32) ?? plan;
@@ -173,7 +173,7 @@ export function GptCdkRedeemPage() {
     setOrder(orderFromReceipt(data, nextPlan, clientRequestId.current));
     setEvents(eventsFromReceipt(data));
     return nextStatus;
-  }
+  }, [plan]);
 
   useEffect(() => {
     if (stage !== "result" || terminalStatuses.has(status) || status === "unused") return;
@@ -185,8 +185,8 @@ export function GptCdkRedeemPage() {
         const data = redemptionToken
           ? await cdkRequest("/result", device.current, { redemption_token: redemptionToken })
           : await cdkRequest("/receipt", device.current, { code: lookupCode.trim() });
-        const nextStatus = applyReceipt(data);
         if (stopped) return;
+        const nextStatus = applyReceipt(data);
         setError("");
         if (!terminalStatuses.has(nextStatus) && nextStatus !== "unused") timer = window.setTimeout(poll, 3_000);
       } catch {
@@ -195,7 +195,7 @@ export function GptCdkRedeemPage() {
     };
     timer = window.setTimeout(poll, status ? 3_000 : 0);
     return () => { stopped = true; window.clearTimeout(timer); };
-  }, [redemptionToken, lookupCode, stage, status]);
+  }, [redemptionToken, lookupCode, stage, status, applyReceipt]);
 
   async function preview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

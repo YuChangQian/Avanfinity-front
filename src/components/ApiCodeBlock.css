@@ -1,0 +1,16 @@
+.api-code-block { min-width:0; overflow:hidden; border:1px solid #303238; border-radius:11px; background:#191b20; color:#e5e7eb; }
+.api-code-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:40px; padding:8px 14px; border-bottom:1px solid #33353c; background:#24262c; }
+.api-code-toolbar > span { color:#c8cbd2; font:11px ui-monospace,monospace; letter-spacing:.03em; }
+.api-code-toolbar button { display:inline-flex; align-items:center; gap:5px; padding:4px 7px; border:1px solid #474952; border-radius:6px; color:#e5e7eb; background:transparent; font-size:11px; cursor:pointer; }
+.api-code-toolbar button:hover { background:#363943; }
+.api-code-toolbar button:focus-visible { outline:2px solid #c8cbd2; outline-offset:2px; }
+.api-code-toolbar button svg { width:12px; height:12px; }
+.api-code-block pre,.developer-page .api-code-block pre { max-width:100%; max-height:360px; margin:0; padding:18px; overflow:auto; border:0; color:#e5e7eb; background:#191b20; font:12px/1.85 ui-monospace,SFMono-Regular,Menlo,monospace; tab-size:2; scrollbar-width:thin; scrollbar-color:#616572 #191b20; }
+.api-code-block pre code { color:inherit; white-space:pre; background:none; }
+.api-code-block .api-token-property { color:#94c4ed; }
+.api-code-block .api-token-string { color:#b5dca6; }
+.api-code-block .api-token-number { color:#f0c586; }
+.api-code-block .api-token-keyword { color:#d2b5ed; }
+.api-code-block .api-token-comment { color:#a1a8b4; }
+.api-code-copy-error { margin:0; padding:8px 14px; color:#f1c98e; font-size:12px; }
+@media(max-width:600px) { .api-code-block pre,.developer-page .api-code-block pre { padding:14px; font-size:11px; max-height:300px; } }

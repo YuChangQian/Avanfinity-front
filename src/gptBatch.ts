@@ -43,6 +43,8 @@ export function parseGptMailboxBatch(raw: string): {
       return { accounts: [], error: { code: "format", line } };
     }
     const password = (hasRt ? parts[2] : parts.at(-1)!).trim();
+    // Reject ASCII controls in account identifiers as well as whitespace.
+    // eslint-disable-next-line no-control-regex
     if (email.length > 320 || !/^[^\s@\x00-\x1f\x7f]+@[^\s@.\x00-\x1f\x7f]+(?:\.[^\s@.\x00-\x1f\x7f]+)+$/.test(email)) {
       return { accounts: [], error: { code: "email", line } };
     }

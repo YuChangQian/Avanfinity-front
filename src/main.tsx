@@ -7,13 +7,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import "./i18n";
 import "./styles.css";
+import "./controls.css";
+import { ConfirmProvider } from "./components/ui/confirm";
 import { ApiError, captureReferralAttribution } from "./api";
 import { normalizeInviteCode, referralCodeFromUrl, removeReferralQuery } from "./referralAttribution";
 import { router } from "./router";
 import { referralAttributionAtom, referralStorageKey } from "./state";
 
 const queryClient = new QueryClient();
-document.documentElement.classList.add("dark");
 const referralCode = referralCodeFromUrl(new URL(window.location.href));
 const storedReferralCode = normalizeInviteCode(localStorage.getItem(referralStorageKey));
 const hadStoredReferralCode = storedReferralCode !== null;
@@ -50,5 +51,5 @@ function ReferralAttributionTracker() {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode><Provider><ReferralAttributionTracker /><QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider></Provider></StrictMode>,
+  <StrictMode><Provider><ReferralAttributionTracker /><QueryClientProvider client={queryClient}><ConfirmProvider><RouterProvider router={router} /></ConfirmProvider></QueryClientProvider></Provider></StrictMode>,
 );

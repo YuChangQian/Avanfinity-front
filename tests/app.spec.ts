@@ -1633,6 +1633,7 @@ test("admin saves tier presentation even when product pricing preview is unavail
     rechargeMultiplier: "1.25", minimumRechargeRate: "0", declineFee: "0", refundMultiplier: "1.25",
     gptDirectMultiplier: "1.25", gptDirectMinimumFee: "1" });
   await expect(editor.getByRole("alert").filter({ hasText: "产品同步暂不可用" })).toBeVisible();
+  await page.getByTestId("tier-section-profile").click();
   await editor.getByLabel("中文名称", { exact: true }).fill("无限会员");
   await editor.getByLabel("英文名称", { exact: true }).fill("Infinite");
   await editor.locator(".tier-profile-form textarea").nth(0).fill("长期客户专属价格与服务");
@@ -3646,7 +3647,7 @@ test("logged-in CDK history shows a trusted Stripe invoice", async ({ page }) =>
   await expect(history.getByText("u***@example.com")).toBeVisible();
 });
 
-test("feedback duration keeps Session errors readable and pauses on hover", async ({ page }) => {
+test("feedback duration keeps Session errors readable beside the operation", async ({ page }) => {
   await mockAuthenticatedShell(page, "customer");
   await mockGptDirect(page);
   await page.route("**/api/gpt-direct/preflight", route => route.fulfill({ status: 400,
@@ -3656,17 +3657,11 @@ test("feedback duration keeps Session errors readable and pauses on hover", asyn
   await page.getByRole("button", { name: "验证凭据与获取报价", exact: true }).click();
   const notice = page.locator("p.error[role=alert]");
   await expect(notice).toContainText("Session 已失效");
-  await expect(notice).toHaveCSS("animation-duration", "20s");
-  await notice.evaluate(element => { element.getAnimations()[0].currentTime = 6000; });
-  await expect(notice).toHaveCSS("opacity", "1");
-  await notice.hover();
-  await expect(notice).toHaveCSS("animation-play-state", "paused");
-  await page.mouse.move(0, 400);
-  await expect(notice).toHaveCSS("animation-play-state", "running");
-  await notice.evaluate(element => { element.getAnimations()[0].currentTime = 19000; });
-  await expect(notice).toHaveCSS("opacity", "1");
-  await notice.evaluate(element => { element.getAnimations()[0].finish(); });
-  await expect(notice).toBeHidden();
+  await expect(notice).toHaveCSS("position", "static");
+  await expect(notice).toHaveCSS("animation-name", "none");
+  await page.clock.install();
+  await page.clock.fastForward(30_000);
+  await expect(notice).toBeVisible();
 });
 
 test("payment card last four is shown in direct and CDK history and drawers", async ({ page }) => {
@@ -5600,9 +5595,9 @@ test("card detail refreshes local balance and activity without discarding cached
   releaseSync();
   await expect(page.getByText("余额与消费记录已更新，上游退款正在自动核对入账。", { exact: true })).toBeVisible();
   const successNotice = page.locator("p.card-sync-status[role=status]");
-  await expect(successNotice).toHaveCSS("animation-duration", "12s");
-  await successNotice.evaluate(element => { element.getAnimations()[0].currentTime = 11000; });
-  await expect(successNotice).toHaveCSS("opacity", "1");
+  await expect(successNotice).toHaveCSS("position", "static");
+  await expect(successNotice).toHaveCSS("animation-name", "none");
+  await expect(successNotice).toBeVisible();
   await expect(page.getByText("$18.8", { exact: true })).toBeVisible();
   await expect(page.getByText("OPENAI", { exact: true })).toBeVisible();
   await expect(fundsActivity).toContainText("RECHARGE");
@@ -5960,15 +5955,24 @@ test("an unpaid deposit can be cancelled and replaced", async ({ page }) => {
     order = { ...order, status: "cancelled", cancellable: false };
     return route.fulfill({ json: { code: 0, data: { gatewayRef, status: "cancelled", cancelledAt: new Date().toISOString(), replayed: false } } });
   });
-  page.on("dialog", async (dialog) => {
-    expect(dialog.message()).toContain("取消后该订单将永久停止核对，不会再自动到账");
-    await dialog.accept();
-  });
+
 
   await page.goto("/deposit");
   const cancel = page.getByTestId("cancel-deposit-order");
   await expect(cancel).toBeVisible({ timeout: 20_000 });
   await cancel.click();
+  const confirmation = page.getByRole("alertdialog");
+  await expect(confirmation).toContainText("取消后该订单将永久停止核对，不会再自动到账");
+  await expect(confirmation.getByRole("button", { name: "取消", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(confirmation).toBeHidden();
+  await expect(cancel).toBeFocused();
+  expect(cancelRequests).toBe(0);
+  await cancel.click();
+  await confirmation.getByRole("button", { name: "取消", exact: true }).click();
+  expect(cancelRequests).toBe(0);
+  await cancel.click();
+  await confirmation.getByRole("button", { name: "确认操作", exact: true }).click();
   await expect.poll(() => cancelRequests).toBe(1);
   await expect(page.getByTestId("deposit-current-order")).toHaveCount(0);
   await expect(page.locator(".transaction-panel")).toContainText("已取消");
@@ -6439,9 +6443,9 @@ test("developer manages all scopes, Webhook URL, delivery tests, and DEAD retrie
   await row.getByRole("button", { name: "保存", exact: true }).click();
   await expect.poll(() => savedBody?.webhookUrl).toBe("https://hooks.example.com:443/avanfinity");
   await expect.poll(() => savedBody?.ipWhitelist).toBe("203.0.113.10/32");
-
-  page.once("dialog", (dialog) => dialog.accept());
   await row.getByRole("button", { name: "轮换 Webhook Secret", exact: true }).click();
+
+  await page.getByRole("alertdialog").getByRole("button", { name: "确认操作", exact: true }).click();
   await expect.poll(() => savedBody?.rotateWebhookSecret).toBe(true);
   await expect(page.getByTestId("new-webhook-secret")).toHaveText(`whsec_${"2".repeat(64)}`);
   await expect(page.getByTestId("new-api-secret")).toHaveCount(0);
@@ -6675,8 +6679,8 @@ test("announcements persist per user until they are acknowledged", async ({ page
 
     const adminAnnouncement = page.locator(".announcement-admin-row").filter({ hasText: title });
     await expect(adminAnnouncement).toBeVisible();
-    page.once("dialog", (dialog) => dialog.accept());
     await adminAnnouncement.getByRole("button", { name: "撤回", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "确认操作", exact: true }).click();
     await expect(adminAnnouncement).toContainText("已撤回");
     await customer.reload();
     await expect(customer.locator(".announcement-history-row").filter({ hasText: title })).toHaveCount(0);
@@ -6852,8 +6856,8 @@ test("admin manually confirms a deposit once and hides terminal actions", async 
   const cancelled = table.getByRole("row").filter({ hasText: "cancelled@example.com" });
   await expect(cancelled.getByRole("button", { name: "手动到账", exact: true })).toHaveCount(0);
   const late = table.getByRole("row").filter({ hasText: "late@example.com" });
-  page.once("dialog", (dialog) => dialog.accept());
   await late.getByRole("button", { name: "手动到账", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "确认操作", exact: true }).click();
   await expect(page.getByText("手动到账成功，已入账 12.0182 USDT。", { exact: true })).toBeVisible();
   await expect(late).toContainText("已到账");
   await expect(late).toContainText("入账金额: 12.0182");
@@ -7458,7 +7462,7 @@ test("admin CDK receipts use the direct order drawer with both Stripe invoices",
   await page.goto("/admin?panel=gptOrders&source=cdk");
   await page.getByTestId("admin-cdk-orders").getByRole("button", { name: "详情", exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.locator(".transaction-detail-grid")).toHaveCount(1);
+  await expect(dialog.locator(".admin-drawer-facts")).toHaveCount(2);
   await expect(dialog.locator(".admin-gpt-order-timeline")).toBeVisible();
   await expect(dialog.locator(".gpt-order-progress")).toHaveCount(0);
   await expect(dialog.getByText("g***@example.test", { exact: true })).toBeVisible();
@@ -7556,9 +7560,9 @@ test("admin configures automatic CDK quote refresh without echoing the Session",
   await expect(section.getByText("等待刷新", { exact: true })).toBeVisible();
   await expect(section.getByLabel("替换 Session（留空则保留）", { exact: true })).toHaveValue("");
   expect(await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))).not.toContain(secret);
-
-  page.once("dialog", (dialog) => void dialog.accept());
   await section.getByRole("button", { name: "删除", exact: true }).click();
+
+  await page.getByRole("alertdialog").getByRole("button", { name: "确认操作", exact: true }).click();
   await expect.poll(() => deletes).toBe(1);
   await expect(page.getByTestId("admin-gpt-quote-refresh").getByText("未配置", { exact: true })).toBeVisible();
 });
@@ -7573,7 +7577,7 @@ test("admin workspace remains usable on a mobile viewport", async ({ page }) => 
     ["overview", ".admin-provider-summary"],
     ["upstreams", '[data-testid="upstream-spacex"]'],
     ["costs", '[data-testid="admin-product-list"]'],
-    ["tiers", ".pricing-tier-grid form"],
+    ["tiers", ".pricing-tier-card form"],
     ["cards", '[data-testid="admin-cards-table"]'],
     ["cdks", ".admin-cdk-pricing-list"],
     ["proxies", '[data-testid="admin-proxy-add"]'],
@@ -7582,7 +7586,7 @@ test("admin workspace remains usable on a mobile viewport", async ({ page }) => 
     ["announcements", ".admin-announcement-form"],
     ["audit", '[data-testid="admin-audit-table"]'],
     ["rewards", ".admin-reward-forms"],
-    ["telegram", ".admin-telegram-overview"],
+    ["telegram", '[data-testid="admin-telegram-overview"]'],
   ] as const;
   for (const [panel, readySelector] of panels) {
     await page.getByTestId(`admin-nav-${panel}`).click();
@@ -7703,8 +7707,9 @@ test("admin opens a customer detail view and returns without breaking management
   expect(await page.evaluate(() => `${localStorage.getItem("session")} ${sessionStorage.getItem("recentAuthReturnPath")}`)).not.toContain("4111111111110910");
   await page.getByTestId("admin-customer-card-sensitive-71").click();
   await expect(sensitive).toHaveCount(0);
-  await expect(page.getByTestId("admin-customer-deposits")).toContainText("$10.0345");
-  await expect(page.getByTestId("admin-customer-deposits")).toContainText("5xZk…pQ91");
+  await page.getByTestId("admin-customer-records").getByRole("button", { name: "充值记录", exact: true }).click();
+  await expect(page.getByTestId("admin-customer-deposit-table")).toContainText("10.0345");
+  await expect(page.getByTestId("admin-customer-deposit-table")).toContainText("00000000-0000-0000-0000-000000000101");
   await expect(page.getByTestId("admin-customer-operations")).toContainText("RECHARGE · SUCCEEDED");
   await expect(detail).not.toContainText("5450200000900910");
   await expect(detail).not.toContainText("665");
@@ -7935,8 +7940,8 @@ test("admin opens a customer detail view after filtering and manages profile com
 
   const telegram = page.getByTestId("admin-customer-telegram-unbind-form");
   await telegram.locator('[name="reason"]').fill("Customer requested Telegram account unlink");
-  page.once("dialog", (dialog) => dialog.accept());
   await telegram.getByRole("button", { name: "解绑 Telegram", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "确认操作", exact: true }).click();
   await expect.poll(() => commands.length).toBe(3);
   expect(commands.map((command) => command.body)).toEqual([
     { action: "setInviter", inviterId: 9, reason: "Customer requested inviter reassignment" },
@@ -7960,8 +7965,8 @@ test("admin resets a customer password from management", async ({ page }) => {
   await form.getByRole("button", { name: "重置密码", exact: true }).click();
   await expect(page.getByTestId("admin-customer-management").getByRole("status")).toContainText("两次输入的密码不一致");
   await form.getByLabel("确认密码", { exact: true }).fill("CustomerReset123!");
-  page.once("dialog", (dialog) => dialog.accept());
   await form.getByRole("button", { name: "重置密码", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "确认操作", exact: true }).click();
   await expect(page.getByTestId("admin-customer-management")).toContainText("客户密码已重置，所有登录会话已失效");
   expect(payloads).toEqual([{ password: "CustomerReset123!", confirmPassword: "CustomerReset123!" }]);
 });
@@ -8327,7 +8332,6 @@ test("admin-created products stay unavailable until bound to a healthy upstream"
   await expect(adminProduct).toContainText("MASTERCARD");
   await expect(adminProduct.getByRole("button", { name: "停用", exact: true })).toBeVisible();
 
-  await page.getByTestId("admin-back-to-app").click();
   await page.getByTestId("app-sidebar").getByRole("link", { name: "开卡中心", exact: true }).click();
   await expect(page.getByTestId(`product-${code}`)).toHaveCount(0);
   const rejectedOpen = await page.request.post("/api/cards/open", {

@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal, shiftDecimal } from "../decimal";
 import { useEffect, useState } from "react";
 import { useAtomValue } from "jotai";
@@ -49,6 +50,7 @@ function paymentQrValue(order: DepositOrder, network?: { tokenContract: string; 
 }
 
 export function DepositPage() {
+  const confirm = useConfirm();
   const session = useAtomValue(sessionAtom);
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -247,8 +249,8 @@ export function DepositPage() {
               variant="outline"
               data-testid="cancel-deposit-order"
               disabled={cancelMutation.isPending}
-              onClick={() => {
-                if (window.confirm(t("cancelDepositConfirm"))) cancelMutation.mutate(currentOrder.gatewayRef);
+              onClick={async () => {
+                if (await confirm(t("cancelDepositConfirm"))) cancelMutation.mutate(currentOrder.gatewayRef);
               }}
             >
               <XCircle /><StableSwap state={cancelMutation.isPending ? "busy" : "idle"} labels={{ idle: t("cancelDepositOrder"), busy: t("cancellingDeposit") }} />

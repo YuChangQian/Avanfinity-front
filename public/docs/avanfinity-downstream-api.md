@@ -1071,7 +1071,7 @@ OpenAI 生命周期字段：`eventId`，以及存在时的 `orderId`、`cdkId`�
 
 以下接口、请求与响应定义来自本次发布的同一份规范。字段约束详见末尾模型定义，响应码不等于付款或交付终态。
 
-## API v1 · 2026-10-28
+## API v1 · 2026-11-01
 
 ### GET `/api/v1/products`
 
@@ -7272,6 +7272,623 @@ all=true 固定提交时的本人卡片清单；或传入1–1000个cardIds。�
   },
   "408": {
     "$ref": "#/components/responses/RequestTimeout"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### GET `/api/v1/sms/catalog`
+
+查询收码服务与国家
+
+操作：`smsCatalog`；权限：`sms:read`。
+
+返回本站目录及是否开放购买，关闭后仍可查询已有订单。
+
+响应：
+```json
+{
+  "200": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsCatalogResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### POST `/api/v1/sms/quotes`
+
+获取收码报价
+
+操作：`smsQuote`；权限：`sms:write`。
+
+有效期60秒，绑定当前客户、API Key及费率版本。USD十进制字符串，报价不扣款。 无库存返回409/SMS_OUT_OF_STOCK，查询限流返回429/SMS_RATE_LIMITED，不扣款。 service=full时durationHours必填，报价绑定租期。全租20分钟内且未收短信才可取消退款；超过20分钟即使无短信也不自动退款，多条短信不重复扣费。
+
+请求：
+```json
+{
+  "required": true,
+  "content": {
+    "application/json": {
+      "schema": {
+        "$ref": "#/components/schemas/SmsQuoteInput"
+      },
+      "example": {
+        "service": "tg",
+        "country": 6
+      },
+      "examples": {
+        "shortTerm": {
+          "value": {
+            "service": "tg",
+            "country": 6
+          }
+        },
+        "fullRent": {
+          "value": {
+            "service": "full",
+            "country": 6,
+            "durationHours": 72
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+响应：
+```json
+{
+  "200": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsQuoteResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### GET `/api/v1/sms/orders`
+
+查询收码订单
+
+操作：`smsOrders`；权限：`sms:read`。
+
+只返回本账户及当前API Key创建的订单，每页20条，通过hasMore翻页。
+
+参数：
+```json
+[
+  {
+    "name": "page",
+    "in": "query",
+    "schema": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    }
+  }
+]
+```
+
+响应：
+```json
+{
+  "200": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsOrderListResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### POST `/api/v1/sms/orders`
+
+购买收码号码
+
+操作：`smsCreateOrder`；权限：`sms:write`。
+
+钱包预扣并返回排队订单。202表示已受理，需查订单进度。重试复用原幂等键和quoteId。结果不明保留待核对，不另建订单重买；实际费用较低退差额，不追加扣款。同一订单多条短信不重复收费。
+
+参数：
+```json
+[
+  {
+    "name": "Idempotency-Key",
+    "in": "header",
+    "required": true,
+    "schema": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 128
+    },
+    "description": "一次购买意图固定使用同一键；不同参数不可复用。"
+  }
+]
+```
+
+请求：
+```json
+{
+  "required": true,
+  "content": {
+    "application/json": {
+      "schema": {
+        "$ref": "#/components/schemas/SmsCreateInput"
+      },
+      "example": {
+        "quoteId": "00000000-0000-4000-8000-000000000001"
+      }
+    }
+  }
+}
+```
+
+响应：
+```json
+{
+  "202": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsOrderResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### GET `/api/v1/sms/orders/{id}`
+
+查询号码与验证码
+
+操作：`smsOrderDetail`；权限：`sms:read`。
+
+返回本站订单号、号码、短信及资金状态；验证码保留前导零，查询不触发购买。
+
+参数：
+```json
+[
+  {
+    "name": "id",
+    "in": "path",
+    "required": true,
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+]
+```
+
+响应：
+```json
+{
+  "200": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsOrderResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### POST `/api/v1/sms/orders/{id}/cancel`
+
+申请取消并退款
+
+操作：`smsCancelOrder`；权限：`sms:write`。
+
+仅未收码订单可以申请。202不代表已退款；核实取消退款后返还实扣金额。refunded或failed表示剩余预扣已退。重复操作不会重复返款。 Full rent还要求当前未收短信且未超过cancellationDeadline；超时不派发取消，租赁继续。
+
+参数：
+```json
+[
+  {
+    "name": "id",
+    "in": "path",
+    "required": true,
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+]
+```
+
+响应：
+```json
+{
+  "202": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsOrderResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### POST `/api/v1/sms/orders/{id}/finish`
+
+结束收码订单
+
+操作：`smsFinishOrder`；权限：`sms:write`。
+
+主动结束不退款。202表示已排队，请查询至finished；重复请求不重复扣费。
+
+参数：
+```json
+[
+  {
+    "name": "id",
+    "in": "path",
+    "required": true,
+    "schema": {
+      "type": "string",
+      "format": "uuid"
+    }
+  }
+]
+```
+
+响应：
+```json
+{
+  "202": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsOrderResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
+  },
+  "429": {
+    "$ref": "#/components/responses/RateLimited"
+  },
+  "500": {
+    "$ref": "#/components/responses/ServerError"
+  },
+  "503": {
+    "$ref": "#/components/responses/Unavailable"
+  }
+}
+```
+
+### GET `/api/v1/sms/offers`
+
+预览收码价格与库存
+
+操作：`smsOffers`；权限：`sms:read`。
+
+不传service时返回各服务的起价与总库存；传入service时返回各国家的当前售价与库存。价格为本站最终USD售价，预览最多缓存30秒，不锁价、不扣款。未返回的服务或国家表示暂无库存；购买前仍需取得60秒有效报价。 Full rent使用独立租赁库存，国家行额外返回durationHours，同一国家可有多个租期。服务总库存按每国最长可售数量合并，避免同一号码跨租期重复计数；报价故障通过unavailableServices表示。
+
+参数：
+```json
+[
+  {
+    "name": "service",
+    "in": "query",
+    "required": false,
+    "schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "description": "服务代码；省略则查询所有服务起价。"
+  }
+]
+```
+
+响应：
+```json
+{
+  "200": {
+    "description": "本站订单或目录快照。",
+    "headers": {
+      "Cache-Control": {
+        "schema": {
+          "type": "string",
+          "const": "no-store"
+        }
+      }
+    },
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SmsOffersResponse"
+        }
+      }
+    }
+  },
+  "400": {
+    "$ref": "#/components/responses/InvalidRequest"
+  },
+  "401": {
+    "$ref": "#/components/responses/Unauthorized"
+  },
+  "403": {
+    "$ref": "#/components/responses/Forbidden"
+  },
+  "404": {
+    "$ref": "#/components/responses/NotFound"
+  },
+  "408": {
+    "$ref": "#/components/responses/RequestTimeout"
+  },
+  "409": {
+    "$ref": "#/components/responses/Conflict"
   },
   "429": {
     "$ref": "#/components/responses/RateLimited"
@@ -14132,6 +14749,578 @@ all=true 固定提交时的本人卡片清单；或传入1–1000个cardIds。�
           "minLength": 16,
           "maxLength": 134,
           "writeOnly": true
+        }
+      }
+    },
+    "SmsMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "text",
+        "receivedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "receivedAt": {
+          "type": "string"
+        }
+      }
+    },
+    "SmsOrder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "service",
+        "country",
+        "status",
+        "price",
+        "refundedAmount",
+        "currency",
+        "phone",
+        "expiresAt",
+        "createdAt",
+        "messages",
+        "durationHours",
+        "canCancel",
+        "cancellationDeadline",
+        "cancelAvailableAt",
+        "originalPrice"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "service": {
+          "type": "string"
+        },
+        "country": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "buying",
+            "waiting",
+            "received",
+            "cancel_requested",
+            "finish_requested",
+            "finished",
+            "refunded",
+            "failed",
+            "needs_review"
+          ]
+        },
+        "price": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d{1,4})?$"
+        },
+        "refundedAmount": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d{1,4})?$"
+        },
+        "currency": {
+          "type": "string",
+          "const": "USD"
+        },
+        "phone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expiresAt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/SmsMessage"
+          }
+        },
+        "durationHours": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "enum": [
+            null,
+            24,
+            72,
+            168,
+            336,
+            720,
+            1440,
+            2160,
+            4320
+          ],
+          "description": "全租按小时保存租期；短期收码为空。"
+        },
+        "canCancel": {
+          "type": "boolean",
+          "description": "仅等待收码、未收到任何短信、已满两分钟且仍在取消窗口内时可取消；以服务器判定为准。"
+        },
+        "cancellationDeadline": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "全租取消截止UTC时间；短期为空。全租仅未收短信且购买后2至20分钟内可申请取消。"
+        },
+        "cancelAvailableAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time",
+          "description": "确认号码分配成功后至少两分钟才可申请取消的UTC时间；号码尚未分配时为空。"
+        },
+        "originalPrice": {
+          "type": "string",
+          "pattern": "^\\d+(?:\\.\\d{1,4})?$",
+          "description": "原订单确认的预扣金额。退款后保持不变；price为当前实扣净额，refundedAmount为累计退回钱包金额。"
+        }
+      }
+    },
+    "SmsCatalogResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "enum": [
+            200,
+            202
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "currency",
+            "services",
+            "countries"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "currency": {
+              "type": "string",
+              "const": "USD"
+            },
+            "services": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "code",
+                  "name"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "countries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "SmsQuoteInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "service",
+        "country"
+      ],
+      "properties": {
+        "service": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "country": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "durationHours": {
+          "type": "integer",
+          "enum": [
+            24,
+            72,
+            168,
+            336,
+            720,
+            1440,
+            2160,
+            4320
+          ],
+          "description": "Full rent租期小时数；service=full必填，其它服务须省略。只购买实时可售租期。"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "service": {
+                "const": "full"
+              }
+            },
+            "required": [
+              "service"
+            ]
+          },
+          "then": {
+            "required": [
+              "durationHours"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "durationHours"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "SmsQuoteResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "enum": [
+            200,
+            202
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "service",
+            "country",
+            "price",
+            "currency",
+            "expiresAt",
+            "durationHours"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "service": {
+              "type": "string"
+            },
+            "country": {
+              "type": "integer"
+            },
+            "price": {
+              "type": "string",
+              "pattern": "^\\d+(?:\\.\\d{1,4})?$"
+            },
+            "currency": {
+              "type": "string",
+              "const": "USD"
+            },
+            "expiresAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "durationHours": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "enum": [
+                null,
+                24,
+                72,
+                168,
+                336,
+                720,
+                1440,
+                2160,
+                4320
+              ],
+              "description": "全租按小时保存租期；短期收码为空。"
+            }
+          }
+        }
+      }
+    },
+    "SmsCreateInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quoteId"
+      ],
+      "properties": {
+        "quoteId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "SmsOrderResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "enum": [
+            200,
+            202
+          ]
+        },
+        "data": {
+          "$ref": "#/components/schemas/SmsOrder"
+        }
+      }
+    },
+    "SmsOrderListResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "enum": [
+            200,
+            202
+          ]
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "list",
+            "page",
+            "hasMore"
+          ],
+          "properties": {
+            "list": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/SmsOrder"
+              }
+            },
+            "page": {
+              "type": "integer"
+            },
+            "hasMore": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "SmsOffersResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "data"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "const": 200
+        },
+        "data": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "currency",
+                "services"
+              ],
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "const": "USD"
+                },
+                "services": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "service",
+                      "price",
+                      "count"
+                    ],
+                    "properties": {
+                      "service": {
+                        "type": "string"
+                      },
+                      "price": {
+                        "type": "string",
+                        "pattern": "^[0-9]+(?:\\.[0-9]{1,4})?$"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "popularityRank": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "受欢迎度排序位置，1为最靠前；缺失表示暂无数据，不等同于库存数量。"
+                      }
+                    }
+                  }
+                },
+                "unavailableServices": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "报价暂不可查询的服务，不代表无库存。"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "currency",
+                "countries"
+              ],
+              "properties": {
+                "currency": {
+                  "type": "string",
+                  "const": "USD"
+                },
+                "countries": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "country",
+                      "price",
+                      "count"
+                    ],
+                    "properties": {
+                      "country": {
+                        "type": "integer"
+                      },
+                      "price": {
+                        "type": "string",
+                        "pattern": "^[0-9]+(?:\\.[0-9]{1,4})?$"
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "durationHours": {
+                        "type": "integer",
+                        "enum": [
+                          24,
+                          72,
+                          168,
+                          336,
+                          720,
+                          1440,
+                          2160,
+                          4320
+                        ],
+                        "description": "全租国家报价对应的租期；短期报价不返回此字段。"
+                      },
+                      "popularityRank": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "受欢迎度排序位置，1为最靠前；缺失表示暂无数据，不等同于库存数量。"
+                      },
+                      "qualityRank": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "质量排序位置，1为最靠前；缺失表示暂无数据。排名不是成功率百分比。"
+                      }
+                    }
+                  }
+                },
+                "unavailableServices": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "报价暂不可查询的服务，不代表无库存。"
+                }
+              }
+            }
+          ]
         }
       }
     }

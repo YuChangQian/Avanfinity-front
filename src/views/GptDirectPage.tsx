@@ -291,14 +291,8 @@ function GptDirectContent() {
   const [preparedBatch, setPreparedBatch] = useState<BatchPreviewRow[] | null>(null);
   const [toolsTab, setToolsTab] = useState<"orders" | "lifecycle" | "cdk">("orders");
   const [oneCardPerAccount, setOneCardPerAccount] = useState(false);
-  const [batchResults, setBatchResults] = useState<BatchResult[]>(() => savedProgress.batch.map((row, index) => ({ ...row, maskedEmail: `#${index + 1}` })));
+  const [batchResultRows, setBatchResults] = useState<BatchResult[]>(() => savedProgress.batch.map((row, index) => ({ ...row, maskedEmail: `#${index + 1}` })));
 
-  useEffect(() => {
-    if (identity === null) return;
-    try {
-      localStorage.setItem(progressStorageKey(identity), JSON.stringify({ activeOrderId, previewStatus: preparedBatch ? "preflight_only" : undefined, singleStatus: singleUncertain ? "unknown" : orderPending ? "submitting" : undefined, batch: batchResults.map(({ status, orderId }) => ({ status, orderId })) }));
-    } catch { /* Progress still works when browser storage is unavailable. */ }
-  }, [identity, activeOrderId, batchResults, preparedBatch, orderPending, singleUncertain]);
   const [renewalSession, setRenewalSession] = useState("");
   const [renewalPending, setRenewalPending] = useState(false);
   const [renewalError, setRenewalError] = useState("");
@@ -368,7 +362,7 @@ function GptDirectContent() {
     },
   });
 
-  const pendingBatchIds = batchResults.filter((row) => row.orderId && row.status === "processing").map((row) => row.orderId!);
+  const pendingBatchIds = batchResultRows.filter((row) => row.orderId && row.status === "processing").map((row) => row.orderId!);
   const resumedBatchQuery = useQuery({
     queryKey: ["gpt-direct-batch-progress", identity, pendingBatchIds],
     queryFn: async () => Promise.all(pendingBatchIds.map(async (id) => {
@@ -376,17 +370,21 @@ function GptDirectContent() {
       catch { return null; }
     })),
     enabled: Boolean(session && !batchPending && pendingBatchIds.length),
-    refetchInterval: 3_000,
+    refetchInterval: (query) => query.state.data?.every((order) => order && financiallyFinal(order)) ? false : 3_000,
   });
+  const batchResults = useMemo(() => batchResultRows.map<BatchResult>((row) => {
+    const order = resumedBatchQuery.data?.find((order) => order?.id === row.orderId);
+    return order ? { ...row, maskedEmail: order.maskedEmail || row.maskedEmail,
+      status: financiallyFinal(order) ? order.status === "completed" ? "completed" : "failed" : "processing",
+      message: t(`gptOrderStage.${order.stage}`, { defaultValue: order.stage || order.status }) } : row;
+  }), [batchResultRows, resumedBatchQuery.data, t]);
+
   useEffect(() => {
-    if (!resumedBatchQuery.data) return;
-    setBatchResults((rows) => rows.map((row) => {
-      const order = resumedBatchQuery.data.find((order) => order?.id === row.orderId);
-      return order ? { ...row, maskedEmail: order.maskedEmail || row.maskedEmail,
-        status: financiallyFinal(order) ? order.status === "completed" ? "completed" : "failed" : "processing",
-        message: t(`gptOrderStage.${order.stage}`, { defaultValue: order.stage || order.status }) } : row;
-    }));
-  }, [resumedBatchQuery.data, t]);
+    if (identity === null) return;
+    try {
+      localStorage.setItem(progressStorageKey(identity), JSON.stringify({ activeOrderId, previewStatus: preparedBatch ? "preflight_only" : undefined, singleStatus: singleUncertain ? "unknown" : orderPending ? "submitting" : undefined, batch: batchResults.map(({ status, orderId }) => ({ status, orderId })) }));
+    } catch { /* Progress still works when browser storage is unavailable. */ }
+  }, [identity, activeOrderId, batchResults, preparedBatch, orderPending, singleUncertain]);
 
   useEffect(() => {
     if (!preflightData) return;

@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/confirm";
 import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleDollarSign, CircleStop, ExternalLink, RefreshCw, Save, X } from "lucide-react";
@@ -74,6 +75,7 @@ export function AdminXDirectPanel({ token }: { token: string }) {
 }
 
 function XDirectOrders({ token, plans }: { token: string; plans: Array<{ key: string; label: string }> }) {
+  const confirm = useConfirm();
   const { t, i18n } = useTranslation();
   const en = i18n.language === "en";
   const client = useQueryClient();
@@ -110,8 +112,8 @@ function XDirectOrders({ token, plans }: { token: string; plans: Array<{ key: st
     },
   });
   const selectOrder = (id: string | null) => { setEndNotice(null); setSelectedId(id); selectedIdRef.current = id; };
-  const confirmEnd = (id: string) => {
-    if (endingRef.current || !window.confirm(en ? "End this X order?" : "确定结束此 X 直充订单？")) return;
+  const confirmEnd = async (id: string) => {
+    if (endingRef.current || !await confirm(en ? "End this X order?" : "确定结束此 X 直充订单？")) return;
     endingRef.current = true;
     setEndNotice(null);
     endOrder.mutate(id);

@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal } from "../decimal";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +25,7 @@ export function AdminGptDirectOrdersPanel(props: Props) {
 }
 
 function DirectOrdersPanel({ token, onOpenCustomer, onOpenCard }: Props) {
+  const confirm = useConfirm();
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const locale = i18n.language === "en" ? "en-US" : "zh-CN";
@@ -85,7 +87,7 @@ function DirectOrdersPanel({ token, onOpenCustomer, onOpenCard }: Props) {
     <AdminGptOrderDetail selectedId={selectedOrderId} order={detail} events={orderDetail.data?.data.events}
       isLoading={orderDetail.isLoading} isError={orderDetail.isError} onRetry={() => orderDetail.refetch()}
       onClose={() => setSelectedOrderId(null)} onOpenCustomer={onOpenCustomer} onOpenCard={onOpenCard}
-      actions={orderDetail.data && <>{orderDetail.data.data.order.status === "requires_action" && <section className="admin-alert is-warning"><div>{renewalRecovery ? <><strong>{t("gptRenewalSessionTitle")}</strong><p>{t("adminGptRenewalSessionHint")}</p></> : <p>{t("adminGptEndOrderWarning")}</p>}</div><Button type="button" size="sm" variant="outline" disabled={endOrder.isPending} onClick={() => { if (window.confirm(t("adminGptEndOrderConfirm"))) endOrder.mutate(orderDetail.data.data.order.id); }}><CircleStop />{endOrder.isPending ? t("adminGptEndingOrder") : t("adminGptEndOrder")}</Button>{endOrder.isError && <p className="admin-alert is-error" role="alert">{endOrder.error instanceof Error ? endOrder.error.message : t("adminLoadFailed")}</p>}</section>}</>} />
+      actions={orderDetail.data && <>{orderDetail.data.data.order.status === "requires_action" && <section className="admin-alert is-warning"><div>{renewalRecovery ? <><strong>{t("gptRenewalSessionTitle")}</strong><p>{t("adminGptRenewalSessionHint")}</p></> : <p>{t("adminGptEndOrderWarning")}</p>}</div><Button type="button" size="sm" variant="outline" disabled={endOrder.isPending} onClick={async () => { if (await confirm(t("adminGptEndOrderConfirm"))) endOrder.mutate(orderDetail.data.data.order.id); }}><CircleStop />{endOrder.isPending ? t("adminGptEndingOrder") : t("adminGptEndOrder")}</Button>{endOrder.isError && <p className="admin-alert is-error" role="alert">{endOrder.error instanceof Error ? endOrder.error.message : t("adminLoadFailed")}</p>}</section>}</>} />
 
   </div>;
 }

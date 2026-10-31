@@ -14,6 +14,7 @@ import {
   LifeBuoy,
   LogOut,
   Menu,
+  MessageSquare,
   Megaphone,
   Network,
   Plus,
@@ -166,6 +167,7 @@ export function AppShell() {
         <Link to="/cards" {...linkProps(t("openCardCenter"))} activeOptions={{ exact: true }} aria-current={pathname === "/cards" || pathname.startsWith("/cards/open/") ? "page" : undefined}><Plus /><span>{t("openCardCenter")}</span></Link>
         <Link to="/cards/owned" {...linkProps(t("ownedCards"))} aria-current={pathname === "/cards/owned" || /^\/cards\/\d+$/.test(pathname) ? "page" : undefined}><CreditCard /><span>{t("ownedCards")}</span></Link>
         <Link to="/card-transactions" {...linkProps(t("cardTransactions"))}><ReceiptText /><span>{t("cardTransactions")}</span></Link>
+        <Link to="/sms" {...linkProps("收取验证码服务")}><MessageSquare /><span>收取验证码服务</span></Link>
         <Link to="/tg-direct" className="sidebar-link" aria-label="TG 直充" aria-current={pathname.startsWith("/tg-direct") ? "page" : undefined} onClick={() => setMobileNavOpen(false)}><Sparkles /><span>TG 直充</span></Link>
         <Link to="/gpt-direct" className="sidebar-link" aria-label={t("gptDirectNavigation")} aria-current={pathname.startsWith("/gpt-direct") ? "page" : undefined} onClick={() => setMobileNavOpen(false)}><Sparkles /><span>{t("gptDirectNavigation")}</span></Link>
         <Link to="/cdk/redeem" {...linkProps(t("cdkRedeemNavigation"))}><KeyRound /><span>{t("cdkRedeemNavigation")}</span></Link>

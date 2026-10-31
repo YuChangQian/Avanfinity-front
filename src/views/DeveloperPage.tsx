@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/confirm";
 import { useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +30,7 @@ import {
   type OpenApiSchema,
 } from "../api";
 import { sessionAtom } from "../state";
+import { ApiCodeBlock } from "../components/ApiCodeBlock";
 import { CdkRegionGuide } from "../components/CdkRegionGuide";
 import { useFeatures } from "../features";
 
@@ -41,6 +43,7 @@ const scopeGroups: Array<{ label: string; hint: string; options: Array<{ value: 
       { value: "account:read", label: "scopeAccountRead" },
       { value: "cards:read", label: "scopeCardsRead" },
       { value: "gpt:read", label: "scopeGptRead" },
+      { value: "sms:read", label: "读取收码服务与订单" },
       { value: "tg-direct:read", label: "读取 TG 套餐与订单" },
       { value: "cdk:read", label: "scopeCdkRead" },
       { value: "operations:read", label: "scopeOperationsRead" },
@@ -56,6 +59,7 @@ const scopeGroups: Array<{ label: string; hint: string; options: Array<{ value: 
       { value: "cards:recharge", label: "scopeCardsRecharge" },
       { value: "deposits:create", label: "scopeDepositsCreate" },
       { value: "gpt:write", label: "scopeGptWrite" },
+      { value: "sms:write", label: "购买收码号码、取消和结束订单" },
       { value: "tg-direct:write", label: "提交 TG 直充" },
       { value: "cdk:purchase", label: "scopeCdkPurchase" },
     ],
@@ -63,7 +67,7 @@ const scopeGroups: Array<{ label: string; hint: string; options: Array<{ value: 
 ];
 
 const ipRequiredScopes = new Set<DeveloperKeyScope>([
-  "cdk:configure", "cdk:issue", "cdk:export", "cdk:revoke", "cards:sensitive", "cards:manage", "cards:open", "cards:recharge", "deposits:create", "gpt:write", "x-direct:write", "tg-direct:write", "cdk:purchase",
+  "cdk:configure", "cdk:issue", "cdk:export", "cdk:revoke", "cards:sensitive", "cards:manage", "cards:open", "cards:recharge", "deposits:create", "gpt:write", "x-direct:write", "tg-direct:write", "sms:write", "cdk:purchase",
 ]);
 
 const webhookStatusKeys: Record<string, string> = {
@@ -277,6 +281,7 @@ function curlExample(
 
 function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
   const { t } = useTranslation();
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("");
   const query = useQuery({
@@ -373,13 +378,17 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
               const operationBaseUrl = new URL(operation.servers?.[0]?.url ?? baseUrl, window.location.origin).href.replace(/\/$/, "");
               const requestExample = curlExample(spec, operationBaseUrl, path, method, parameters, media, operation.security?.length !== 0);
               const responses = Object.entries(operation.responses ?? {}).map(([status, response]) => [status, resolveOpenApiRef<OpenApiResponse>(spec, response)] as const);
-              return <details className="openapi-operation" key={`${method}-${path}`} data-operation-id={operation.operationId}>
+              return <details className="openapi-operation" key={`${method}-${path}`} data-operation-id={operation.operationId} onToggle={event => {
+                if (event.target !== event.currentTarget) return;
+                const open = event.currentTarget.open;
+                setExpanded(previous => { const next = new Set(previous); if (open) next.add(`${method}-${path}`); else next.delete(`${method}-${path}`); return next; });
+              }}>
                 <summary>
                   <span className={`openapi-method is-${method}`}>{method.toUpperCase()}</span>
                   <code>{path}</code>
                   <span className="openapi-operation-copy"><strong>{operation.summary ?? operation.operationId}</strong><small>{operation["x-required-scope"]}</small></span>
                 </summary>
-                <div className="openapi-operation-detail">
+                {expanded.has(`${method}-${path}`) && <div className="openapi-operation-detail">
                   {operation.description && <p>{operation.description}</p>}
                   <div className="openapi-operation-badges">
                     <span>{t("requiredScope")}: <code>{operation["x-required-scope"]}</code></span>
@@ -398,13 +407,13 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
                   {requestBody && <section>
                     <h4>{t("apiRequestBody")} {requestBody.required && <span>{t("required")}</span>}</h4>
                     <div className="openapi-json-grid">
-                      <div><strong>{t("apiJsonSchema")}</strong><pre><code>{JSON.stringify(schema ?? media?.schema ?? {}, null, 2)}</code></pre></div>
-                      <div><strong>{t("apiJsonExample")}</strong>{example === undefined ? <p className="openapi-empty-detail">{t("noApiExample")}</p> : <pre><code>{JSON.stringify(example, null, 2)}</code></pre>}</div>
+                      <div><strong>{t("apiJsonSchema")}</strong><ApiCodeBlock code={JSON.stringify(schema ?? media?.schema ?? {}, null, 2)} /></div>
+                      <div><strong>{t("apiJsonExample")}</strong>{example === undefined ? <p className="openapi-empty-detail">{t("noApiExample")}</p> : <ApiCodeBlock code={JSON.stringify(example, null, 2)} />}</div>
                     </div>
                   </section>}
                   <section data-operation-example={operation.operationId}>
                     <h4>{t("apiExamples")} · curl</h4>
-                    <div className="openapi-code-example"><pre><code>{requestExample}</code></pre></div>
+                    <div className="openapi-code-example"><ApiCodeBlock language="curl" code={requestExample} /></div>
                   </section>
                   <section>
                     <h4>{t("apiResponses")}</h4>
@@ -424,14 +433,14 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
                             {responseHeaders.map(([name, header]) => <div key={name}><dt><code>{name}</code></dt><dd>{header?.description ?? "—"}<code>{JSON.stringify(resolveOpenApiRef<OpenApiSchema>(spec, header?.schema) ?? {})}</code></dd></div>)}
                           </dl>}
                           {responseMedia && <div className="openapi-json-grid">
-                            <div><strong>{t("apiJsonSchema")}</strong><pre><code>{JSON.stringify(responseSchema ?? responseMedia.schema ?? {}, null, 2)}</code></pre></div>
-                            <div><strong>{t("apiJsonExample")}</strong><pre><code>{JSON.stringify(responseExample, null, 2)}</code></pre></div>
+                            <div><strong>{t("apiJsonSchema")}</strong><ApiCodeBlock code={JSON.stringify(responseSchema ?? responseMedia.schema ?? {}, null, 2)} /></div>
+                            <div><strong>{t("apiJsonExample")}</strong><ApiCodeBlock code={JSON.stringify(responseExample, null, 2)} /></div>
                           </div>}
                         </details>;
                       })}
                     </div>
                   </section>
-                </div>
+                </div>}
               </details>;
             })}
           </div>
@@ -456,8 +465,8 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
           return <details className="openapi-webhook-event" data-webhook-event={event} key={event}>
             <summary><code>{event}</code><span>{binding?.title}</span></summary>
             <div className="openapi-json-grid">
-              <div><strong>{t("apiJsonSchema")}</strong><pre><code>{JSON.stringify(binding?.objectSchema ?? {}, null, 2)}</code></pre></div>
-              <div><strong>{t("apiJsonExample")}</strong><pre><code>{JSON.stringify(eventExample, null, 2)}</code></pre></div>
+              <div><strong>{t("apiJsonSchema")}</strong><ApiCodeBlock code={JSON.stringify(binding?.objectSchema ?? {}, null, 2)} /></div>
+              <div><strong>{t("apiJsonExample")}</strong><ApiCodeBlock code={JSON.stringify(eventExample, null, 2)} /></div>
             </div>
           </details>;
         })}</div></div>
@@ -468,8 +477,9 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
 }
 
 export function DeveloperPage() {
+  const confirm = useConfirm();
   const session = useAtomValue(sessionAtom);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const client = useQueryClient();
   const { flags } = useFeatures();
   const [secrets, setSecrets] = useState<{ appSecret?: string; webhookSecret: string } | null>(null);
@@ -684,6 +694,11 @@ const depositStatus = await call("/deposits/" + deposit.body.data.gatewayRef);
 const operation = await call("/operations/" + operationId);`;
 
   return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")} className="developer-page">
+    <nav className="developer-section-nav" aria-label="API 页面导航">
+      <a href="#developer-apps">{i18n.language === "en" ? "Applications" : "应用管理"}</a>
+      <a href="#developer-guide">{i18n.language === "en" ? "Integration guide" : "接入指南"}</a>
+      <a href="#api-reference">{t("apiDocumentation")}</a>
+    </nav>
     <section className="deposit-panel developer-key-create">
       <div className="inline-action">
         {flags.developerApi && <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || query.data.data.length >= 5}>
@@ -710,7 +725,8 @@ const operation = await call("/operations/" + operationId);`;
       </div>}
     </section>
     {error && <p className="admin-alert is-error" role="alert">{error}</p>}
-    <section className="transaction-panel developer-keys">
+    <section className="transaction-panel developer-keys" id="developer-apps">
+      <div className="section-title"><h2>{i18n.language === "en" ? "Applications" : "应用管理"}</h2><span>{query.data.data.length} / 5</span></div>
       {query.data.data.length === 0
         ? <div className="empty-state">{t("noKeys")}</div>
         : query.data.data.map((key) => <form className="transaction-row developer-key-form" key={key.id} onSubmit={(event) => submitKey(event, key.id)}>
@@ -766,8 +782,8 @@ const operation = await call("/operations/" + operationId);`;
             </select>
             <div className="inline-action">
               <Button size="xs" disabled={update.isPending}>{t("save")}</Button>
-              <Button type="button" size="xs" variant="outline" onClick={() => {
-                if (window.confirm(t("rotateWebhookSecretConfirm"))) rotateWebhookSecret.mutate(key.id);
+              <Button type="button" size="xs" variant="outline" onClick={async () => {
+                if (await confirm(t("rotateWebhookSecretConfirm"))) rotateWebhookSecret.mutate(key.id);
               }} disabled={rotateWebhookSecret.isPending}><RotateCcw />{t("rotateWebhookSecret")}</Button>
               <Button type="button" size="xs" variant="outline" onClick={() => remove.mutate(key.id)} disabled={remove.isPending}>{t("delete")}</Button>
             </div>
@@ -775,7 +791,7 @@ const operation = await call("/operations/" + operationId);`;
         </form>)}
     </section>
     <DeveloperWebhooks token={session.token} keys={query.data.data} />
-    <section className="developer-guide">
+    <section className="developer-guide" id="developer-guide">
       <div className="section-title"><h2><BookOpen />{t("developerGuideTitle")}</h2><span>API v1</span></div>
       <div className="developer-guide-content">
         <article className="developer-guide-card developer-quickstart">
@@ -785,7 +801,6 @@ const operation = await call("/operations/" + operationId);`;
             <div><dt>{t("apiAuthentication")}</dt><dd><code>X-App-Id</code> + <code>X-App-Secret</code></dd></div>
             <div><dt>{t("apiContentType")}</dt><dd><code>application/json</code></dd></div>
           </dl>
-          <CdkRegionGuide />
           <p className="developer-callout">{t("apiScopeIpRule")}</p>
         </article>
 
@@ -826,10 +841,12 @@ const operation = await call("/operations/" + operationId);`;
           <Button asChild size="sm" variant="outline"><a href="#api-reference">{t("apiDocumentation")}</a></Button>
         </article>
 
+        <CdkRegionGuide />
+
         <article className="developer-guide-card developer-examples">
           <h3>{t("apiExamples")}</h3>
-          <details><summary>curl</summary><pre><code>{curlExample}</code></pre></details>
-          <details><summary>TypeScript · fetch</summary><pre><code>{typescriptExample}</code></pre></details>
+          <details><summary>curl</summary><ApiCodeBlock language="curl" code={curlExample} /></details>
+          <details><summary>TypeScript · fetch</summary><ApiCodeBlock language="TypeScript" code={typescriptExample} /></details>
         </article>
 
         <article className="developer-guide-card developer-security-card">

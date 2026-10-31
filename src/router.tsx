@@ -24,6 +24,7 @@ const AgentPage = lazyRouteComponent(() => import("./views/AgentPage"), "AgentPa
 const MarketPage = lazyRouteComponent(() => import("./views/MarketPage"), "MarketPage");
 const CardDetailPage = lazyRouteComponent(() => import("./views/CardDetailPage"), "CardDetailPage");
 const OpenCardPage = lazyRouteComponent(() => import("./views/OpenCardPage"), "OpenCardPage");
+const SmsPage = lazyRouteComponent(() => import("./views/SmsPage"), "SmsPage");
 const TgDirectPage = lazyRouteComponent(() => import("./views/TgDirectPage"), "TgDirectPage");
 const GptDirectPage = lazyRouteComponent(() => import("./views/GptDirectPage"), "GptDirectPage");
 const GptDirectOrderPage = lazyRouteComponent(() => import("./views/GptDirectOrderPage"), "GptDirectOrderPage");
@@ -86,6 +87,7 @@ const adminRoute = createRoute({ getParentRoute: () => appRoute, path: "/admin",
 const agentRoute = createRoute({ getParentRoute: () => appRoute, path: "/agent", component: AgentPage });
 const marketRoute = createRoute({ getParentRoute: () => appRoute, path: "/openai-prices", component: MarketPage });
 const xDirectRoute = createRoute({ getParentRoute: () => appRoute, path: "/x-direct", component: () => <Navigate to="/dashboard" replace /> });
+const smsRoute = createRoute({ getParentRoute: () => appRoute, path: "/sms", component: SmsPage });
 const tgDirectRoute = createRoute({ getParentRoute: () => appRoute, path: "/tg-direct", component: TgDirectPage });
 const gptDirectRoute = createRoute({ getParentRoute: () => appRoute, path: "/gpt-direct", validateSearch: gptDirectSearch, component: GptDirectPage });
 const gptDirectOrderRoute = createRoute({ getParentRoute: () => appRoute, path: "/gpt-direct/orders/$orderId", component: GptDirectOrderPage });
@@ -94,7 +96,7 @@ export const router = createRouter({
   routeTree: rootRoute.addChildren([
   unifiedRedeemRoute, indexRoute, loginRoute, telegramLoginRoute, telegramPaymentRoute, registerRoute, inviteRoute, shortInviteRoute, registerInviteRoute, verifyEmailRoute, forgotPasswordRoute, resetPasswordRoute, termsRoute, userAgreementRoute, mfaSetupRoute, appRoute.addChildren([
     cdkV2Route, dashboardRoute, financeRoute, cardsRoute, ownedCardsRoute, cardTransactionsRoute, openCardRoute, cardDetailRoute, depositRoute, rewardsRoute, lotteryRoute,
-    shopRoute, referralRoute, membershipRoute, settingsRoute, announcementsRoute, supportTicketsRoute, developerRoute, adminRoute, agentRoute, marketRoute, tgDirectRoute, tgCdkRedeemRoute, xDirectRoute, gptDirectRoute, gptDirectOrderRoute, gptCdkRedeemRoute, xCdkRedeemRoute,
+    shopRoute, referralRoute, membershipRoute, settingsRoute, announcementsRoute, supportTicketsRoute, developerRoute, adminRoute, agentRoute, marketRoute, smsRoute, tgDirectRoute, tgCdkRedeemRoute, xDirectRoute, gptDirectRoute, gptDirectOrderRoute, gptCdkRedeemRoute, xCdkRedeemRoute,
   ]),
   ]),
 });

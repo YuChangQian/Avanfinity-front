@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { Plugin } from "vite";
 
 const createdAt = "2026-08-10T08:00:00Z";
@@ -200,6 +201,7 @@ function json(res: { statusCode: number; setHeader: (name: string, value: string
 export function stylePreviewPlugin(): Plugin {
   return {
     name: "style-preview-mock",
+    apply: "serve",
     transformIndexHtml(html) {
       return html.replace(
         "</head>",
@@ -224,6 +226,30 @@ export function stylePreviewPlugin(): Plugin {
         if (path === "/api/auth/login") return json(res, session);
         if (path === "/api/auth/logout") return json(res, { code: 0 });
         if (path === "/api/auth/refresh") return json(res, { code: 0 });
+        const ok = (data: unknown) => json(res, { code: 0, data });
+        const tier = { code: "standard", nameZh: "普通会员", nameEn: "Standard", descriptionZh: "按需使用虚拟卡与数字服务", descriptionEn: "Virtual cards and digital services", thresholdAmount: "0", minimumOpenFee: "1", minimumRechargeRate: "0.01", referralOpenReward: "0.1", referralRechargeRate: "0.001", declineFee: "0.5", gptDirectMinimumFee: "1.5" };
+        if (path === "/api/v1/openapi.json") return json(res, JSON.parse(readFileSync(`${__dirname}/public/docs/downstream-v1.json`, "utf8")));
+        if (path === "/api/developer/keys") return ok([{ id: 1, name: "本地预览应用", appId: "app_preview", appSecretMasked: "••••••abcd", scopes: ["gpt:read"], status: "active", ipWhitelist: "", minuteLimit: 60, dailyLimit: 1000, webhookUrl: "", createdAt }]);
+        if (path === "/api/developer/webhooks" || path === "/api/support/tickets" || path === "/api/lottery") return ok([]);
+        if (path === "/api/agent") return ok({ pricingEffective: true, subUsers: [] });
+        if (path === "/api/membership") return ok({ currentTier: tier, nextTier: null, tiers: [tier], cumulativeRecharge: "100" });
+        if (path === "/api/settings") return ok({ ...session, status: "active", memberTier: "standard", inviteCode: "PREVW", emailLoginEnabled: true, emailVerified: true, emailVerificationPending: false, pendingEmail: null, canUnbind: true, avatarUrl: null, cumulativeRecharge: "100", createdAt, nextTier: null });
+        if (path === "/api/telegram") return ok({ botConfigured: true, botName: "local_preview_bot", isBound: false, chatId: null, username: null, pendingUnbind: null });
+        if (path === "/api/referral") return ok({ inviteCode: "PREVW", inviteUrl: "/register?invite=PREVW", promoBalance: "0", referralCount: 0, openCardBonus: "0.1", depositRebate: "0", cardRechargeRebate: "0.001", cumulativeEarnings: "0", txList: [], directReferrals: { total: 0, limit: 20, list: [] }, policy: { rewardsEnabled: true, directOnly: true, calculationMode: "confirmed_profit_share", profitShareRate: "0.1", displayMode: "profit_share", tierRewards: [] } });
+        const today = new Date().toISOString().slice(0, 10);
+        if (path === "/api/points") return ok({ balance: 120, history: [], telegramBound: true, calendar: { month: today.slice(0, 7), checkedDates: [] }, checkin: { enabled: true, eligible: true, eligibilityReason: "eligible", checkedToday: false, businessDate: today, currentStreak: 2, checkedDates: [], todayAward: 3, nextAward: 4, basePoints: 1, streakBonusPerDay: 1, streakBonusCapDays: 7 } });
+        if (path === "/api/sms/catalog") return ok({ enabled: true, currency: "USD", services: [{ code: "tg", name: "Telegram" }, { code: "dr", name: "OpenAI" }, { code: "full", name: "Full rent" }], countries: [{ id: 6, name: "印度尼西亚" }, { id: 22, name: "印度" }, { id: 0, name: "俄罗斯" }] });
+        if (path === "/api/sms/offers") return ok(url.includes("service=") ? { currency: "USD", countries: [{ country: 6, price: "1.1", count: 15 }, { country: 22, price: "0.85", count: 5 }] } : { currency: "USD", services: [{ service: "tg", price: "0.85", count: 20 }, { service: "dr", price: "1.25", count: 10 }] });
+        if (path === "/api/sms/orders") return ok({ list: [], page: 1, hasMore: false });
+        if (path === "/api/tg-direct/plans") return ok({ plans: ["premium_3m", "premium_6m", "premium_12m"].map((key, index) => ({ key, label: `Premium · ${["3 个月", "6 个月", "1 年"][index]}`, enabled: true, serviceFee: "2.50", pricingVersion: 1 })), paymentsEnabled: true, serviceFee: "2.50" });
+        if (path === "/api/tg-direct/orders") return json(res, { code: 0, data: [], meta: { total: 0, page: 1, pageSize: 50 } });
+        if (path === "/api/tg-direct/cdks") return ok({ list: [], total: 0 });
+        if (path === "/api/cdk-v2/products") return ok({ issueEnabled: true, authorizeEnabled: true, list: [] });
+        if (path === "/api/cdk-v2/profiles" || path === "/api/cdk-v2/codes") return ok({ list: [], total: 0 });
+        if (path === "/api/deposit/records") return json(res, { code: 0, data: [], serverTime: new Date().toISOString(), networks: [
+          { network: "TRON", currency: "USDT", standard: "TRC20", tokenContract: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", tokenDecimals: 6, enabled: true, ready: true },
+          { network: "BSC", currency: "USDT", standard: "BEP20", tokenContract: "0x55d398326f99059fF775485246999027B3197955", tokenDecimals: 18, enabled: true, ready: true },
+        ] });
         if (path === "/api/dashboard") {
           return json(res, {
             userId: 9, email: session.email, displayName: session.displayName, role: "admin",
@@ -266,6 +292,8 @@ export function stylePreviewPlugin(): Plugin {
             ],
           } });
         }
+        if (/^\/api\/cards\/\d+\/ledger$/.test(path)) return ok({ activities: [], transactions: [] });
+        if (path === "/api/developer/webhooks/deliveries") return ok({ list: [], total: 0, page: 1, pageSize: 20 });
         const cardMatch = /^\/api\/cards\/(\d+)$/.exec(path);
         if (cardMatch) {
           const detail = cardDetails[cardMatch[1]];

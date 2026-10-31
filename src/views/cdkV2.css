@@ -9,14 +9,14 @@
 .cdkv2-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .cdkv2-header p { color: #686868; font-size: 14px; }
 .cdkv2-eyebrow { font-size: 11px; letter-spacing: .09em; font-weight: 600; color: #757575; }
-.cdk-v2 .cdkv2-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 17px; min-height: 44px; border: 1px solid #191919; border-radius: 9px; color: #fff; background: #191919; font-size: 13px; font-weight: 550; text-decoration: none; cursor: pointer; white-space: normal; transition: background .15s; }
+.cdk-v2 .cdkv2-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 17px; min-height: 44px; border: 1px solid #191919; border-radius: var(--control-radius); color: #fff; background: #191919; font-size: 13px; font-weight: 550; text-decoration: none; cursor: pointer; white-space: normal; transition: background .15s; }
 .cdk-v2 .cdkv2-button:hover { background: #333; }
 .cdk-v2 .cdkv2-button.secondary { background: #fff; color: #333; border-color: #dedede; }
 .cdk-v2 .cdkv2-button.secondary:hover { background: #f5f5f5; border-color: #aaa; }
 .cdk-v2 .cdkv2-button.danger { background: #a32929; border-color: #a32929; }
 .cdk-v2 button:disabled { opacity: .45; cursor: not-allowed; }
 .cdk-v2 button svg, .cdk-v2 a svg { flex-shrink: 0; }
-.cdk-v2 :is(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid #477a67; outline-offset: 3px; }
+.cdk-v2 :is(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--control-focus); outline-offset: 3px; }
 .cdkv2-guide { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 24px; padding: 20px 24px; border: 1px solid #e4e4e4; border-radius: 12px; background: #fff; gap: 20px; }
 .cdkv2-guide li { display: flex; align-items: center; gap: 12px; }
 .cdkv2-guide li > span { display: grid; place-items: center; width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; background: #f2f2f2; font-size: 13px; font-weight: 600; }

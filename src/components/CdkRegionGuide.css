@@ -1,0 +1,22 @@
+.developer-guide-content > .cdk-region-guide { grid-column:1 / -1; display:grid; gap:16px; }
+.cdk-region-guide .developer-guide-heading { align-items:start; }
+.cdk-region-guide ol { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:0; padding:0; list-style:none; counter-reset:cdk-guide; }
+.cdk-region-guide ol li { min-width:0; position:relative; padding:43px 15px 15px; border:1px solid #e6e6e1; border-radius:11px; color:#555; background:#fafaf8; font-size:12px; line-height:1.75; counter-increment:cdk-guide; overflow-wrap:anywhere; }
+.cdk-region-guide ol li:before { content:counter(cdk-guide,decimal-leading-zero); position:absolute; top:12px; left:15px; color:#85857d; font-size:11px; font-weight:650; }
+.cdk-region-guide ol strong { display:block; margin-bottom:6px; color:#292929; font-size:13px; }
+.cdk-region-guide p code,.cdk-region-guide li code { padding:2px 4px; border-radius:4px; color:#474747; background:#efefeb; font-size:.9em; }
+.cdk-region-guide p a { display:inline-block; color:#333; text-decoration:underline; text-underline-offset:3px; }
+.cdk-guide-example { overflow:hidden; border:1px solid #e2e2df; border-radius:11px; }
+.cdk-guide-example-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:14px 16px; border:0; color:#333; background:#f8f8f5; text-align:left; font-size:13px; font-weight:550; cursor:pointer; }
+.cdk-guide-example-toggle svg { width:15px; height:15px; transition:transform .15s; }
+.cdk-guide-example-toggle[aria-expanded=true] svg { transform:rotate(180deg); }
+.cdk-guide-example .api-code-block { border-radius:0; border-width:1px 0 0; }
+.developer-guide .developer-examples { grid-column:1 / -1; }
+.developer-examples .api-code-block { border:0; border-radius:0; }
+.openapi-json-grid > div > .api-code-block,.openapi-code-example > .api-code-block { border:0; border-radius:0; }
+.openapi-code-example .api-code-toolbar span { color:#c8cbd2; }
+@media(max-width:700px) { .cdk-region-guide ol { grid-template-columns:minmax(0,1fr); } .cdk-region-guide ol li { padding:14px 14px 14px 46px; } .cdk-region-guide ol li:before { top:16px; left:14px; } }
+
+.developer-guide .developer-security-card { grid-column:1 / -1; }
+.developer-guide .developer-security-card ul { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 28px; }
+@media(max-width:700px) { .developer-guide .developer-security-card ul { grid-template-columns:minmax(0,1fr); } }
