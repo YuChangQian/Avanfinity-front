@@ -1,11 +1,11 @@
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 import { stylePreviewPlugin } from "./vite.style-preview";
 
-function configuredPublicOrigin() {
-  const value = (process.env.PUBLIC_ORIGIN ?? process.env.VITE_PUBLIC_ORIGIN ?? "").trim();
+function configuredPublicOrigin(env: Record<string, string>) {
+  const value = (env.PUBLIC_ORIGIN ?? env.VITE_PUBLIC_ORIGIN ?? "").trim();
   if (!value) return "";
   const url = new URL(value);
   const loopbackHttp = url.protocol === "http:" && ["127.0.0.1", "localhost", "::1"].includes(url.hostname);
@@ -35,14 +35,18 @@ function seoAssets(origin: string): Plugin {
   };
 }
 
-export default defineConfig(() => {
-  const publicOrigin = configuredPublicOrigin();
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+  const publicOrigin = configuredPublicOrigin(env);
+  const apiTarget = (env.VITE_API_TARGET || process.env.VITE_API_TARGET || "http://127.0.0.1:8080").trim();
+  const apiTargetHost = new URL(apiTarget).hostname;
+  const apiTargetIsLocal = ["127.0.0.1", "localhost", "::1"].includes(apiTargetHost);
   return {
     plugins: [
       react(),
       tailwindcss(),
       seoAssets(publicOrigin),
-      ...(process.env.VITE_STYLE_PREVIEW === "1" ? [stylePreviewPlugin()] : []),
+      ...(env.VITE_STYLE_PREVIEW === "1" || process.env.VITE_STYLE_PREVIEW === "1" ? [stylePreviewPlugin()] : []),
     ],
     build: { manifest: "asset-manifest.json" },
     define: { __PUBLIC_ORIGIN__: JSON.stringify(publicOrigin) },
@@ -57,8 +61,9 @@ export default defineConfig(() => {
       },
       proxy: {
         "/api": {
-          target: process.env.VITE_API_TARGET ?? "http://127.0.0.1:8080",
-          changeOrigin: false,
+          target: apiTarget,
+          changeOrigin: !apiTargetIsLocal,
+          secure: true,
         },
       },
     },

@@ -20,6 +20,7 @@ import {
   Layers3,
   LifeBuoy,
   Megaphone,
+  Menu,
   KeyRound,
   Radio,
   RefreshCw,
@@ -490,6 +491,7 @@ export function AdminPage() {
   const [moneyQuery, setMoneyQuery] = useState({ page: 1, q: "", status: "", type: "", provider: "" });
   const [financialPage, setFinancialPage] = useState(1);
   const [auditQuery, setAuditQuery] = useState({ page: 1, q: "", action: "", targetType: "" });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isPanel = (...panels: AdminPanel[]) => panels.includes(activePanel);
 
   function selectPanel(panel: AdminPanel, replace = false) {
@@ -561,6 +563,23 @@ export function AdminPage() {
     const timer = window.setInterval(() => setDepositClock(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, [activePanel]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.documentElement.style.overflow = previousRootOverflow;
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     const restore = () => {
@@ -1155,14 +1174,18 @@ export function AdminPage() {
 
   return <div className="admin-shell" data-testid="admin-shell">
     <a className="skip-link" href="#main-content">{t("skipToContent")}</a>
-    <aside className="admin-local-sidebar">
+    {mobileMenuOpen && <button type="button" className="mobile-sidebar-backdrop" aria-label={t("closeNavigation")} data-testid="admin-mobile-backdrop" onClick={() => setMobileMenuOpen(false)} />}
+    <aside className={`admin-local-sidebar${mobileMenuOpen ? " is-mobile-open" : ""}`}>
+      <button type="button" className="mobile-sidebar-toggle admin-mobile-toggle" aria-label={t(mobileMenuOpen ? "closeNavigation" : "openNavigation")} aria-controls="admin-mobile-drawer" aria-expanded={mobileMenuOpen} data-testid="admin-mobile-menu" onClick={() => setMobileMenuOpen((open) => !open)}>
+        {mobileMenuOpen ? <X /> : <Menu />}
+      </button>
       <div className="admin-local-brand"><span><BrandIcon /></span><div><strong>AVANFINITY</strong><small>{t("adminWorkspace")}</small></div></div>
       <nav aria-label={t("adminNavigation")} data-testid="admin-local-nav">
-        {adminSections.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { selectPanel(id); setActionMessage(""); }} aria-current={activePanel === id ? "page" : undefined} data-testid={`admin-nav-${id}`}><Icon /><span>{t(label)}</span>{id === "support" && adminSupportUnreadCount > 0 && <b className="sidebar-badge" aria-label={t("unreadSupportMessages", { count: adminSupportUnreadCount })}>{adminSupportUnreadCount > 99 ? "99+" : adminSupportUnreadCount}</b>}</button>)}
+        {adminSections.map(({ id, label, icon: Icon }) => <button key={id} type="button" onClick={() => { selectPanel(id); setActionMessage(""); setMobileMenuOpen(false); }} aria-current={activePanel === id ? "page" : undefined} data-testid={`admin-nav-${id}`}><Icon /><span>{t(label)}</span>{id === "support" && adminSupportUnreadCount > 0 && <b className="sidebar-badge" aria-label={t("unreadSupportMessages", { count: adminSupportUnreadCount })}>{adminSupportUnreadCount > 99 ? "99+" : adminSupportUnreadCount}</b>}</button>)}
       </nav>
-      <div className="admin-local-foot">
+      <div className="admin-local-foot" id="admin-mobile-drawer">
         <LanguageButton />
-        <Link to="/dashboard" className="admin-back-link" data-testid="admin-back-to-app"><ArrowLeft /><span>{t("adminBackToApp")}</span></Link>
+        <Link to="/dashboard" className="admin-back-link" data-testid="admin-back-to-app" onClick={() => setMobileMenuOpen(false)}><ArrowLeft /><span>{t("adminBackToApp")}</span></Link>
         <div className="admin-local-audit"><ShieldCheck /><span><strong>{t("auditEnabled")}</strong><small>{t("allActionsRecorded")}</small></span></div>
       </div>
     </aside>

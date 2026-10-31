@@ -1186,6 +1186,7 @@ input:focus, select:focus, textarea:focus {
 .admin-back-link svg { width: 16px; flex: 0 0 auto; stroke-width: 1.8; }
 .admin-back-link:hover { color: #171717; background: #f3f3f1; }
 .admin-back-link:focus-visible { outline: 2px solid #171717; outline-offset: 2px; }
+.admin-mobile-toggle { display: none; }
 .admin-local-audit {
   display: flex;
   align-items: center;
@@ -4152,6 +4153,10 @@ details[open] > :not(summary) { animation: disclosure-content-in .2s ease-out bo
     position: sticky;
     top: 0;
     z-index: 20;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
     height: auto;
     max-height: none;
     margin: 0;
@@ -4161,11 +4166,72 @@ details[open] > :not(summary) { animation: disclosure-content-in .2s ease-out bo
     border-radius: 0;
     box-shadow: none;
   }
-  .admin-local-brand { display: none; }
-  .admin-local-foot { display: none; }
-  .admin-local-sidebar nav { display: flex; margin: 0; overflow-x: auto; scrollbar-width: none; }
+  .admin-mobile-toggle {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    min-height: 42px;
+    flex: 0 0 auto;
+    border: 0;
+    border-radius: 10px;
+    color: #555;
+    background: #f3f3f1;
+  }
+  .admin-mobile-toggle svg { width: 18px; }
+  .admin-mobile-toggle:focus-visible { outline: 2px solid #171717; outline-offset: 2px; }
+  .admin-local-brand,
+  .admin-local-foot {
+    display: none;
+  }
+  .admin-local-sidebar nav {
+    display: flex;
+    grid-column: 2;
+    margin: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
   .admin-local-sidebar nav::-webkit-scrollbar { display: none; }
   .admin-local-sidebar nav button { width: auto; flex: 0 0 auto; min-height: 40px; padding-inline: 13px; font-size: 13px; }
+  .admin-local-sidebar.is-mobile-open {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 90;
+    width: min(288px, calc(100vw - 56px));
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 14px 10px 12px;
+    overflow: hidden;
+    border: 0;
+    border-right: 1px solid #e4e4e1;
+    background: #fff;
+    box-shadow: 18px 0 40px #00000022;
+  }
+  .admin-local-sidebar.is-mobile-open .admin-mobile-toggle {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  }
+  .admin-local-sidebar.is-mobile-open .admin-local-brand {
+    display: flex;
+    padding-right: 48px;
+  }
+  .admin-local-sidebar.is-mobile-open nav {
+    display: grid;
+    grid-column: auto;
+    flex: 1;
+    margin: 16px 0;
+    overflow-y: auto;
+  }
+  .admin-local-sidebar.is-mobile-open nav button {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .admin-local-sidebar.is-mobile-open .admin-local-foot {
+    display: grid;
+  }
   .admin-page > header h1 { font-size: 20px; }
   .admin-panel-heading h2 { font-size: 20px; }
   .admin-provider-grid, .pricing-tier-grid { grid-template-columns: 1fr; }
