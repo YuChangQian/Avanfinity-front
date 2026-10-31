@@ -94,7 +94,7 @@ export function XDirectCdkPanel({ token, plans, cards }: { token: string; plans:
         <label>官方金额上限（BDT）<input name="officialAmount" type="number" min="0.01" step="0.01" required disabled={busy} /></label>
       </div>
       {product && mode === "new" && <p>当前开卡费 USD {formatDecimal(product.openFee)}；充值费率 {formatDecimal(shiftDecimal(product.rechargeRate, 2))}%。执行前以后台核验的实际费用为准，超出授权上限即停止。</p>}
-      {products.isError && mode === "new" && <p role="alert">开卡产品加载失败，请稍后重试。</p>}
+      {products.isError && mode === "new" && <p role="alert" className="error">开卡产品加载失败，请稍后重试。</p>}
       <p className="admin-settings-note">固定充值金额在兑换时执行，不自动追加充值。新开卡或充值后的剩余余额留在发行者卡内。钱包上限需覆盖全部钱包扣款；官方金额上限单独以 BDT 授权，不把美元汇率估算当作扣款授权。</p>
       <Button type="submit" disabled={busy || !plans.find(item => item.key === plan)?.enabled || (mode === "existing" ? !cardId : !productCode || products.isError)}><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: "免费生成 CDK", busy: "处理中…" }} /></Button>
     </form>

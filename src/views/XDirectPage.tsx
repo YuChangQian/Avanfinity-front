@@ -118,13 +118,13 @@ export function XDirectPage() {
   const preview = submitting !== "confirm" && uncertainOrderId !== order?.id && !paymentStarted(order);
   const recovered = uncertainOrderId === order?.id && settledStatuses.includes(order?.status ?? "");
   const orderContent = <div className="space-y-4">
-        {message && !recovered && <p role="alert">{message}</p>}
-        {detail.isError && <p role="alert">状态暂时无法获取，请刷新原订单，勿重复充值。</p>}
+        {message && !recovered && <p role="alert" className="error">{message}</p>}
+        {detail.isError && <p role="alert" className="error">状态暂时无法获取，请刷新原订单，勿重复充值。</p>}
         {(order || submitting === "prepare") && <XOrderProgress order={order} preparing={submitting === "prepare"} confirming={submitting === "confirm"} uncertain={uncertainOrderId === order?.id && !recovered} />}
         {order ? <>
           <strong>@{order.recipient} · {planList.find(item => item.key === order.plan)?.label ?? order.plan}</strong>
           <p>{submitting === "confirm" && !paid(order) ? "正在充值" : preview && order.status === "failed_precharge" ? "报价获取失败，未开始充值" : preview && order.status === "review_required" ? "报价结果待核对，未开始充值" : statuses[order.status] ?? "结果待核对"}</p>
-          {order.message && <p role="alert">{order.message}</p>}
+          {order.message && <p role="alert" className="error">{order.message}</p>}
           <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2">
             <div className="flex items-center justify-between gap-3"><span>官方金额</span><strong>{amount(order)}</strong></div>
             {order.amountMinor != null && <div className="flex items-center justify-between gap-3"><span>美元参考金额</span><strong>{order.estimatedUsd ? `约 USD ${order.estimatedUsd}` : "暂无法换算"}</strong></div>}
@@ -161,9 +161,9 @@ export function XDirectPage() {
           <SelectContent>{activeCards.map(card => <SelectItem key={card.id} value={String(card.id)}>{card.cardNumberMasked} · 余额 USD {card.balance}</SelectItem>)}</SelectContent>
         </Select></label>
         <p>所选套餐服务费：USD {planList.find(item => item.key === plan)?.serviceFee ?? "0.00"}。先检查账号资格并获取官方报价。确认后从所选卡付款，卡台服务费从钱包另行收取；换汇及发卡行费用以卡片实际账单为准。</p>
-        {plans.isError && <p role="alert">X 服务暂不可用，请稍后重试。</p>}
-        {cards.isError && <p role="alert">卡片加载失败，请刷新页面。</p>}
-        {plans.data && !plans.data.data.paymentsEnabled && <p role="status">付款暂未开启，可以预检已开放套餐。</p>}
+        {plans.isError && <p role="alert" className="error">X 服务暂不可用，请稍后重试。</p>}
+        {cards.isError && <p role="alert" className="error">卡片加载失败，请刷新页面。</p>}
+        {plans.data && !plans.data.data.paymentsEnabled && <p className="admin-alert is-warning" role="status">付款暂未开启，可以预检已开放套餐。</p>}
         <Button type="submit" disabled={action.isPending || !cardId || !planList.find(item => item.key === plan)?.enabled}><StableSwap state={action.isPending ? "busy" : "idle"} labels={{ idle: "检查资格并获取报价", busy: "处理中…" }} /></Button>
       </form></section>
       <section className="gpt-direct-panel"><div className="gpt-order-content" aria-live="polite">

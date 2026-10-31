@@ -416,7 +416,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           <div><dt>{t("depositLastTest")}</dt><dd>{t(`depositTestStatus.${deposit.lastTestStatus}`)}{deposit.lastTestAt ? ` · ${new Date(deposit.lastTestAt).toLocaleString()}` : ""}</dd></div>
           <div><dt>{t("depositLastSuccess")}</dt><dd>{deposit.lastSuccessAt ? new Date(deposit.lastSuccessAt).toLocaleString() : "—"}</dd></div>
         </dl>
-        {deposit.lastError && <p className="admin-alert is-error" role="alert"><span><strong>{t("depositLastError")}</strong>{deposit.lastErrorAt ? ` · ${new Date(deposit.lastErrorAt).toLocaleString()}` : ""}<br />{deposit.lastError}</span></p>}
+        {deposit.lastError && <p className="admin-alert is-error" role="note"><span><strong>{t("depositLastError")}</strong>{deposit.lastErrorAt ? ` · ${new Date(deposit.lastErrorAt).toLocaleString()}` : ""}<br />{deposit.lastError}</span></p>}
         {depositNotice && <p className={`admin-alert ${depositNoticeError ? "is-error" : "is-success"}`} role={depositNoticeError ? "alert" : "status"}>{depositNotice}</p>}
         <div className="admin-form-actions">
           <Button type="button" variant="outline" disabled={!savedDepositComplete || saveDeposits.isPending || testDeposits.isPending} onClick={() => { setDepositNotice(""); testDeposits.mutate(); }}><RefreshCw /><StableSwap state={testDeposits.isPending ? "busy" : "idle"} labels={{ idle: t("testDepositMonitor"), busy: t("depositTesting") }} /></Button>

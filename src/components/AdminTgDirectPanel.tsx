@@ -142,7 +142,7 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
                 </dl>
               </div>
             </div>
-            {tgOrderExplanation(order) && <p className="admin-alert is-warning">{tgOrderExplanation(order)}</p>}
+            {tgOrderExplanation(order) && <p className="admin-alert is-warning" role="note">{tgOrderExplanation(order)}</p>}
             <section className="admin-drawer-section">
               <header><span>ACCOUNT</span><h3>{en ? "Customer & payment" : "客户与支付"}</h3></header>
               <dl className="admin-drawer-facts">

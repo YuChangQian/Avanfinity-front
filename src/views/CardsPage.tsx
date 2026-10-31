@@ -257,7 +257,7 @@ export function CardsPage() {
         <p>{t("cardTools.searchHint")}</p>
       </form>
       <CardClosurePanel key={String(sessionIdentity(session))} owner={String(sessionIdentity(session))} token={session.token} enabled={flags.cardDelete} />
-      {cards.isError && <p role="alert">{t("cardTools.searchError")} <Button variant="outline" onClick={() => void cards.refetch()}>{t("cardTools.refresh")}</Button></p>}
+      {cards.isError && <p role="alert" className="error">{t("cardTools.searchError")} <Button variant="outline" onClick={() => void cards.refetch()}>{t("cardTools.refresh")}</Button></p>}
     </div>}
     {showingOwnedCards && cards.data && <section className="owned-cards">
       <div className="section-title"><h2>{t("cardList")}</h2><span>{t("cardCountLabel", { count: cards.data.data.total })}</span></div>

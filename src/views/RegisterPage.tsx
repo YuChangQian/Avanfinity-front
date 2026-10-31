@@ -49,7 +49,7 @@ export function RegisterPage() {
       <p className="secure-note"><ShieldCheck size={14} /> {t("emailDeliveryCheckSpamHint")}</p>
       <label>{t("password")}<input name="password" type="password" placeholder="12+ characters" minLength={12} required /></label>
       {attributedCode
-        ? <p className="success-note" data-testid="invite-attribution-locked">{t("inviteAttributionLocked")}</p>
+        ? <p className="success-note" role="note" data-testid="invite-attribution-locked">{t("inviteAttributionLocked")}</p>
         : <label>{t("optionalInvite")}<input name="inviteCode" placeholder="e.g. INVITE2026" value={manualInviteCode} onChange={(event) => setManualInviteCode(event.target.value)} /></label>}
       <label className="legal-consent"><input name="legalConsent" type="checkbox" required /><span>我已年满 18 周岁，确认不在中国大陆地区，且已阅读并同意 <Link to="/terms" target="_blank">服务条款</Link> 和 <Link to="/user-agreement" target="_blank">用户协议</Link>。</span></label>
       {error && <p role="alert" className="error">{error}</p>}

@@ -53,7 +53,7 @@ export function MfaSetupPage() {
       {status.isLoading && <section className="mfa-enrollment" aria-busy="true"><p><DataSkeleton /></p><label>{t("mfaSecretLabel")}<output className="secret-output"><DataSkeleton /></output></label><label>{t("mfaUriLabel")}<textarea readOnly rows={4} /></label><form className="stacked-form"><label>{t("mfaConfirmCode")}<input disabled /></label><Button size="lg" disabled>{t("enableMfa")}</Button></form></section>}
       {status.isError && <p role="alert" className="error">{t("mfaStatusFailed")}</p>}
       {status.data?.data.state === "pending" && !enrollment && <p role="alert" className="security-warning"><KeyRound />{t("mfaSecretNotRepeated")}</p>}
-      {status.data?.data.state === "enabled" && <p className="success-note">{t("mfaAlreadyEnabled")}</p>}
+      {status.data?.data.state === "enabled" && <p className="success-note" role="note">{t("mfaAlreadyEnabled")}</p>}
       {status.data?.data.state === "not_enrolled" && !enrollment && <Button size="lg" onClick={() => enroll.mutate()} disabled={enroll.isPending}><StableSwap state={enroll.isPending ? "busy" : "idle"} labels={{ idle: t("startMfaSetup"), busy: t("processing") }} /></Button>}
       {enroll.isError && <p role="alert" className="error">{enroll.error.message}</p>}
       {enrollment && <section className="mfa-enrollment" aria-live="polite">

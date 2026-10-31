@@ -40,7 +40,7 @@ export function AdminProfitPanel({ token }: { token: string }) {
   const [classification, setClassification] = useState("unresolved");
   const [operationId, setOperationId] = useState("");
   const [note, setNote] = useState("");
-  const [message, setMessage] = useState("");
+  const [flash, setFlash] = useState<{ kind: "success" | "error"; text: string } | null>(null);
   const connections = useQuery({ queryKey: ["profit-connections"], queryFn: () => getProfitConnections(token) });
   const report = useQuery({ queryKey: ["profit-report", filters], queryFn: () => createProfitReport(token, filters), retry: false, staleTime: Infinity, refetchOnWindowFocus: false });
   const id = report.data?.data.id;
@@ -51,16 +51,16 @@ export function AdminProfitPanel({ token }: { token: string }) {
     const url = URL.createObjectURL(blob); const anchor = document.createElement("a");
     anchor.href = url; anchor.download = `真实利润-${filters.start ?? "累计"}-${filters.end ?? "全部"}-${id}.csv`; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, onError: (e) => setMessage(errorText(e)) });
+  }, onError: (e) => setFlash({ kind: "error", text: errorText(e) }) });
   const review = useMutation({ mutationFn: () => reviewProfitEvidence(token, { sourceKey: selected!.key, fingerprint: selected!.fingerprint, classification, operationId: classification === "operation_cost" ? operationId : undefined, note }),
-    onSuccess: () => { setSelected(null); setMessage("核对记录已保存。正在重新生成报表，旧导出仍保留原数据。"); setPage(1); void report.refetch(); }, onError: (e) => setMessage(errorText(e)) });
+    onSuccess: () => { setSelected(null); setFlash({ kind: "success", text: "核对记录已保存。正在重新生成报表，旧导出仍保留原数据。" }); setPage(1); void report.refetch(); }, onError: (e) => setFlash({ kind: "error", text: errorText(e) }) });
 
   function submitFilters(event: FormEvent) { event.preventDefault(); setPage(1); setFilters({ ...draft }); }
   function inspect(item: ProfitItem) { setSelected(item); setClassification("unresolved"); setOperationId(typeof item.evidence.suggestedOperationId === "string" ? item.evidence.suggestedOperationId : ""); setNote(""); }
   return <div className="admin-panel-stack profit-panel" data-testid="admin-profit">
     <div className="admin-section-heading"><div><span className="admin-kicker">ACTUAL PROFIT</span><h2>收益与对账</h2><p>本站实际扣款减去上游实际扣款，退款与返款自动抵扣。无需网页登录 Token。</p></div>
       <Button onClick={() => { setPage(1); void report.refetch(); }} disabled={report.isFetching}><RefreshCw />{report.isFetching ? "正在核算" : "重新生成报表"}</Button></div>
-    {message && <p className="admin-alert" role="status">{message}</p>}
+    {flash && <p className={`admin-alert ${flash.kind === "error" ? "is-error" : "is-success"}`} role={flash.kind === "error" ? "alert" : "status"}>{flash.text}</p>}
     <form className="admin-surface profit-filters" onSubmit={submitFilters}>
       <label>开始日期（北京时间）<input type="date" value={draft.start ?? ""} onChange={e => setDraft({ ...draft, start: e.target.value || undefined })} /></label>
       <label>结束日期<input type="date" value={draft.end ?? ""} onChange={e => setDraft({ ...draft, end: e.target.value || undefined })} /></label>
@@ -80,13 +80,13 @@ export function AdminProfitPanel({ token }: { token: string }) {
         <p>净收益 = 本站实际扣款（含加收费用、扣退款）− 上游实际扣款（扣返款）− 固定充值费 − 返佣 − 补贴。加收费用已在实际扣款中，不重复累加。</p>
         <p>充值费按上游 API 充值到账额 ÷ 99.8% × 0.2% 计算；属于固定费率口径，不代表逐笔网页账单手续费。客户充值本金不当收入，账户间本金划转不当利润。</p>
         {summary.pendingCount > 0 && <p>待结算和未归属收支尚未计入上述金额，可在明细查看；它们不会阻塞已完成业务的收益展示。</p>}
-        {summary.warnings.map(w => <p role="status" className="negative" key={w}>{w}</p>)}
+        {summary.warnings.map(w => <p role="note" className="admin-alert is-warning" key={w}>{w}</p>)}
         <small>报表生成时间：{new Date(report.data!.data.generatedAt).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}（北京时间）。金额保留原始精度；更新凭证后回补业务日期。稳定币按本站 USD 记账单位展示，不包含未记录的站外费用。</small>
       </section>
     </>}
     <section className="admin-surface">
       <div className="admin-section-heading"><h3>收支与凭证明细</h3><Button variant="outline" disabled={!id || download.isPending} onClick={() => download.mutate()}><Download />导出当前报表 CSV</Button></div>
-      {rows.isError && <p role="alert">{errorText(rows.error)}</p>}
+      {rows.isError && <p role="alert" className="error">{errorText(rows.error)}</p>}
       <div className="admin-table-wrap profit-table"><table><thead><tr><th>业务日期</th><th>业务 / 来源</th><th>用户 / 卡片 / 交易</th><th>核对状态</th><th>收入</th><th>真实成本</th><th>充值费 / 返佣 / 补贴</th><th>利润</th><th>凭证</th></tr></thead><tbody>
         {rows.data?.data.list.map(item => <tr key={item.key}><td>{item.businessDate}</td><td>{itemKind(item)}<small>{item.key}</small>{item.operationId && <small>业务：{item.operationId}</small>}</td><td>{item.userId ? <a href={adminCustomerReturnPath(item.userId)}>用户 #{item.userId}</a> : "—"}<FeeSources item={item} /></td><td><span className={`status-pill ${item.status === "confirmed" ? "is-active" : ""}`}>{item.kind === "CARD_FEE" && item.status === "confirmed" ? "已收手续费" : statuses[item.status]}</span><small>{item.reason}</small></td>
           <td>{usd(item.revenue)}</td><td>{item.kind === "CARD_FEE" ? "成本另列" : usd(item.cost)}</td><td>{usd(item.fundingFee)} / {usd(item.reward)} / {usd(item.subsidy)}</td><td className={item.profit?.startsWith("-") ? "negative" : ""}>{item.kind === "CARD_FEE" ? "—" : usd(item.profit)}{item.kind === "CARD_FEE" && <small>收入行，不代表单笔净利润</small>}</td><td><Button size="sm" variant="outline" onClick={() => inspect(item)}>查看凭证</Button></td></tr>)}
@@ -102,7 +102,7 @@ export function AdminProfitPanel({ token }: { token: string }) {
           {!selected.key.startsWith("operation:") && <option value="non_business">已核实为非本站损益</option>}</select></label>
           {classification === "operation_cost" && <label>本站业务编号（UUID）<input required value={operationId} onChange={e => setOperationId(e.target.value)} placeholder="money operation ID" /></label>}
           <label>凭证依据与核对说明<textarea required minLength={10} maxLength={1000} value={note} onChange={e => setNote(e.target.value)} placeholder="填写已核实的订单、账单或付款凭证依据；不要填写密码、卡号或 Token" /></label>
-          {review.isError && <p role="alert" className="negative">{errorText(review.error)}</p>}<Button type="submit" disabled={review.isPending}>保存核对记录</Button></form>}
+          {review.isError && <p role="alert" className="error">{errorText(review.error)}</p>}<Button type="submit" disabled={review.isPending}>保存核对记录</Button></form>}
       </>}
     </Dialog.Content></Dialog.Portal></Dialog.Root>
   </div>;

@@ -46,7 +46,7 @@ export function EmailLoginSetup({ token, verificationPending, initialEmail, onCo
   return <article className="module-card settings-security" data-testid="email-login-setup">
     <div className="stat-icon"><KeyRound /></div>
     <h2>{t("setupEmailLogin")}</h2>
-    {verificationPending && <p className="success-note">{t("emailLoginVerificationPending")}</p>}
+    {verificationPending && <p className="success-note" role="status">{t("emailLoginVerificationPending")}</p>}
     <form onSubmit={submit}>
         <p>{t("setupEmailLoginHint")}</p>
         <label>{t("email")}<input name="email" type="email" autoComplete="email" defaultValue={initialEmail} required /></label>

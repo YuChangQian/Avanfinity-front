@@ -85,7 +85,7 @@ export function TgCdkRedeemPage() {
       {result && !recovering && <>
         <h2>{planLabels[result.plan] ?? "Telegram Premium"}</h2>
         <p role="status">{statusLabels[result.status] ?? "结果待核对，请查询原兑换状态"}</p>
-        {result.status === "ineligible" && <p role="alert">该 Telegram 账号暂不能接收此套餐，请核对用户名或联系管理员。</p>}
+        {result.status === "ineligible" && <p role="alert" className="error">该 Telegram 账号暂不能接收此套餐，请核对用户名或联系管理员。</p>}
         {result.status === "unused" && <form className="grid gap-6" onSubmit={event => { event.preventDefault(); void run("preflight"); }}>
           <label>TG 用户名<input value={recipient} onChange={event => setRecipient(event.target.value)} readOnly={Boolean(intent)} disabled={busy} maxLength={33} pattern="@?[A-Za-z0-9_]{1,32}" autoComplete="off" required /></label>
           <Button disabled={busy}><StableSwap state={busy ? "busy" : intent ? "alt" : "idle"} labels={{ idle: "检查资格并获取报价", alt: "重试预检", busy: "正在预检…" }} /></Button>

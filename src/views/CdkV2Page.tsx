@@ -74,8 +74,8 @@ function CdkV2Workspace() {
     {(error || loadError) && <div className="cdkv2-alert" role="alert">{error || loadError}</div>}
     {notice && <div className="cdkv2-notice" role="status"><Check size={18} />{notice}</div>}
     {products.isPending && <p role="status" className="cdkv2-hint">正在加载产品与发行状态。</p>}
-    {products.data?.issueEnabled === false && <p className="cdkv2-warning">新发行暂未开放。</p>}
-    {products.data?.authorizeEnabled === false && <p className="cdkv2-warning">新兑换授权暂未开放，已授权交易可继续查询。</p>}
+    {products.data?.issueEnabled === false && <p className="cdkv2-warning" role="note">新发行暂未开放。</p>}
+    {products.data?.authorizeEnabled === false && <p className="cdkv2-warning" role="note">新兑换授权暂未开放，已授权交易可继续查询。</p>}
     {view === 'issue' && <div className="cdkv2-layout"><section className="cdkv2-panel"><div className="cdkv2-section-heading"><div><span className="cdkv2-eyebrow">第二步 · 发行</span><h2>免费生成兑换码</h2></div><span className="cdkv2-badge">发码免费</span></div>
       {profiles.isPending ? <p role="status">正在加载模板…</p> : enabledProfiles.length === 0 ? <div className="cdkv2-empty"><KeyRound size={32} /><h3>{profiles.data?.list.length ? '还没有启用的模板' : '先创建你的第一个模板'}</h3><p>模板保存产品、选卡方式与支出上限。之后每次发码都可以直接复用。</p><button className="cdkv2-button" disabled={busy || !!profiles.error} onClick={newProfile}><Plus size={16} />创建第一个模板</button></div> : <form onSubmit={e => { e.preventDefault(); void run(async () => { if (!selectedProfile?.enabled) return; const body = issuanceBody; const current = intent && JSON.stringify(intent.body) === JSON.stringify(body) ? intent : { key: crypto.randomUUID(), body }; setIntent(current); sessionStorage.setItem(intentStorageKey, JSON.stringify(current)); const data = await cdkRequest<Batch>('batches', current.body, token, 'POST', current.key); setBatch(data); setBatchId(data.id); setPage(1); await codes.refetch(); }); }}>
         <label><span>发行模板</span><select required value={profileId} onChange={e => setProfileId(e.target.value)}><option value="">选择一个已启用的模板</option>{enabledProfiles.map(v => <option key={v.id} value={v.id}>{v.configuration.name} · v{v.version}</option>)}</select></label>

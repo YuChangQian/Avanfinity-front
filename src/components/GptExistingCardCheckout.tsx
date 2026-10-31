@@ -177,7 +177,7 @@ export function GptExistingCardCheckout({ token, userKey, cardId, estimateUsd, s
         <div><dt>{t("gptFundingWallet")}</dt><dd>${formatDecimal(review.wallet)}</dd></div>
       </dl>
       <p>{t("gptFundingNotice")}</p>
-      {!fundingCovered(review.wallet, review.total) && <p role="alert">{t("gptFundingWalletLow")} <Link to="/finance">{t("gptFundingDeposit")}</Link></p>}
+      {!fundingCovered(review.wallet, review.total) && <p role="alert" className="error">{t("gptFundingWalletLow")} <Link to="/finance">{t("gptFundingDeposit")}</Link></p>}
     </div>}
     {error && <p role="alert" className="error">{error} <Link to="/cards/$cardId" params={{ cardId: String(cardId) }}>{t("gptFundingViewCard")}</Link></p>}
     {pending && <p role="status">{t("gptFundingPending")} <Link to="/cards/$cardId" params={{ cardId: String(cardId) }}>{t("gptFundingViewCard")}</Link></p>}

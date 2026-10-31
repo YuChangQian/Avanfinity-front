@@ -94,7 +94,7 @@ function QuoteRefreshForm({ token, settings }: { token: string; settings: AdminG
         succeeded: settings.catalogProgress.succeeded ?? 0, failed: settings.catalogProgress.failed ?? 0 })}
       {settings.catalogProgress.rateLimited && ` · ${t("gptCatalogRateLimited")}`}
     </p>}
-    {!settings.notificationReady && <p className="admin-alert is-warning"><ShieldAlert />{t("cdkRefreshTelegramRequired")}</p>}
+    {!settings.notificationReady && <p className="admin-alert is-warning" role="note"><ShieldAlert />{t("cdkRefreshTelegramRequired")}</p>}
     {error && <p className="admin-alert is-error" role="alert"><span>{error instanceof Error ? error.message : t("updateFailed")}</span>{recentAuthRequired && <Button type="button" size="xs" variant="outline" onClick={requestRecentAuth}>{t("verifyAgain")}</Button>}</p>}
   </section>;
 }

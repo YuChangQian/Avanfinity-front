@@ -208,7 +208,7 @@ export function AppShell() {
           }}><X aria-hidden="true" /></button>
         </div>
         <div id="announcement-strip-list" hidden={!announcementsExpanded}>
-          {readAnnouncement.isError && <p className="announcement-strip-error" role="alert">{t("announcementReadFailed")}</p>}
+          {readAnnouncement.isError && <p className="error announcement-strip-error" role="alert">{t("announcementReadFailed")}</p>}
           <div className="announcement-strip-list">{visibleAnnouncements.map(item => <article key={item.id} data-testid={`announcement-${item.id}`}>
             <h2>{item.title}</h2><p>{item.content}</p>
             <Button size="sm" variant="outline" onClick={() => readAnnouncement.mutate(item.id)} disabled={readAnnouncement.isPending}><StableSwap state={readAnnouncement.isPending && readAnnouncement.variables === item.id ? "busy" : "idle"} labels={{ idle: t("acknowledgeAnnouncement"), busy: t("processing") }} /></Button>

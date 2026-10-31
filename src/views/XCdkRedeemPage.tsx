@@ -90,10 +90,10 @@ export function XCdkRedeemPage() {
       {result && !recovering && <>
         <h2>{planLabels[result.plan] ?? "X 会员"}</h2>
         <p role="status">{statusLabels[result.status] ?? "结果待核对，请查询原兑换状态"}</p>
-        {result.errorCode === "X_CARD_READ_RATE_LIMITED" && <p role="alert">发卡平台请求过于频繁，请稍后继续原兑换；未提交付款、未扣服务费。</p>}
-        {result.errorCode === "X_CARD_READ_UNAVAILABLE" && <p role="alert">暂时无法核对支付卡余额，请稍后继续原兑换；未提交付款、未扣服务费。</p>}
-        {result.errorCode === "X_CARD_BALANCE_INSUFFICIENT" && <p role="alert">卡余额不足，请联系发行者补足卡余额后继续；未提交付款、未扣服务费。</p>}
-        {result.status === "ineligible" && <p role="alert">72小时内没有改过资料、个人信息、密码，以及陌生设备登录，才可以进行充值，您提供的账号暂不满足此条件。</p>}
+        {result.errorCode === "X_CARD_READ_RATE_LIMITED" && <p role="alert" className="error">发卡平台请求过于频繁，请稍后继续原兑换；未提交付款、未扣服务费。</p>}
+        {result.errorCode === "X_CARD_READ_UNAVAILABLE" && <p role="alert" className="error">暂时无法核对支付卡余额，请稍后继续原兑换；未提交付款、未扣服务费。</p>}
+        {result.errorCode === "X_CARD_BALANCE_INSUFFICIENT" && <p role="alert" className="error">卡余额不足，请联系发行者补足卡余额后继续；未提交付款、未扣服务费。</p>}
+        {result.status === "ineligible" && <p role="alert" className="error">72小时内没有改过资料、个人信息、密码，以及陌生设备登录，才可以进行充值，您提供的账号暂不满足此条件。</p>}
         {result.status === "unused" && <form className="grid gap-6" onSubmit={event => { event.preventDefault(); void run("preflight"); }}>
           <label>X 用户名<input value={recipient} onChange={event => setRecipient(event.target.value)} readOnly={Boolean(intent)} disabled={busy} maxLength={16} pattern="@?[A-Za-z0-9_]{1,15}" autoComplete="off" required /></label>
           <Button disabled={busy}><StableSwap state={busy ? "busy" : intent ? "alt" : "idle"} labels={{ idle: "检查资格并获取报价", alt: "重试预检", busy: "正在预检…" }} /></Button>

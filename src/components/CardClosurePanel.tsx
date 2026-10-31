@@ -61,7 +61,7 @@ export function CardClosurePanel({ token, owner, enabled }: { token: string; own
     {intent?.id && <section className="transaction-panel" data-testid="card-closure-progress" aria-label={t("cardTools.progress")}>
       <h3>{t("cardTools.progress")}</h3>
       <p>{t("cardTools.background")}</p>
-      {result.isError && <p role="alert">{t("cardTools.readError")} <Button variant="outline" onClick={() => void result.refetch()}>{t("cardTools.refresh")}</Button></p>}
+      {result.isError && <p role="alert" className="error">{t("cardTools.readError")} <Button variant="outline" onClick={() => void result.refetch()}>{t("cardTools.refresh")}</Button></p>}
       {!batch && !result.isError && <p role="status">{t("loading")}</p>}
       {batch && <>
         <p role="status">{t(`cardTools.batchStatus.${batch.status}`)}</p>
@@ -85,7 +85,7 @@ export function CardClosurePanel({ token, owner, enabled }: { token: string; own
         <Dialog.Description>{t("cardTools.scope")}</Dialog.Description>
         <p>{t("deleteCardWarning")}</p><p>{t("cardTools.exclusions")}</p>
         <label className="card-closure-confirm"><input type="checkbox" checked={confirmed} disabled={submit.isPending} onChange={e => setConfirmed(e.target.checked)} />{t("cardTools.confirmLabel")}</label>
-        {submit.isError && <p role="alert">{t("cardTools.submitError")}</p>}
+        {submit.isError && <p role="alert" className="error">{t("cardTools.submitError")}</p>}
         <div className="card-actions">
           <Dialog.Close asChild><Button variant="outline" disabled={submit.isPending}>{t("cancel")}</Button></Dialog.Close>
           <Button variant="destructive" disabled={!confirmed || !enabled || submit.isPending} onClick={() => {

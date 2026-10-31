@@ -93,6 +93,7 @@ import {
   type AdminMembershipTier,
   type AdminCardRecord,
   type MembershipTierProfileInput,
+  type PricingData,
   type PricingInput,
   type PricingPreview,
   type ReferralEstimateRange,
@@ -105,6 +106,92 @@ import { sessionAtom } from "../state";
 import { parseAdminCustomerReturnPath, type AdminCustomerView } from "../adminCustomerReturnPath";
 
 type AdminPanel = "overview" | "profit" | "upstreams" | "costs" | "tiers" | "cards" | "cdks" | "gptOrders" | "xDirect" | "tgDirect" | "proxies" | "funds" | "customers" | "support" | "announcements" | "audit" | "rewards" | "telegram" | "system";
+
+const mockMembershipTier = (input: Partial<AdminMembershipTier> & Pick<AdminMembershipTier, "code" | "nameZh" | "nameEn" | "thresholdAmount">): AdminMembershipTier => ({
+  descriptionZh: input.descriptionZh ?? `${input.nameZh}权益说明（预览）`,
+  descriptionEn: input.descriptionEn ?? `${input.nameEn} benefits (preview)`,
+  minimumOpenFee: input.minimumOpenFee ?? "1.0000",
+  minimumRechargeRate: input.minimumRechargeRate ?? "0.010000",
+  referralOpenReward: input.referralOpenReward ?? "0.5000",
+  referralRechargeRate: input.referralRechargeRate ?? "0.002000",
+  declineFee: input.declineFee ?? "0.3000",
+  gptDirectMinimumFee: input.gptDirectMinimumFee ?? "2.0000",
+  openMultiplier: input.openMultiplier ?? "1.2000",
+  rechargeMultiplier: input.rechargeMultiplier ?? "1.150000",
+  refundMultiplier: input.refundMultiplier ?? "1.050000",
+  gptDirectMultiplier: input.gptDirectMultiplier ?? "1.100000",
+  version: input.version ?? 1,
+  authDeclineRate1: input.authDeclineRate1 ?? "15.00",
+  authDeclineAmount1: input.authDeclineAmount1 ?? "0.3000",
+  authDeclineRate2: input.authDeclineRate2 ?? "20.00",
+  authDeclineAmount2: input.authDeclineAmount2 ?? "0.5000",
+  authDeclineRate3: input.authDeclineRate3 ?? "25.00",
+  authDeclineAmount3: input.authDeclineAmount3 ?? "0.8000",
+  authDeclineFreezeRate: input.authDeclineFreezeRate ?? "30.00",
+  authDeclineFreezeMargin: input.authDeclineFreezeMargin ?? "200.0000",
+  ...input,
+});
+
+const MOCK_PRICING_DATA: PricingData = {
+  overrides: [],
+  referralPolicy: {
+    calculationMode: "confirmed_profit_share",
+    profitShareRate: "0.100000",
+    displayMode: "profit_share",
+    version: 3,
+    tiers: [
+      { code: "none", nameZh: "普通会员", nameEn: "Standard", openingBaseReward: { min: "0.2000", max: "0.5000" }, rechargeRewardRate: { min: "0.001000", max: "0.002000" } },
+      { code: "silver", nameZh: "白银会员", nameEn: "Silver", openingBaseReward: { min: "0.4000", max: "0.8000" }, rechargeRewardRate: { min: "0.001500", max: "0.003000" } },
+      { code: "gold", nameZh: "黄金会员", nameEn: "Gold", openingBaseReward: { min: "0.6000", max: "1.2000" }, rechargeRewardRate: { min: "0.002000", max: "0.004000" } },
+    ],
+  },
+  tiers: [
+    mockMembershipTier({
+      code: "none", nameZh: "普通会员", nameEn: "Standard", thresholdAmount: "0.0000",
+      descriptionZh: "注册即可使用的基础等级，适合刚开始开卡和充值。", descriptionEn: "Default tier for new accounts.",
+      openMultiplier: "1.2500", minimumOpenFee: "1.5000", rechargeMultiplier: "1.200000", minimumRechargeRate: "0.012000",
+      declineFee: "0.3500", refundMultiplier: "1.080000", gptDirectMultiplier: "1.150000", gptDirectMinimumFee: "2.5000", version: 4,
+    }),
+    mockMembershipTier({
+      code: "silver", nameZh: "白银会员", nameEn: "Silver", thresholdAmount: "1000.0000",
+      descriptionZh: "累计充值达标后解锁更优开卡与充值费率。", descriptionEn: "Better open and recharge rates after recharge threshold.",
+      openMultiplier: "1.1800", minimumOpenFee: "1.2000", rechargeMultiplier: "1.120000", minimumRechargeRate: "0.010000",
+      declineFee: "0.3000", refundMultiplier: "1.050000", gptDirectMultiplier: "1.100000", gptDirectMinimumFee: "2.0000", version: 4,
+      authDeclineRate1: "12.00", authDeclineAmount1: "0.2500", authDeclineFreezeRate: "28.00", authDeclineFreezeMargin: "180.0000",
+    }),
+    mockMembershipTier({
+      code: "gold", nameZh: "黄金会员", nameEn: "Gold", thresholdAmount: "5000.0000",
+      descriptionZh: "高等级客户专属费率，适合高频开卡与直充业务。", descriptionEn: "Premium rates for high-volume card and direct-pay use.",
+      openMultiplier: "1.1000", minimumOpenFee: "0.9000", rechargeMultiplier: "1.080000", minimumRechargeRate: "0.008000",
+      declineFee: "0.2500", refundMultiplier: "1.030000", gptDirectMultiplier: "1.050000", gptDirectMinimumFee: "1.5000", version: 4,
+      authDeclineRate1: "10.00", authDeclineAmount1: "0.2000", authDeclineRate2: "15.00", authDeclineAmount2: "0.4000",
+      authDeclineRate3: "20.00", authDeclineAmount3: "0.6000", authDeclineFreezeRate: "25.00", authDeclineFreezeMargin: "150.0000",
+    }),
+  ],
+};
+
+function MockDirectFees({ kind, tierCode }: { kind: "x" | "tg"; tierCode: string }) {
+  const { i18n } = useTranslation();
+  const en = i18n.language === "en";
+  const plans = kind === "x"
+    ? [
+        { key: "premium_3m", label: en ? "Premium · 3 months" : "Premium · 3 个月", serviceFee: "1.50" },
+        { key: "premium_6m", label: en ? "Premium · 6 months" : "Premium · 6 个月", serviceFee: "2.50" },
+        { key: "premium_12m", label: en ? "Premium · 1 year" : "Premium · 1 年", serviceFee: "4.00" },
+        { key: "premium_plus_3m", label: en ? "Premium+ · 3 months" : "Premium+ · 3 个月", serviceFee: "2.00" },
+        { key: "premium_plus_6m", label: en ? "Premium+ · 6 months" : "Premium+ · 6 个月", serviceFee: "3.50" },
+        { key: "premium_plus_12m", label: en ? "Premium+ · 1 year" : "Premium+ · 1 年", serviceFee: "5.50" },
+      ]
+    : [
+        { key: "premium_3m", label: en ? "Premium · 3 months" : "Premium · 3 个月", serviceFee: "1.20" },
+        { key: "premium_6m", label: en ? "Premium · 6 months" : "Premium · 6 个月", serviceFee: "2.00" },
+        { key: "premium_12m", label: en ? "Premium · 1 year" : "Premium · 1 年", serviceFee: "3.50" },
+      ];
+  return <div className="tier-direct-block" data-testid={`admin-${kind}-direct-fees-mock`}>
+    <div className="tier-direct-block-head"><strong>{kind === "x" ? (en ? "X Direct" : "X 直充") : (en ? "TG Direct" : "TG 直充")}</strong><small>{en ? "Static preview" : "静态预览"}</small></div>
+    <div className="tier-direct-grid">{plans.map((plan) => <label key={`${tierCode}-${plan.key}`}><span>{plan.label}</span><input type="number" value={plan.serviceFee} readOnly aria-label={`${plan.label} ${en ? "Service fee (USD)" : "服务费"}`} /></label>)}</div>
+  </div>;
+}
 
 const adminSections: Array<{ id: AdminPanel; label: string; icon: typeof Activity }> = [
   { id: "overview", label: "adminOverview", icon: Activity },
@@ -326,7 +413,7 @@ function reconciliationIsClosable(status: string, dispatchState: string) {
     || (["FAILED", "COMPENSATED"].includes(status) && dispatchState === "FAILED");
 }
 
-function PricingTierEditor({ token, tier, onApplied }: { token: string; tier: AdminMembershipTier; onApplied: () => void }) {
+function PricingTierEditor({ token, tier, onApplied, previewOnly = false, section = "pricing" }: { token: string; tier: AdminMembershipTier; onApplied: () => void; previewOnly?: boolean; section?: "pricing" | "profile" | "decline" | "direct" }) {
   const { t, i18n } = useTranslation();
   const [profile, setProfile] = useState<MembershipTierProfileInput>({
     version: tier.version,
@@ -386,70 +473,116 @@ function PricingTierEditor({ token, tier, onApplied }: { token: string; tier: Ad
   };
   const invalidMargin = preview?.products.some((product) => Number(product.openProfit) < 0 || Number(product.rechargeMargin) < 0 || Number(product.refundMargin) < 0) ?? false;
   const hasFreeRecharge = preview?.products.some((product) => Number(product.saleRechargeRate) === 0) ?? false;
+  const mockPreview = (): PricingPreview => ({
+    tierCode: draft.tierCode,
+    version: draft.version,
+    declineFee: draft.declineFee,
+    gptDirectPricing: { multiplier: draft.gptDirectMultiplier, minimumFee: draft.gptDirectMinimumFee },
+    referralOpenReward: tier.referralOpenReward,
+    referralRechargeRate: tier.referralRechargeRate,
+    gptDirectPlans: [
+      { plan: "plus", cost: "20.0000", saleFee: "22.0000" },
+      { plan: "team", cost: "25.0000", saleFee: "28.0000" },
+    ],
+    products: [
+      { productCode: "VISA_STANDARD", costOpenFee: "0.8000", costRechargeRate: "0.008000", costRtfRate: "0.005000", saleOpenFee: "1.2000", saleRechargeRate: "0.010000", saleRefundRate: "0.006000", openProfit: "0.4000", rechargeMargin: "0.002000", refundMargin: "0.001000" },
+      { productCode: "EXPLICIT_BIN", costOpenFee: "1.0000", costRechargeRate: "0.009000", costRtfRate: "0.005500", saleOpenFee: "1.5000", saleRechargeRate: "0.012000", saleRefundRate: "0.007000", openProfit: "0.5000", rechargeMargin: "0.003000", refundMargin: "0.001500" },
+    ],
+  });
 
   return <article className="admin-surface pricing-tier-card" data-testid={`pricing-tier-${tier.code}`}>
-    <div className="admin-section-heading">
-      <div><span className="admin-kicker">{tier.code}</span><h3>{i18n.language === "en" ? tier.nameEn : tier.nameZh}</h3><p>{t("pricingVersion", { version: tier.version })}</p></div>
+    <div className="pricing-tier-card-head">
+      <div>
+        <span className="admin-kicker">{tier.code}</span>
+        <h3>{i18n.language === "en" ? tier.nameEn : tier.nameZh}</h3>
+        <p>{t("pricingVersion", { version: tier.version })} · {t(`tierSectionHint.${section}`)}</p>
+      </div>
       <span className="status-pill is-active">{t("active")}</span>
     </div>
-    <form className="tier-profile-form" onSubmit={(event) => { event.preventDefault(); setNotice(""); profileMutation.mutate(); }}>
-      <div className="tier-profile-heading"><strong>{t("tierProfile")}</strong><small>{t("tierProfileHint")}</small></div>
-      <label>{t("tierNameZh")}<input value={profile.nameZh} maxLength={64} onChange={(event) => setProfile((current) => ({ ...current, nameZh: event.target.value }))} required /></label>
-      <label>{t("tierNameEn")}<input value={profile.nameEn} maxLength={64} onChange={(event) => setProfile((current) => ({ ...current, nameEn: event.target.value }))} required /></label>
-      <label>{t("tierDescriptionZh")}<textarea value={profile.descriptionZh} maxLength={500} onChange={(event) => setProfile((current) => ({ ...current, descriptionZh: event.target.value }))} required /></label>
-      <label>{t("tierDescriptionEn")}<textarea value={profile.descriptionEn} maxLength={500} onChange={(event) => setProfile((current) => ({ ...current, descriptionEn: event.target.value }))} required /></label>
-      <label>{t("tierThreshold")}<input type="number" min="0" step="0.0001" value={profile.thresholdAmount} onChange={(event) => setProfile((current) => ({ ...current, thresholdAmount: event.target.value }))} required /></label>
-      <Button disabled={profileMutation.isPending}><StableSwap state={profileMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierProfile"), busy: t("processing") }} /></Button>
-    </form>
-    {profileMutation.isError && <p className="admin-alert is-error" role="alert">{profileMutation.error instanceof Error ? profileMutation.error.message : t("updateFailed")}</p>}
-    <form className="tier-profile-form" data-testid={`tier-decline-policy-${tier.code}`} onSubmit={(event) => { event.preventDefault(); setNotice(""); declinePolicyMutation.mutate(); }}>
-      <div className="tier-profile-heading"><strong>{t("tierDeclinePolicy")}</strong><small>{t("tierDeclinePolicyHint")}</small></div>
-      <label>{t("authDeclineRate1")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.feeRate1} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeRate1: event.target.value }))} required /></label>
-      <label>{t("authDeclineAmount1")}<input type="number" min="0" step="0.0001" value={declinePolicy.feeAmount1} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeAmount1: event.target.value }))} required /></label>
-      <label>{t("authDeclineRate2")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.feeRate2} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeRate2: event.target.value }))} required /></label>
-      <label>{t("authDeclineAmount2")}<input type="number" min="0" step="0.0001" value={declinePolicy.feeAmount2} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeAmount2: event.target.value }))} required /></label>
-      <label>{t("authDeclineRate3")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.feeRate3} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeRate3: event.target.value }))} required /></label>
-      <label>{t("authDeclineAmount3")}<input type="number" min="0" step="0.0001" value={declinePolicy.feeAmount3} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeAmount3: event.target.value }))} required /></label>
-      <label>{t("authDeclineFreezeRate")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.freezeRate} onChange={(event) => setDeclinePolicy((current) => ({ ...current, freezeRate: event.target.value }))} required /></label>
-      <label>{t("authDeclineFreezeMargin")}<input type="number" min="0" step="0.0001" value={declinePolicy.freezeMargin} onChange={(event) => setDeclinePolicy((current) => ({ ...current, freezeMargin: event.target.value }))} required /></label>
-      <Button disabled={declinePolicyMutation.isPending}><StableSwap state={declinePolicyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierDeclinePolicy"), busy: t("processing") }} /></Button>
-    </form>
-    {declinePolicyMutation.isError && <p className="admin-alert is-error" role="alert">{declinePolicyMutation.error instanceof Error ? declinePolicyMutation.error.message : t("updateFailed")}</p>}
-    <AdminXDirectFees token={token} tierCode={tier.code} />
-    <AdminTgDirectFees token={token} tierCode={tier.code} />
-    <form className="pricing-form" onSubmit={(event) => { event.preventDefault(); previewMutation.mutate(draft); }}>
-      <label>{t("openMultiplier")}<input type="number" min="0" max="100" step="0.0001" value={draft.openMultiplier} onChange={(event) => update("openMultiplier", event.target.value)} required /></label>
-      <label>{t("minimumOpenFee")}<input type="number" min="0" step="0.0001" value={draft.minimumOpenFee} onChange={(event) => update("minimumOpenFee", event.target.value)} required /></label>
-      <label>{t("rechargeMultiplier")}<input type="number" min="0" max="100" step="0.000001" value={draft.rechargeMultiplier} onChange={(event) => update("rechargeMultiplier", event.target.value)} required /></label>
-      <label>{t("minimumRechargeRate")}<input type="number" min="0" max="1" step="0.000001" value={draft.minimumRechargeRate} onChange={(event) => update("minimumRechargeRate", event.target.value)} required /></label>
-      <label>{t("declineFee")}<input type="number" min="0" max="1000000" step="0.0001" value={draft.declineFee} onChange={(event) => update("declineFee", event.target.value)} required /></label>
-      <label>{t("refundMultiplier")}<input type="number" min="1" max="100" step="0.000001" value={draft.refundMultiplier} onChange={(event) => update("refundMultiplier", event.target.value)} required /></label>
-      <label>{t("gptDirectMultiplier")}<input type="number" min="1" max="100" step="0.000001" value={draft.gptDirectMultiplier} onChange={(event) => update("gptDirectMultiplier", event.target.value)} required /></label>
-      <label>{t("gptDirectMinimumFee")}<input type="number" min="0" max="1000000" step="0.0001" value={draft.gptDirectMinimumFee} onChange={(event) => update("gptDirectMinimumFee", event.target.value)} required /></label>
-      <Button type="submit" variant="outline" disabled={previewMutation.isPending}><StableSwap state={previewMutation.isPending ? "busy" : "idle"} labels={{ idle: t("previewPricing"), busy: t("processing") }} /></Button>
-      <p className="pricing-formula-hint">{t("rechargePricingFormula")}</p>
-      <p className="pricing-formula-hint">{t("refundPricingFormula")}</p>
-      <p className="pricing-formula-hint">{t("gptDirectPricingFormula")}</p>
-    </form>
-    {previewMutation.isError && <p className="admin-alert is-error" role="alert">{previewMutation.error instanceof Error ? previewMutation.error.message : t("updateFailed")}</p>}
-    {preview && <div className="pricing-preview" aria-live="polite">
-      <div className="admin-table-wrap">
-        <table className="admin-table">
-          <thead><tr><th>{t("productCode")}</th><th>{t("costOpenFee")}</th><th>{t("saleOpenFee")}</th><th>{t("openProfit")}</th><th>{t("costRechargeRate")}</th><th>{t("saleRechargeRate")}</th><th>{t("rechargeMargin")}</th><th>{t("costRefundRate")}</th><th>{t("saleRefundRate")}</th><th>{t("refundMargin")}</th></tr></thead>
-          <tbody>{preview.products.map((product) => <tr key={product.productCode}>
-            <td><code>{product.productCode}</code></td><td>${formatDecimal(product.costOpenFee)}</td><td>${formatDecimal(product.saleOpenFee)}</td><td className="positive">+${formatDecimal(product.openProfit)}</td><td>{displayRate(product.costRechargeRate)}</td><td>{displayRate(product.saleRechargeRate)}</td><td className="positive">+{displayRate(product.rechargeMargin)}</td><td>{displayRate(product.costRtfRate)}</td><td>{displayRate(product.saleRefundRate)}</td><td className="positive">+{displayRate(product.refundMargin)}</td>
-          </tr>)}</tbody>
-        </table>
-      </div>
-      {preview.products.length === 0 && <AdminState>{t("noSyncedProducts")}</AdminState>}
-      <div className="admin-alert is-neutral" data-testid="decline-fee-preview"><ShieldCheck /><span>{t("declineFeePreview", { amount: formatDecimal(preview.declineFee) })}</span></div>
-      {preview.referralOpenReward != null && <div className="admin-alert is-neutral" data-testid="referral-reward-preview"><ShieldCheck /><span>{t("referralPricingPreview", { open: preview.referralOpenReward, rate: displayRate(preview.referralRechargeRate ?? null) })}</span></div>}
-      {preview.gptDirectPlans && preview.gptDirectPlans.length > 0 && <div className="admin-alert is-neutral" data-testid="gpt-direct-fee-preview"><ShieldCheck /><span>{t("gptDirectPlansPreview")}：{preview.gptDirectPlans.map((item) => `${t(`gptPlan.${item.plan}`, { defaultValue: item.plan })} $${formatDecimal(item.saleFee)}`).join(" · ")}</span></div>}
-      {invalidMargin && <p className="admin-alert is-error" role="alert">{t("negativeMarginBlocked")}</p>}
-      {hasFreeRecharge && <p className="admin-alert" role="status">{t("zeroRechargeRateWarning")}</p>}
-      <div className="admin-card-actions"><Button onClick={() => applyMutation.mutate()} disabled={applyMutation.isPending || invalidMargin || preview.products.length === 0}><StableSwap state={applyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("applyPricing"), busy: t("processing") }} /></Button></div>
+    <dl className="pricing-tier-summary">
+      <div><dt>{t("tierSummaryThreshold")}</dt><dd>${formatDecimal(tier.thresholdAmount)}</dd></div>
+      <div><dt>{t("tierSummaryOpenFee")}</dt><dd>${formatDecimal(tier.minimumOpenFee)}</dd></div>
+      <div><dt>{t("tierSummaryRechargeRate")}</dt><dd>{displayRate(tier.minimumRechargeRate)}</dd></div>
+      <div><dt>{t("tierSummaryDeclineFee")}</dt><dd>${formatDecimal(tier.declineFee)}</dd></div>
+    </dl>
+    {section === "profile" && <>
+      <form className="tier-profile-form" onSubmit={(event) => { event.preventDefault(); if (previewOnly) { setNotice(i18n.language === "en" ? "Preview only — save is disabled." : "静态预览，保存已禁用。"); return; } setNotice(""); profileMutation.mutate(); }}>
+        <div className="tier-profile-heading"><strong>{t("tierProfile")}</strong><small>{t("tierProfileHint")}</small></div>
+        <label>{t("tierNameZh")}<input value={profile.nameZh} maxLength={64} onChange={(event) => setProfile((current) => ({ ...current, nameZh: event.target.value }))} required /></label>
+        <label>{t("tierNameEn")}<input value={profile.nameEn} maxLength={64} onChange={(event) => setProfile((current) => ({ ...current, nameEn: event.target.value }))} required /></label>
+        <label>{t("tierDescriptionZh")}<textarea value={profile.descriptionZh} maxLength={500} onChange={(event) => setProfile((current) => ({ ...current, descriptionZh: event.target.value }))} required /></label>
+        <label>{t("tierDescriptionEn")}<textarea value={profile.descriptionEn} maxLength={500} onChange={(event) => setProfile((current) => ({ ...current, descriptionEn: event.target.value }))} required /></label>
+        <label>{t("tierThreshold")}<input type="number" min="0" step="0.0001" value={profile.thresholdAmount} onChange={(event) => setProfile((current) => ({ ...current, thresholdAmount: event.target.value }))} required /></label>
+        <div className="tier-form-actions"><Button disabled={profileMutation.isPending || previewOnly}><StableSwap state={profileMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierProfile"), busy: t("processing") }} /></Button></div>
+      </form>
+      {profileMutation.isError && <p className="admin-alert is-error" role="alert">{profileMutation.error instanceof Error ? profileMutation.error.message : t("updateFailed")}</p>}
+    </>}
+    {section === "decline" && <>
+      <form className="tier-profile-form is-decline" data-testid={`tier-decline-policy-${tier.code}`} onSubmit={(event) => { event.preventDefault(); if (previewOnly) { setNotice(i18n.language === "en" ? "Preview only — save is disabled." : "静态预览，保存已禁用。"); return; } setNotice(""); declinePolicyMutation.mutate(); }}>
+        <div className="tier-profile-heading"><strong>{t("tierDeclinePolicy")}</strong><small>{t("tierDeclinePolicyHint")}</small></div>
+        <label>{t("authDeclineRate1")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.feeRate1} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeRate1: event.target.value }))} required /></label>
+        <label>{t("authDeclineAmount1")}<input type="number" min="0" step="0.0001" value={declinePolicy.feeAmount1} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeAmount1: event.target.value }))} required /></label>
+        <label>{t("authDeclineRate2")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.feeRate2} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeRate2: event.target.value }))} required /></label>
+        <label>{t("authDeclineAmount2")}<input type="number" min="0" step="0.0001" value={declinePolicy.feeAmount2} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeAmount2: event.target.value }))} required /></label>
+        <label>{t("authDeclineRate3")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.feeRate3} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeRate3: event.target.value }))} required /></label>
+        <label>{t("authDeclineAmount3")}<input type="number" min="0" step="0.0001" value={declinePolicy.feeAmount3} onChange={(event) => setDeclinePolicy((current) => ({ ...current, feeAmount3: event.target.value }))} required /></label>
+        <label>{t("authDeclineFreezeRate")}<input type="number" min="0" max="100" step="0.01" value={declinePolicy.freezeRate} onChange={(event) => setDeclinePolicy((current) => ({ ...current, freezeRate: event.target.value }))} required /></label>
+        <label>{t("authDeclineFreezeMargin")}<input type="number" min="0" step="0.0001" value={declinePolicy.freezeMargin} onChange={(event) => setDeclinePolicy((current) => ({ ...current, freezeMargin: event.target.value }))} required /></label>
+        <div className="tier-form-actions"><Button disabled={declinePolicyMutation.isPending || previewOnly}><StableSwap state={declinePolicyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierDeclinePolicy"), busy: t("processing") }} /></Button></div>
+      </form>
+      {declinePolicyMutation.isError && <p className="admin-alert is-error" role="alert">{declinePolicyMutation.error instanceof Error ? declinePolicyMutation.error.message : t("updateFailed")}</p>}
+    </>}
+    {section === "direct" && <div className="pricing-tier-direct">
+      {previewOnly ? <><MockDirectFees kind="x" tierCode={tier.code} /><MockDirectFees kind="tg" tierCode={tier.code} /></> : <><AdminXDirectFees token={token} tierCode={tier.code} /><AdminTgDirectFees token={token} tierCode={tier.code} /></>}
     </div>}
-    {applyMutation.isError && <p className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</p>}
+    {section === "pricing" && <>
+      <form className="pricing-form" onSubmit={(event) => {
+        event.preventDefault();
+        if (previewOnly) {
+          const data = mockPreview();
+          setPreview(data);
+          setPreviewedInput(draft);
+          setNotice("");
+          return;
+        }
+        previewMutation.mutate(draft);
+      }}>
+        <div className="tier-profile-heading"><strong>{t("tierPricingFields")}</strong><small>{t("tierSectionHint.pricing")}</small></div>
+        <label>{t("openMultiplier")}<input type="number" min="0" max="100" step="0.0001" value={draft.openMultiplier} onChange={(event) => update("openMultiplier", event.target.value)} required /></label>
+        <label>{t("minimumOpenFee")}<input type="number" min="0" step="0.0001" value={draft.minimumOpenFee} onChange={(event) => update("minimumOpenFee", event.target.value)} required /></label>
+        <label>{t("rechargeMultiplier")}<input type="number" min="0" max="100" step="0.000001" value={draft.rechargeMultiplier} onChange={(event) => update("rechargeMultiplier", event.target.value)} required /></label>
+        <label>{t("minimumRechargeRate")}<input type="number" min="0" max="1" step="0.000001" value={draft.minimumRechargeRate} onChange={(event) => update("minimumRechargeRate", event.target.value)} required /></label>
+        <label>{t("declineFee")}<input type="number" min="0" max="1000000" step="0.0001" value={draft.declineFee} onChange={(event) => update("declineFee", event.target.value)} required /></label>
+        <label>{t("refundMultiplier")}<input type="number" min="1" max="100" step="0.000001" value={draft.refundMultiplier} onChange={(event) => update("refundMultiplier", event.target.value)} required /></label>
+        <label>{t("gptDirectMultiplier")}<input type="number" min="1" max="100" step="0.000001" value={draft.gptDirectMultiplier} onChange={(event) => update("gptDirectMultiplier", event.target.value)} required /></label>
+        <label>{t("gptDirectMinimumFee")}<input type="number" min="0" max="1000000" step="0.0001" value={draft.gptDirectMinimumFee} onChange={(event) => update("gptDirectMinimumFee", event.target.value)} required /></label>
+        <div className="tier-form-actions pricing-form-actions">
+          <Button type="submit" disabled={previewMutation.isPending}><StableSwap state={previewMutation.isPending ? "busy" : "idle"} labels={{ idle: t("previewPricing"), busy: t("processing") }} /></Button>
+        </div>
+        <p className="pricing-formula-hint">{t("rechargePricingFormula")}</p>
+        <p className="pricing-formula-hint">{t("refundPricingFormula")}</p>
+        <p className="pricing-formula-hint">{t("gptDirectPricingFormula")}</p>
+      </form>
+      {previewMutation.isError && <p className="admin-alert is-error" role="alert">{previewMutation.error instanceof Error ? previewMutation.error.message : t("updateFailed")}</p>}
+      {preview && <div className="pricing-preview" aria-live="polite">
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>{t("productCode")}</th><th>{t("costOpenFee")}</th><th>{t("saleOpenFee")}</th><th>{t("openProfit")}</th><th>{t("costRechargeRate")}</th><th>{t("saleRechargeRate")}</th><th>{t("rechargeMargin")}</th><th>{t("costRefundRate")}</th><th>{t("saleRefundRate")}</th><th>{t("refundMargin")}</th></tr></thead>
+            <tbody>{preview.products.map((product) => <tr key={product.productCode}>
+              <td><code>{product.productCode}</code></td><td>${formatDecimal(product.costOpenFee)}</td><td>${formatDecimal(product.saleOpenFee)}</td><td className="positive">+${formatDecimal(product.openProfit)}</td><td>{displayRate(product.costRechargeRate)}</td><td>{displayRate(product.saleRechargeRate)}</td><td className="positive">+{displayRate(product.rechargeMargin)}</td><td>{displayRate(product.costRtfRate)}</td><td>{displayRate(product.saleRefundRate)}</td><td className="positive">+{displayRate(product.refundMargin)}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+        {preview.products.length === 0 && <AdminState>{t("noSyncedProducts")}</AdminState>}
+        <div className="admin-alert is-neutral" data-testid="decline-fee-preview"><ShieldCheck /><span>{t("declineFeePreview", { amount: formatDecimal(preview.declineFee) })}</span></div>
+        {preview.referralOpenReward != null && <div className="admin-alert is-neutral" data-testid="referral-reward-preview"><ShieldCheck /><span>{t("referralPricingPreview", { open: preview.referralOpenReward, rate: displayRate(preview.referralRechargeRate ?? null) })}</span></div>}
+        {preview.gptDirectPlans && preview.gptDirectPlans.length > 0 && <div className="admin-alert is-neutral" data-testid="gpt-direct-fee-preview"><ShieldCheck /><span>{t("gptDirectPlansPreview")}：{preview.gptDirectPlans.map((item) => `${t(`gptPlan.${item.plan}`, { defaultValue: item.plan })} $${formatDecimal(item.saleFee)}`).join(" · ")}</span></div>}
+        {invalidMargin && <p className="admin-alert is-error" role="alert">{t("negativeMarginBlocked")}</p>}
+        {hasFreeRecharge && <p className="admin-alert is-warning" role="status">{t("zeroRechargeRateWarning")}</p>}
+        <div className="admin-card-actions"><Button onClick={() => { if (previewOnly) { setNotice(i18n.language === "en" ? "Preview only — apply is disabled." : "静态预览，应用已禁用。"); return; } applyMutation.mutate(); }} disabled={applyMutation.isPending || invalidMargin || preview.products.length === 0 || previewOnly}><StableSwap state={applyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("applyPricing"), busy: t("processing") }} /></Button></div>
+      </div>}
+      {applyMutation.isError && <p className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</p>}
+    </>}
     {notice && <p className="admin-alert is-success" role="status">{notice}</p>}
   </article>;
 }
@@ -492,6 +625,9 @@ export function AdminPage() {
   const [financialPage, setFinancialPage] = useState(1);
   const [auditQuery, setAuditQuery] = useState({ page: 1, q: "", action: "", targetType: "" });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTierCode, setActiveTierCode] = useState("");
+  const [tierSection, setTierSection] = useState<"pricing" | "profile" | "decline" | "direct">("pricing");
+  const [referralOpen, setReferralOpen] = useState(false);
   const isPanel = (...panels: AdminPanel[]) => panels.includes(activePanel);
 
   function selectPanel(panel: AdminPanel, replace = false) {
@@ -563,6 +699,13 @@ export function AdminPage() {
     const timer = window.setInterval(() => setDepositClock(Date.now()), 1_000);
     return () => window.clearInterval(timer);
   }, [activePanel]);
+
+  useEffect(() => {
+    if (activePanel !== "tiers") return;
+    const tiers = pricing.data?.data?.tiers?.length ? pricing.data.data.tiers : (!pricing.isLoading ? MOCK_PRICING_DATA.tiers : []);
+    if (!tiers.length) return;
+    if (!tiers.some((tier) => tier.code === activeTierCode)) setActiveTierCode(tiers[0]!.code);
+  }, [activePanel, activeTierCode, pricing.data, pricing.isLoading]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -824,10 +967,10 @@ export function AdminPage() {
           </section>
         </div>
         <p className="admin-provider-note">{t("credentialRotationHint")}</p>
-        {provider.lastError && <p className="admin-alert is-error">{provider.lastError}</p>}
-        {provider.lastProductError && <p className="admin-alert is-warning">{i18n.language === "en" ? "Product sync retrying" : "产品同步重试中"} · {provider.lastProductError}</p>}
-        {!provider.lastError && provider.enabled && provider.runtimeActive && provider.configured && !operational && <p className="admin-alert is-neutral">{t("healthCheckStale")}</p>}
-        {!canCall && <p className="admin-alert is-neutral"><RefreshCw />{t("runtimeRestartHint")}</p>}
+        {provider.lastError && <p className="admin-alert is-error" role="note">{provider.lastError}</p>}
+        {provider.lastProductError && <p className="admin-alert is-warning" role="note">{i18n.language === "en" ? "Product sync retrying" : "产品同步重试中"} · {provider.lastProductError}</p>}
+        {!provider.lastError && provider.enabled && provider.runtimeActive && provider.configured && !operational && <p className="admin-alert is-neutral" role="note">{t("healthCheckStale")}</p>}
+        {!canCall && <p className="admin-alert is-neutral" role="note"><RefreshCw />{t("runtimeRestartHint")}</p>}
         <div className="admin-provider-foot">
           <form className="admin-upstream-settings" onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); upstreamUpdate.mutate({ code: provider.code, enabled: data.get("enabled") === "on", priority: Number(data.get("priority")), version: provider.version }); }}>
             <label className="admin-check"><input name="enabled" type="checkbox" defaultChecked={provider.enabled} /><span>{t("providerEnabled")}</span></label>
@@ -856,14 +999,32 @@ export function AdminPage() {
       <AdminProductsPanel token={token} />
     </div>;
   } else if (activePanel === "tiers") {
-    panel = <div className="admin-panel-stack" data-testid="admin-panel-tiers">
+    const pricingView = pricing.data?.data && pricing.data.data.tiers.length > 0 ? pricing.data.data : (!pricing.isLoading ? MOCK_PRICING_DATA : null);
+    const tiersPreviewOnly = pricingView === MOCK_PRICING_DATA;
+    const selectedTier = pricingView?.tiers.find((tier) => tier.code === activeTierCode) ?? pricingView?.tiers[0] ?? null;
+    const tierSections = ["pricing", "profile", "decline", "direct"] as const;
+    panel = <div className="admin-panel-stack admin-tiers-workspace" data-testid="admin-panel-tiers">
       <PanelHeading eyebrow="MEMBERSHIP" title={t("adminTiers")} description={t("adminTiersDesc")} />
       <div className="admin-alert is-neutral"><ShieldCheck />{t("pricingPreviewRule")}</div>
+      {tiersPreviewOnly && <div className="admin-alert is-warning" role="note"><ShieldCheck />{i18n.language === "en" ? "Showing static preview data because pricing is unavailable or empty. Saves are disabled." : "接口无权限或暂无数据，当前展示静态预览数据；保存/应用已禁用。"}</div>}
       {pricing.isLoading && <AdminRowsSkeleton />}
-      {pricing.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
-      {pricing.data?.data.referralPolicy && <ReferralPolicyEditor key={pricing.data.data.referralPolicy.version} token={token} policy={pricing.data.data.referralPolicy} onApplied={() => { void client.invalidateQueries({ queryKey: ["admin-pricing"] }); }} />}
-      {pricing.data?.data.tiers.length === 0 && <AdminState>{t("noMembershipTiers")}</AdminState>}
-      <div className="pricing-tier-grid">{pricing.data?.data.tiers.map((tier) => <PricingTierEditor key={`${tier.code}-${tier.version}`} token={token} tier={tier} onApplied={() => { void client.invalidateQueries({ queryKey: ["admin-pricing"] }); }} />)}</div>
+      {!pricing.isLoading && pricingView && pricingView.tiers.length === 0 && <AdminState>{t("noMembershipTiers")}</AdminState>}
+      {pricingView && pricingView.tiers.length > 0 && selectedTier && <>
+        <div className="pricing-tier-switch" role="tablist" aria-label={t("tierPickLabel")}>
+          {pricingView.tiers.map((tier) => <button key={tier.code} type="button" role="tab" aria-selected={tier.code === selectedTier.code} data-testid={`tier-pick-${tier.code}`} onClick={() => { setActiveTierCode(tier.code); setTierSection("pricing"); }}>
+            <strong>{i18n.language === "en" ? tier.nameEn : tier.nameZh}</strong>
+            <small>${formatDecimal(tier.thresholdAmount)} · {displayRate(tier.minimumRechargeRate)}</small>
+          </button>)}
+        </div>
+        <div className="pricing-tier-sections" role="tablist" aria-label={t(`tierSection.${tierSection}`)}>
+          {tierSections.map((id) => <button key={id} type="button" role="tab" aria-selected={tierSection === id} data-testid={`tier-section-${id}`} onClick={() => setTierSection(id)}>{t(`tierSection.${id}`)}</button>)}
+        </div>
+        <PricingTierEditor key={`${selectedTier.code}-${selectedTier.version}-${tiersPreviewOnly ? "mock" : "live"}-${tierSection}`} token={token} tier={selectedTier} section={tierSection} previewOnly={tiersPreviewOnly} onApplied={() => { void client.invalidateQueries({ queryKey: ["admin-pricing"] }); }} />
+      </>}
+      {pricingView?.referralPolicy && <details className="admin-surface tier-referral-fold" open={referralOpen} onToggle={(event) => setReferralOpen(event.currentTarget.open)}>
+        <summary>{t("tierReferralPolicyToggle")}<small>{t("referralPolicyVersion", { version: pricingView.referralPolicy.version })}</small></summary>
+        <ReferralPolicyEditor key={`${pricingView.referralPolicy.version}-${tiersPreviewOnly ? "mock" : "live"}`} token={token} policy={pricingView.referralPolicy} onApplied={() => { void client.invalidateQueries({ queryKey: ["admin-pricing"] }); }} />
+      </details>}
     </div>;
   } else if (activePanel === "cards") {
     panel = <div className="admin-panel-stack" data-testid="admin-panel-cards">
@@ -1067,7 +1228,7 @@ export function AdminPage() {
               <small>{t("amount")}: ${formatDecimal(item.amount)} · {t("customerFee")}: ${formatDecimal(item.fee)} · {t("customerCharge")}: ${formatDecimal(item.totalAmount)}</small>
               <small>{t("upstreamEvidence")}: {item.upstreamBusinessId ?? "—"}</small>
               <small>{item.reason}{item.lastError ? ` · ${item.lastError}` : ""}</small>
-              {!closable && <p className="admin-alert is-warning">{t("reconciliationEvidenceRequired")}</p>}
+              {!closable && <p className="admin-alert is-warning" role="status">{t("reconciliationEvidenceRequired")}</p>}
               {canProveDeleteNoEffect && <div className="delete-reconciliation-actions">
                 <small>{t("deleteNoEffectEvidenceHint")}</small>
                 <div className="admin-card-actions">
@@ -1225,7 +1386,7 @@ export function AdminPage() {
               <div className="is-emphasis"><dt>费用</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.customerFee ?? "—")}</dd></div>
             </dl>
           </section>
-          {moneyOperationDetail.data.data.operation.lastError && <p className="admin-alert is-error">{moneyOperationDetail.data.data.operation.lastError}</p>}
+          {moneyOperationDetail.data.data.operation.lastError && <p className="admin-alert is-error" role="note">{moneyOperationDetail.data.data.operation.lastError}</p>}
           <section className="admin-drawer-section">
             <header><span>EVIDENCE</span><h3>定价快照与核对证据</h3></header>
             <details className="admin-json" open><summary>查看 JSON</summary><pre>{JSON.stringify({ pricingSnapshot: moneyOperationDetail.data.data.operation.pricingSnapshot, reconciliation: moneyOperationDetail.data.data.reconciliation, upstreamEvidence: moneyOperationDetail.data.data.upstreamEvidence }, null, 2)}</pre></details>

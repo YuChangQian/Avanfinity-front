@@ -145,7 +145,7 @@ export function FinancePage() {
       <div className="section-title"><h2>{t("ledger")}</h2><span>{t("records", { count: transactions.data?.data.total ?? 0 })}</span></div>
       <LedgerFilters id="wallet-ledger-filter" applied={ledgerFilters} wallet types={transactions.data?.data.types ?? ["deposit", "card_open", "card_recharge", "card_refund", "card_transaction_fee", "transfer_in", "transfer_out"]} onApply={filters => {if (ledgerPage === 1 && JSON.stringify(filters) === JSON.stringify(ledgerFilters)) void transactions.refetch();setLedgerFilters(filters);setLedgerPage(1);}} />
       {transactions.isPlaceholderData && <p role="status">{t("loading")}</p>}
-      {transactions.isError && <p role="alert">{t("adminLoadFailed")}</p>}
+      {transactions.isError && <p role="alert" className="error">{t("adminLoadFailed")}</p>}
       {(transactions.data?.data.list.length ?? 0) === 0 ? <div className="empty-state">{t("noLedger")}</div> :
         transactions.data?.data.list.map((item) => <article className="transaction-row" key={item.id}>
           <div className="transaction-icon"><ArrowUpRight /></div>
