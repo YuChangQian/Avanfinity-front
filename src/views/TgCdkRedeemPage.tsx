@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
 import { Link } from "@tanstack/react-router";
@@ -85,7 +86,7 @@ export function TgCdkRedeemPage() {
       {result && !recovering && <>
         <h2>{planLabels[result.plan] ?? "Telegram Premium"}</h2>
         <p role="status">{statusLabels[result.status] ?? "结果待核对，请查询原兑换状态"}</p>
-        {result.status === "ineligible" && <p role="alert" className="error">该 Telegram 账号暂不能接收此套餐，请核对用户名或联系管理员。</p>}
+        {result.status === "ineligible" && <Notice role="alert" className="error">该 Telegram 账号暂不能接收此套餐，请核对用户名或联系管理员。</Notice>}
         {result.status === "unused" && <form className="grid gap-6" onSubmit={event => { event.preventDefault(); void run("preflight"); }}>
           <label>TG 用户名<input value={recipient} onChange={event => setRecipient(event.target.value)} readOnly={Boolean(intent)} disabled={busy} maxLength={33} pattern="@?[A-Za-z0-9_]{1,32}" autoComplete="off" required /></label>
           <Button disabled={busy}><StableSwap state={busy ? "busy" : intent ? "alt" : "idle"} labels={{ idle: "检查资格并获取报价", alt: "重试预检", busy: "正在预检…" }} /></Button>
@@ -99,7 +100,7 @@ export function TgCdkRedeemPage() {
         {result.deliveryStatus === "delivered" && <p>已核验赠送记录 #{result.giftMessageId} · {result.giftDays} 天</p>}
         {((!intent && result.status !== "unused") || ["completed", "revoked", "ineligible", "failed_precharge"].includes(result.status)) && <Button variant="outline" disabled={busy} onClick={reset}>兑换另一张 CDK</Button>}
       </>}
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <Notice className="error" role="alert">{error}</Notice>}
     </div></div></section>
     <footer className="cdk-footer"><ShieldCheck />只查询原兑换记录即可恢复状态；请勿向他人提供兑换码。</footer>
   </main>;

@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useState, type FormEvent } from "react";
 import { Navigate, Link } from "@tanstack/react-router";
 import { useAtom } from "jotai";
@@ -51,18 +52,18 @@ export function MfaSetupPage() {
       <Button asChild size="lg"><Link to="/login">{t("savedCodesLogin")}</Link></Button>
     </section> : <>
       {status.isLoading && <section className="mfa-enrollment" aria-busy="true"><p><DataSkeleton /></p><label>{t("mfaSecretLabel")}<output className="secret-output"><DataSkeleton /></output></label><label>{t("mfaUriLabel")}<textarea readOnly rows={4} /></label><form className="stacked-form"><label>{t("mfaConfirmCode")}<input disabled /></label><Button size="lg" disabled>{t("enableMfa")}</Button></form></section>}
-      {status.isError && <p role="alert" className="error">{t("mfaStatusFailed")}</p>}
-      {status.data?.data.state === "pending" && !enrollment && <p role="alert" className="security-warning"><KeyRound />{t("mfaSecretNotRepeated")}</p>}
-      {status.data?.data.state === "enabled" && <p className="success-note" role="note">{t("mfaAlreadyEnabled")}</p>}
+      {status.isError && <Notice role="alert" className="error">{t("mfaStatusFailed")}</Notice>}
+      {status.data?.data.state === "pending" && !enrollment && <Notice role="alert" className="security-warning"><KeyRound />{t("mfaSecretNotRepeated")}</Notice>}
+      {status.data?.data.state === "enabled" && <Notice className="success-note" role="note">{t("mfaAlreadyEnabled")}</Notice>}
       {status.data?.data.state === "not_enrolled" && !enrollment && <Button size="lg" onClick={() => enroll.mutate()} disabled={enroll.isPending}><StableSwap state={enroll.isPending ? "busy" : "idle"} labels={{ idle: t("startMfaSetup"), busy: t("processing") }} /></Button>}
-      {enroll.isError && <p role="alert" className="error">{enroll.error.message}</p>}
+      {enroll.isError && <Notice role="alert" className="error">{enroll.error.message}</Notice>}
       {enrollment && <section className="mfa-enrollment" aria-live="polite">
         <p>{t("mfaAddAuthenticator")}</p>
         <label>{t("mfaSecretLabel")}<output className="secret-output">{enrollment.secret}</output></label>
         <label>{t("mfaUriLabel")}<textarea readOnly value={enrollment.otpauthUri} rows={4} /></label>
         <form className="stacked-form" onSubmit={submit}>
           <label>{t("mfaConfirmCode")}<input name="credential" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} required /></label>
-          {confirm.isError && <p role="alert" className="error">{confirm.error.message}</p>}
+          {confirm.isError && <Notice role="alert" className="error">{confirm.error.message}</Notice>}
           <Button size="lg" disabled={confirm.isPending}><StableSwap state={confirm.isPending ? "busy" : "idle"} labels={{ idle: t("enableMfa"), busy: t("processing") }} /></Button>
         </form>
       </section>}

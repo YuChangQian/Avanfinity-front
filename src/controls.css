@@ -129,34 +129,6 @@ input:where([type="checkbox"], [type="radio"]) { width: 16px; height: 16px; min-
   select option::checkmark { order: 1; margin-left: auto; }
 }
 
-:root :is(p.error[role="alert"], p[role="alert"], .admin-alert, .cdkv2-alert, .cdkv2-warning, .cdkv2-notice, .success-note, p.notice[role], p.card-sync-status[role]) {
-  position: static;
-  margin-block: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--control-border);
-  border-radius: var(--control-radius);
-  color: #555;
-  background: #f6f6f4;
-  font-size: 13px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-  animation: none;
-}
-:root :is(p.error[role="alert"], p[role="alert"], .admin-alert.is-error, .cdkv2-alert, p.notice.error) {
-  border-color: var(--feedback-error-border);
-  color: var(--feedback-error) !important;
-  background: var(--feedback-error-background);
-}
-:root :is(.success-note, .admin-alert.is-success, .cdkv2-notice, p.notice:not(.error)[role="status"], p.card-sync-status[role="status"]) {
-  border-color: var(--feedback-success-border);
-  color: var(--feedback-success);
-  background: var(--feedback-success-background);
-}
-:root :is(.admin-alert.is-warning, .cdkv2-warning) {
-  border-color: var(--feedback-warning-border);
-  color: var(--feedback-warning);
-  background: var(--feedback-warning-background);
-}
 :root .dialog-content:not([class*="-drawer"]) {
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
@@ -187,3 +159,60 @@ input:where([type="checkbox"], [type="radio"]) { width: 16px; height: 16px; min-
 @media (prefers-reduced-motion: reduce) {
   :root :is(input, select, textarea, button) { transition: none; }
 }
+
+.notification-stack {
+  margin: 0;
+  left: auto;
+  bottom: auto;
+  border: 0;
+  background: transparent;
+  position: fixed;
+  z-index: 10000;
+  top: max(20px, env(safe-area-inset-top));
+  right: max(20px, env(safe-area-inset-right));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(400px, calc(100% - 32px));
+  max-height: calc(100dvh - 40px);
+  padding: 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+}
+.notification-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 14px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--surface-radius);
+  background: #fff;
+  color: #555;
+  box-shadow: 0 8px 28px #0000001c;
+  font-size: 13px;
+  line-height: 1.6;
+  pointer-events: auto;
+  animation: notification-enter .18s ease-out;
+}
+.notification-card.is-error { color: var(--feedback-error); border-color: var(--feedback-error-border); background: var(--feedback-error-background); }
+.notification-card.is-success { color: var(--feedback-success); border-color: var(--feedback-success-border); background: var(--feedback-success-background); }
+.notification-card.is-warning { color: var(--feedback-warning); border-color: var(--feedback-warning-border); background: var(--feedback-warning-background); }
+.notification-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; }
+.notification-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.notification-content > :is(p, h2, h3) { margin: 0; font-size: inherit; color: inherit; }
+.notification-content > svg { display: none; }
+.notification-content :is(button, a) { margin: 6px 6px 0 0; }
+.notification-content a { text-decoration: underline; }
+.notification-close { display: grid; place-items: center; flex-shrink: 0; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; color: inherit; background: transparent; cursor: pointer; }
+.notification-close:hover { background: #0000000b; }
+@keyframes notification-enter { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 600px) {
+  .notification-stack { top: auto; bottom: max(12px, env(safe-area-inset-bottom)); right: max(14px, env(safe-area-inset-right)); width: calc(100% - 28px); max-height: calc(100dvh - 24px); }
+}
+@media (prefers-reduced-motion: reduce) { .notification-card { animation: none; } }
+
+/* Leave the modal header and close button unobstructed. */
+.dialog-content > .notification-stack { top: 80px; max-height: calc(100dvh - 96px); }
+@media (max-width: 600px) { .dialog-content > .notification-stack { top: auto; } }

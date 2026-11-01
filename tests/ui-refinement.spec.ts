@@ -77,7 +77,7 @@ test("admin pricing failure never substitutes demonstration fees", async ({ page
   await page.route("**/api/admin/pricing", route => route.fulfill({ status: 503, json: { error: "unavailable" } }));
   await page.goto("/admin?panel=tiers");
   const panel = page.getByTestId("admin-panel-tiers");
-  await expect(panel.getByRole("alert")).toBeVisible();
+  await expect(page.locator(".notification-stack").getByRole("alert")).toBeVisible();
   await expect(panel.locator(".pricing-tier-card")).toHaveCount(0);
   await expect(panel.getByText("静态预览", { exact: false })).toHaveCount(0);
 });

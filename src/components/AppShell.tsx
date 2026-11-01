@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useAtom, useSetAtom } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -117,10 +118,10 @@ export function AppShell() {
     localStorage.removeItem("session");
     return isPublicCdkRoute ? <Outlet /> : <Navigate to="/login" />;
   }
-  if (profile.isError && !profile.data) return <main className="center"><div role="alert" className="error">
+  if (profile.isError && !profile.data) return <main className="center"><Notice role="alert" className="error">
     <p>{profile.error instanceof Error ? profile.error.message : "Request failed"}</p>
     <Button type="button" variant="outline" onClick={() => void profile.refetch()}>{t("retry")}</Button>
-  </div></main>;
+  </Notice></main>;
   if (isAdminRoute) return <Outlet />;
   const accountLabel = profile.data?.displayName ?? profile.data?.email ?? session.displayName ?? session.email ?? `#${session.userId}`;
 
@@ -195,7 +196,7 @@ export function AppShell() {
         <Button className="sidebar-logout" variant="ghost" size="sm" onClick={signOut} aria-label={t("logout")}>
           <LogOut /><span>{t("logout")}</span>
         </Button>
-        {logoutError && <p className="error" role="alert">{logoutError}</p>}
+        {logoutError && <Notice className="error" role="alert">{logoutError}</Notice>}
       </div>
     </aside>
     <div className="app-content" id="main-content" tabIndex={-1}>
@@ -210,7 +211,7 @@ export function AppShell() {
           }}><X aria-hidden="true" /></button>
         </div>
         <div id="announcement-strip-list" hidden={!announcementsExpanded}>
-          {readAnnouncement.isError && <p className="error announcement-strip-error" role="alert">{t("announcementReadFailed")}</p>}
+          {readAnnouncement.isError && <Notice className="error announcement-strip-error" role="alert">{t("announcementReadFailed")}</Notice>}
           <div className="announcement-strip-list">{visibleAnnouncements.map(item => <article key={item.id} data-testid={`announcement-${item.id}`}>
             <h2>{item.title}</h2><p>{item.content}</p>
             <Button size="sm" variant="outline" onClick={() => readAnnouncement.mutate(item.id)} disabled={readAnnouncement.isPending}><StableSwap state={readAnnouncement.isPending && readAnnouncement.variables === item.id ? "busy" : "idle"} labels={{ idle: t("acknowledgeAnnouncement"), busy: t("processing") }} /></Button>

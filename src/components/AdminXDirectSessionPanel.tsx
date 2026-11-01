@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Save, ShieldCheck } from "lucide-react";
@@ -61,10 +62,10 @@ export function AdminXDirectSessionPanel({ token }: { token: string }) {
       <p>{en ? "Paste a fresh Cookie from the sender's logged-in X browser to check or replace its session." : "粘贴发送方已登录 X 浏览器中的 Cookie，检查或替换直充会话。"}</p>
     </div></div>
     <form className="admin-system-form" autoComplete="off" onSubmit={event => { event.preventDefault(); void submit("save"); }}>
-      {session.isLoading ? <p>{en ? "Loading session status…" : "正在加载会话状态…"}</p> : session.isError ? <div className="admin-alert is-error" role="alert">
+      {session.isLoading ? <p>{en ? "Loading session status…" : "正在加载会话状态…"}</p> : session.isError ? <Notice className="admin-alert is-error" role="alert">
         <span>{en ? "Unable to load session status. Check administrator access and retry." : "会话状态加载失败，请确认管理员权限后重试。"}</span>
         <Button type="button" size="sm" variant="outline" onClick={() => void session.refetch()}>{en ? "Retry" : "重试"}</Button>
-      </div> : <p className="admin-settings-note">
+      </Notice> : <p className="admin-settings-note">
         {session.data?.data.configured ? (en ? "Configured" : "已配置") : (en ? "Not configured" : "未配置")}
         {updatedDate && !Number.isNaN(updatedDate.getTime()) && ` · ${en ? "Updated" : "更新时间"} ${updatedDate.toLocaleString(en ? "en-US" : "zh-CN")}`}
       </p>}
@@ -72,9 +73,9 @@ export function AdminXDirectSessionPanel({ token }: { token: string }) {
         <textarea rows={4} value={cookie} onChange={event => { setCookie(event.target.value); setNotice(""); }} autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={Boolean(pending) || session.isLoading || session.isError} required />
       </label>
       <p className="admin-settings-note">{en ? "The saved Cookie is never displayed. Sessions do not refresh automatically; log in to X again when expired. Replacing the session invalidates unpaid quotes: obtain a fresh quote. Submitted orders remain available for status and receipt checks." : "已保存的 Cookie 不会回显。会话不会自动刷新，过期后需重新登录 X。替换会话会使旧的未支付报价失效，请重新获取报价；已提交订单仍可查询状态和账单。"}</p>
-      {notice && <p className={`admin-alert ${failed ? "is-error" : "is-success"}`} role={failed ? "alert" : "status"}>{notice}
+      {notice && <Notice className={`admin-alert ${failed ? "is-error" : "is-success"}`} role={failed ? "alert" : "status"}>{notice}
         {recentAuthRequired && <Button type="button" size="sm" variant="outline" onClick={() => { setCookie(""); sessionStorage.setItem("recentAuthReturnPath", "/admin?panel=xDirect"); window.location.assign("/login"); }}>{en ? "Verify again" : "重新认证"}</Button>}
-      </p>}
+      </Notice>}
       <div className="admin-form-actions">
         <Button type="button" variant="outline" disabled={!cookie.trim() || Boolean(pending) || session.isLoading || session.isError} onClick={() => void submit("check")}><ShieldCheck />{pending === "check" ? (en ? "Checking…" : "正在检查…") : (en ? "Check session" : "检查会话")}</Button>
         <Button type="submit" disabled={!cookie.trim() || Boolean(pending) || session.isLoading || session.isError}><Save />{pending === "save" ? (en ? "Saving…" : "正在保存…") : (en ? "Save session" : "保存会话")}</Button>

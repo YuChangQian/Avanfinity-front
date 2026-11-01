@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { formatDecimal } from "../decimal";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -63,10 +64,10 @@ export function AdminSystemSettingsPanel({ token }: { token: string }) {
   if (settings.isError || !settings.data) {
     return (
       <section className="admin-surface">
-        <div className="admin-state is-error" role="alert">
+        <Notice className="admin-state is-error" role="alert">
           <span>{t("systemSettingsLoadFailed")}</span>
           <Button size="sm" variant="outline" onClick={() => void settings.refetch()}>{t("retry")}</Button>
-        </div>
+        </Notice>
       </section>
     );
   }
@@ -337,7 +338,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           <div><dt>{t("smtpLastTest")}</dt><dd>{t(`smtpTestStatus.${smtp.lastTestStatus}`)}{smtp.lastTestAt ? ` · ${new Date(smtp.lastTestAt).toLocaleString()}` : ""}</dd></div>
           {smtp.lastErrorCode && <div><dt>{t("smtpLastErrorCode")}</dt><dd><code>{smtp.lastErrorCode}</code></dd></div>}
         </dl>
-        {smtpNotice && <p className={`admin-alert ${smtpNoticeError ? "is-error" : "is-success"}`} role={smtpNoticeError ? "alert" : "status"}>{smtpNotice}</p>}
+        {smtpNotice && <Notice className={`admin-alert ${smtpNoticeError ? "is-error" : "is-success"}`} role={smtpNoticeError ? "alert" : "status"}>{smtpNotice}</Notice>}
         <div className="admin-form-actions">
           <Button type="button" variant="outline" disabled={!savedSmtpComplete || saveSmtp.isPending || testSmtp.isPending} onClick={() => { setSmtpNotice(""); testSmtp.mutate(); }}><Send /><StableSwap state={testSmtp.isPending ? "busy" : "idle"} labels={{ idle: t("sendSmtpTest"), busy: t("sending") }} /></Button>
           <Button type="submit" disabled={(smtp.enabled && !smtpComplete) || saveSmtp.isPending || testSmtp.isPending}><Save /><StableSwap state={saveSmtp.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button>
@@ -404,10 +405,10 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
             </label>}
           </div>}
         </div>
-        <p className="admin-alert is-warning admin-deposit-secret-warning" role="note"><ShieldCheck />{t("depositPublicAddressOnly")}</p>
-        {deposit.network === "SOL" && <p className="admin-alert is-warning" role="note">{t("solanaWalletAddressWarning")}</p>}
-        {deposit.network === "TRON" && (!deposit.apiKeyConfigured || removeDepositApiKey) && !depositApiKey && <p className="admin-alert is-warning" role="note">{t("depositKeylessAddressWarning")}</p>}
-        {deposit.network === "BSC" && (!deposit.apiKeyConfigured || removeDepositApiKey) && !depositApiKey && <p className="admin-alert is-warning" role="note">{t("bscKeylessAddressWarning")}</p>}
+        <Notice className="admin-alert is-warning admin-deposit-secret-warning" role="note"><ShieldCheck />{t("depositPublicAddressOnly")}</Notice>
+        {deposit.network === "SOL" && <Notice className="admin-alert is-warning" role="note">{t("solanaWalletAddressWarning")}</Notice>}
+        {deposit.network === "TRON" && (!deposit.apiKeyConfigured || removeDepositApiKey) && !depositApiKey && <Notice className="admin-alert is-warning" role="note">{t("depositKeylessAddressWarning")}</Notice>}
+        {deposit.network === "BSC" && (!deposit.apiKeyConfigured || removeDepositApiKey) && !depositApiKey && <Notice className="admin-alert is-warning" role="note">{t("bscKeylessAddressWarning")}</Notice>}
         <dl className="admin-smtp-status admin-deposit-status" aria-label={t("depositMonitorStatus")}> 
           <div><dt>{t("depositScanner")}</dt><dd><span className={`status-pill ${deposit.ready ? "is-active" : ""}`}>{deposit.ready ? t("ready") : t("notReady")}</span></dd></div>
           <div><dt>{deposit.network === "SOL" ? t("usdtTokenMint") : t("depositTokenContract")}</dt><dd><code>{deposit.tokenContract}</code></dd></div>
@@ -416,8 +417,8 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           <div><dt>{t("depositLastTest")}</dt><dd>{t(`depositTestStatus.${deposit.lastTestStatus}`)}{deposit.lastTestAt ? ` · ${new Date(deposit.lastTestAt).toLocaleString()}` : ""}</dd></div>
           <div><dt>{t("depositLastSuccess")}</dt><dd>{deposit.lastSuccessAt ? new Date(deposit.lastSuccessAt).toLocaleString() : "—"}</dd></div>
         </dl>
-        {deposit.lastError && <p className="admin-alert is-error" role="note"><span><strong>{t("depositLastError")}</strong>{deposit.lastErrorAt ? ` · ${new Date(deposit.lastErrorAt).toLocaleString()}` : ""}<br />{deposit.lastError}</span></p>}
-        {depositNotice && <p className={`admin-alert ${depositNoticeError ? "is-error" : "is-success"}`} role={depositNoticeError ? "alert" : "status"}>{depositNotice}</p>}
+        {deposit.lastError && <Notice className="admin-alert is-error" role="note"><span><strong>{t("depositLastError")}</strong>{deposit.lastErrorAt ? ` · ${new Date(deposit.lastErrorAt).toLocaleString()}` : ""}<br />{deposit.lastError}</span></Notice>}
+        {depositNotice && <Notice className={`admin-alert ${depositNoticeError ? "is-error" : "is-success"}`} role={depositNoticeError ? "alert" : "status"}>{depositNotice}</Notice>}
         <div className="admin-form-actions">
           <Button type="button" variant="outline" disabled={!savedDepositComplete || saveDeposits.isPending || testDeposits.isPending} onClick={() => { setDepositNotice(""); testDeposits.mutate(); }}><RefreshCw /><StableSwap state={testDeposits.isPending ? "busy" : "idle"} labels={{ idle: t("testDepositMonitor"), busy: t("depositTesting") }} /></Button>
           <Button type="submit" disabled={!depositComplete || saveDeposits.isPending || testDeposits.isPending}><Save /><StableSwap state={saveDeposits.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button>
@@ -443,7 +444,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           <label>{t("paymentRiskReserveRatio")}<input type="number" min={0.01} max={100} step="0.01" value={paymentRisk.reserveBps / 100} onChange={(event) => setPaymentRisk((current) => current ? { ...current, reserveBps: Math.round(Number(event.target.value) * 100) } : current)} required /><small>{t("paymentRiskPercentHint")}</small></label>
         </div>
         <p className="admin-settings-note">{t("paymentRiskCurrentPolicy", { days: paymentRisk.windowDays, attempts: paymentRisk.minAttempts, lock: formatDecimal((paymentRisk.lockThresholdBps / 100).toFixed(2)), release: formatDecimal((paymentRisk.releaseThresholdBps / 100).toFixed(2)), reserve: formatDecimal((paymentRisk.reserveBps / 100).toFixed(2)) })}</p>
-        {paymentRiskNotice && <p className={`admin-alert ${savePaymentRisk.isError ? "is-error" : "is-success"}`} role={savePaymentRisk.isError ? "alert" : "status"}><span>{paymentRiskNotice}</span>{paymentRiskRecentAuthRequired && <Button type="button" size="xs" variant="outline" onClick={requestPaymentRiskRecentAuth}>{t("verifyAgain")}</Button>}</p>}
+        {paymentRiskNotice && <Notice className={`admin-alert ${savePaymentRisk.isError ? "is-error" : "is-success"}`} role={savePaymentRisk.isError ? "alert" : "status"}><span>{paymentRiskNotice}</span>{paymentRiskRecentAuthRequired && <Button type="button" size="xs" variant="outline" onClick={requestPaymentRiskRecentAuth}>{t("verifyAgain")}</Button>}</Notice>}
         <div className="admin-form-actions"><Button type="submit" disabled={savePaymentRisk.isPending || paymentRiskInvalid}><Save /><StableSwap state={savePaymentRisk.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button></div>
       </form>
     </section>}
@@ -493,7 +494,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
             <span><strong>{country.country} · {country.currency}</strong><small>{t("gptProtocolCountryEnabled")}</small></span>
           </label>)}
         </div>
-        {gptProtocolNotice && <p className={`admin-alert ${saveGptProtocol.isError ? "is-error" : "is-success"}`} role={saveGptProtocol.isError ? "alert" : "status"}>{gptProtocolNotice}</p>}
+        {gptProtocolNotice && <Notice className={`admin-alert ${saveGptProtocol.isError ? "is-error" : "is-success"}`} role={saveGptProtocol.isError ? "alert" : "status"}>{gptProtocolNotice}</Notice>}
         <div className="admin-form-actions"><Button type="submit" disabled={saveGptProtocol.isPending}><Save /><StableSwap state={saveGptProtocol.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button></div>
       </form>
     </section>}
@@ -517,7 +518,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
             <small>{t("walletPolicyMarginReserveHint")}</small>
           </label>
         </div>
-        {walletPolicyNotice && <p className={`admin-alert ${saveWalletPolicy.isError ? "is-error" : "is-success"}`} role={saveWalletPolicy.isError ? "alert" : "status"}>{walletPolicyNotice}</p>}
+        {walletPolicyNotice && <Notice className={`admin-alert ${saveWalletPolicy.isError ? "is-error" : "is-success"}`} role={saveWalletPolicy.isError ? "alert" : "status"}>{walletPolicyNotice}</Notice>}
         <div className="admin-form-actions"><Button type="submit" disabled={saveWalletPolicy.isPending || walletPolicyInvalid}><Save /><StableSwap state={saveWalletPolicy.isPending ? "busy" : "idle"} labels={{ idle: t("saveWalletPolicy"), busy: t("processing") }} /></Button></div>
       </form>
     </section>
@@ -564,7 +565,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           </label>
         </div>
         <p className="admin-settings-note">{t("declineThresholdCurrentPolicy", { attempts: declineThreshold.minAttempts, reversal: declineThreshold.reversalFeeRate, autoDelete: declineThreshold.autoDeleteDeclines })}</p>
-        {declineThresholdNotice && <p className={`admin-alert ${saveDeclineThreshold.isError ? "is-error" : "is-success"}`} role={saveDeclineThreshold.isError ? "alert" : "status"}>{declineThresholdNotice}</p>}
+        {declineThresholdNotice && <Notice className={`admin-alert ${saveDeclineThreshold.isError ? "is-error" : "is-success"}`} role={saveDeclineThreshold.isError ? "alert" : "status"}>{declineThresholdNotice}</Notice>}
         <div className="admin-form-actions"><Button type="submit" disabled={saveDeclineThreshold.isPending || declineThresholdInvalid}><Save /><StableSwap state={saveDeclineThreshold.isPending ? "busy" : "idle"} labels={{ idle: t("save"), busy: t("processing") }} /></Button></div>
       </form>
     </section>}
@@ -584,7 +585,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
             </label>;
           })}
         </div>
-        {featureNotice && <p className={`admin-alert ${saveFeatures.isError ? "is-error" : "is-success"}`} role={saveFeatures.isError ? "alert" : "status"}>{featureNotice}</p>}
+        {featureNotice && <Notice className={`admin-alert ${saveFeatures.isError ? "is-error" : "is-success"}`} role={saveFeatures.isError ? "alert" : "status"}>{featureNotice}</Notice>}
         <div className="admin-form-actions"><Button type="submit" disabled={saveFeatures.isPending}><Save /><StableSwap state={saveFeatures.isPending ? "busy" : "idle"} labels={{ idle: t("saveFeatureSettings"), busy: t("processing") }} /></Button></div>
       </form>
     </section>

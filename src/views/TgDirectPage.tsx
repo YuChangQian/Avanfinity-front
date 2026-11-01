@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "../components/ui/notice";
 import { useState } from "react";
 import { CheckCircle2, Circle, History, Loader2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
@@ -112,14 +113,14 @@ export function TgDirectPage() {
   const recovered = uncertainOrderId === order?.id && settledStatuses.includes(order?.status ?? "");
   const orderContent = <div className="tg-order-content space-y-4">
         {selected && detail.isPending && <p role="status">正在读取原订单进度…</p>}
-        {message && !recovered && <p role="alert" className="error">{message}</p>}
-        {detail.isError && <p role="alert" className="error">状态暂时无法获取，请刷新原订单，勿重复充值。</p>}
+        {message && !recovered && <Notice role="alert" className="error">{message}</Notice>}
+        {detail.isError && <Notice role="alert" className="error">状态暂时无法获取，请刷新原订单，勿重复充值。</Notice>}
         {(order || submitting === "prepare") && <TgOrderProgress order={order} preparing={submitting === "prepare"} confirming={submitting === "confirm"} uncertain={uncertainOrderId === order?.id && !recovered} />}
         {order ? <>
           <strong>@{order.recipient} · {planList.find(item => item.key === order.plan)?.label ?? order.plan}</strong>
           <p>{submitting === "confirm" && !paid(order) ? "正在充值" : preview && order.status === "failed_precharge" ? "报价获取失败，未开始充值" : preview && order.status === "review_required" ? "报价结果待核对，未开始充值" : tgOrderStatus(order)}</p>
           {tgOrderExplanation(order) && <p className="tg-order-explanation" role="status">{tgOrderExplanation(order)}</p>}
-          {order.message && !tgOrderExplanation(order) && <p role="alert" className="error">{order.message}</p>}
+          {order.message && !tgOrderExplanation(order) && <Notice role="alert" className="error">{order.message}</Notice>}
           <TgOrderTiming order={order} />
           <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2">
             <div className="flex items-center justify-between gap-3"><span>官方金额</span><strong>{amount(order)}</strong></div>
@@ -154,9 +155,9 @@ export function TgDirectPage() {
           <SelectContent>{activeCards.map(card => <SelectItem key={card.id} value={String(card.id)}>{card.cardNumberMasked} · 余额 USD {card.balance}</SelectItem>)}</SelectContent>
         </Select></label>
         <p>所选套餐服务费：USD {planList.find(item => item.key === plan)?.serviceFee ?? "0.00"}。先检查账号资格并获取官方报价。确认后从所选卡付款，卡台服务费从钱包另行收取；换汇及发卡行费用以卡片实际账单为准。</p>
-        {plans.isError && <p role="alert" className="error">TG 服务暂不可用，请稍后重试。</p>}
-        {cards.isError && <p role="alert" className="error">卡片加载失败，请刷新页面。</p>}
-        {plans.data && !plans.data.data.paymentsEnabled && <p className="admin-alert is-warning" role="status">付款暂未开启，可以预检已开放套餐。</p>}
+        {plans.isError && <Notice role="alert" className="error">TG 服务暂不可用，请稍后重试。</Notice>}
+        {cards.isError && <Notice role="alert" className="error">卡片加载失败，请刷新页面。</Notice>}
+        {plans.data && !plans.data.data.paymentsEnabled && <Notice className="admin-alert is-warning" role="status">付款暂未开启，可以预检已开放套餐。</Notice>}
         <Button type="submit" disabled={action.isPending || !cardId || !planList.find(item => item.key === plan)?.enabled}><StableSwap state={action.isPending ? "busy" : "idle"} labels={{ idle: "检查资格并获取报价", busy: "处理中…" }} /></Button>
       </form></section>
       <section className="gpt-direct-panel"><div className="gpt-order-content" aria-live="polite">
@@ -167,7 +168,7 @@ export function TgDirectPage() {
     <section className="transaction-panel gpt-orders-panel mt-5" aria-labelledby="tg-order-history-title">
       <div className="section-title"><h2 id="tg-order-history-title"><History />TG 直充订单</h2><span>{orders.data?.meta?.total ?? history.length} 笔订单</span></div>
       <DirectOrderFilters query={orderQuery} statuses={statuses} maxUsername={32} total={orders.data?.meta?.total} busy={orders.isFetching} onChange={setOrderQuery} />
-      {orders.isError ? <p className="gpt-list-state error" role="alert">订单加载失败，请刷新。</p> : orders.isLoading ? <p className="gpt-list-state">正在加载订单…</p> : !history.length ? <p className="gpt-list-state">{orderQuery.recipient || orderQuery.status ? "暂无符合条件的订单" : "暂无充值订单"}</p> : history.map(item => <div className="gpt-order-history-row" key={item.id}>
+      {orders.isError ? <Notice className="gpt-list-state error" role="alert">订单加载失败，请刷新。</Notice> : orders.isLoading ? <p className="gpt-list-state">正在加载订单…</p> : !history.length ? <p className="gpt-list-state">{orderQuery.recipient || orderQuery.status ? "暂无符合条件的订单" : "暂无充值订单"}</p> : history.map(item => <div className="gpt-order-history-row" key={item.id}>
         <div className="gpt-order-row"><div className="gpt-order-row-main is-static">
           <span className={`gpt-status-dot is-${item.status}`} />
           <button type="button" className="gpt-order-heading-trigger" disabled={action.isPending} onClick={() => openDetails(item.id)}>
@@ -182,7 +183,7 @@ export function TgDirectPage() {
     </section>
     <Dialog.Root open={drawerOpen} onOpenChange={setDrawerOpen}><Dialog.Portal>
       <Dialog.Overlay className="dialog-overlay" />
-      <Dialog.Content className="dialog-content gpt-progress-drawer tg-progress-drawer">
+      <Dialog.Content className="dialog-content gpt-progress-drawer tg-progress-drawer"><NoticeScope />
         <div className="card-transaction-drawer-head"><div><Dialog.Title>TG 直充进度与到账</Dialog.Title><Dialog.Description>查看当前流程、支付结果和赠送到账记录。</Dialog.Description></div><Dialog.Close asChild><Button type="button" variant="ghost" size="icon" aria-label="关闭"><X /></Button></Dialog.Close></div>
         <div className="gpt-progress-drawer-body tg-progress-drawer-body">{orderContent}</div>
       </Dialog.Content>

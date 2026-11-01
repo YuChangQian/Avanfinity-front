@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { GptDirectPlan, GptDirectQuote } from "../api";
@@ -102,7 +103,7 @@ export function GptCreditsPlanFieldset({
               <small>{t("gptCreditsCustomQuoteHint")}</small>
             </>
           ) : customSelected && customDraft !== "" && customQuantity <= 0 ? (
-            <small role="alert">{t("gptCreditsQuantityInvalid")}</small>
+            <Notice role="alert">{t("gptCreditsQuantityInvalid")}</Notice>
           ) : (
             <small>{t("gptCreditsCustomQuotePending")}</small>
           )}

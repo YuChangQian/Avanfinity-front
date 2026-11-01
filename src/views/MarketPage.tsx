@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { formatDecimal } from "../decimal";
 import { useAtomValue } from "jotai";
 import { useQuery } from "@tanstack/react-query";
@@ -32,10 +33,10 @@ export function MarketPage() {
     <section className="deposit-panel feature-disabled"><BarChart3 /><p>{t("featureUnavailable")}</p></section>
   </PageShell>;
   if (query.isError) return <PageShell eyebrow="PAYMENT REFERENCE" title={t("marketTitle")} description={t("marketDesc")} className="market-page">
-    <section className="deposit-panel query-error" role="alert">
+    <Notice className="deposit-panel query-error" role="alert">
       <strong>{t("marketLoadFailed")}</strong>
       {flags.market && <Button variant="outline" onClick={() => void query.refetch()}><RefreshCw />{t("retry")}</Button>}
-    </section>
+    </Notice>
   </PageShell>;
   if (!query.data) return loadingPage;
   const references = query.data.data.references;

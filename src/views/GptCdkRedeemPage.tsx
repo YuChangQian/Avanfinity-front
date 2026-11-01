@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { formatDecimal } from "../decimal";
 import { isCreditPlan, parseCreditQuantity } from "../gptDirect/plans";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
@@ -351,7 +352,7 @@ export function GptCdkRedeemPage() {
           <form onSubmit={preview} className="cdk-form">
           <div className="cdk-card-heading"><span><KeyRound /></span><div><small>01 CDK</small><h2>{t("cdkEnterCode")}</h2><p>{t("cdkEnterCodeDesc")}</p></div></div>
           <label>{t("cdkCode")}<input value={code} onChange={(event) => setCode(event.target.value)} autoComplete="off" spellCheck={false} maxLength={128} placeholder="AVF-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" required /></label>
-          {error && <p className="error" role="alert">{error}</p>}
+          {error && <Notice className="error" role="alert">{error}</Notice>}
           <Button size="lg" disabled={busy || code.trim().length < 8}><RefreshCw className={busy ? "is-spinning" : "is-reserved"} /><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: t("cdkPreview"), busy: t("processing") }} /></Button>
         </form>
           <form onSubmit={lookup} className="cdk-form cdk-receipt-form">
@@ -366,11 +367,11 @@ export function GptCdkRedeemPage() {
           {!preflightToken ? <form onSubmit={preflight} className="cdk-credential-form">
             <fieldset className="gpt-credential-modes"><legend>{t("gptCredentialMode")}</legend><label><input type="radio" name="cdkCredentialMode" value="session" checked readOnly /><span>{t("gptCredentialModeLabel.session")}</span></label></fieldset>
             <label>{t("gptSessionCredential")}<textarea aria-label={t("gptSessionCredential")} rows={5} value={sessionValue} onChange={(event) => setSessionValue(event.target.value)} autoComplete="off" spellCheck={false} required /><span className="gpt-session-help"><small>{t("gptSessionCredentialHint")}</small><a href="https://chatgpt.com/api/auth/session" target="_blank" rel="noreferrer">{t("gptGetSession")}</a></span></label>
-            {error && <p className="error" role="alert">{error}</p>}
+            {error && <Notice className="error" role="alert">{error}</Notice>}
             <Button size="lg" disabled={busy}><RefreshCw className={busy ? "is-spinning" : "is-reserved"} /><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: t("cdkRunPreflight"), busy: t("processing") }} /></Button>
           </form> : <div className="cdk-confirm">
             <CheckCircle2 /><div><strong>{t("cdkPreflightPassed")}</strong><p>{t(forceNewCard ? "cdkForceNewCardNotice" : "cdkAutoCardNotice")}</p></div>
-            {error && <p className="error" role="alert">{error}</p>}
+            {error && <Notice className="error" role="alert">{error}</Notice>}
             <Button size="lg" onClick={redeem} disabled={busy || redeemLocked}><RefreshCw className={busy ? "is-spinning" : "is-reserved"} /><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: t(isCreditPlan(plan) ? "cdkSubmitCredits" : "cdkSubmitRedeem"), busy: t("processing") }} /></Button>
           </div>}
         </div>}
@@ -396,7 +397,7 @@ export function GptCdkRedeemPage() {
             {!order && invoiceUrls.map((invoiceUrl, index) => <a className="gpt-invoice-link" href={invoiceUrl} target="_blank" rel="noopener noreferrer" key={invoiceUrl}>{t("gptViewStripeInvoice")}{invoiceUrls.length > 1 ? ` ${index + 1}` : ""}</a>)}
             {completed && invoiceUrls.length === 0 && !order ? <p>{t("cdkInvoicePending")}</p> : null}
           </div>
-          {error && <p className="error" role="alert">{error}</p>}
+          {error && <Notice className="error" role="alert">{error}</Notice>}
           {(terminalStatuses.has(status) || status === "unused") && <Button onClick={reset} variant="outline">{t("cdkRedeemAnother")}</Button>}
         </div>}
       </div>

@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -98,7 +99,7 @@ export function GptDirectOrderPage() {
   return <PageShell className="gpt-direct-page" eyebrow="GPT DIRECT" title={t("gptProgressPageTitle")} description={t("gptProgressPageDesc")}>
     <p><Link to="/gpt-direct" aria-label={t("back")}><ArrowLeft /></Link></p>
     {orderQuery.isLoading ? <section className="gpt-direct-panel gpt-order-panel" aria-busy="true"><div className="gpt-live-order"><Clock3 /><div><strong><DataSkeleton /></strong><span><DataSkeleton /></span><small><DataSkeleton /></small><div className="gpt-order-progress"><DataSkeleton /><DataSkeleton /><DataSkeleton /></div></div><Button size="sm" variant="outline" disabled>{t("cancel")}</Button></div></section>
-      : orderQuery.isError || !order ? <p className="gpt-list-state error" role="alert">{t("gptOrdersLoadFailed")}</p>
+      : orderQuery.isError || !order ? <Notice className="gpt-list-state error" role="alert">{t("gptOrdersLoadFailed")}</Notice>
       : <section className="gpt-direct-panel gpt-order-panel">
         <div className={`gpt-live-order is-${order.status}`} role="status" aria-live="polite">
           {financiallyFinal(order) && order.status === "completed" ? <CheckCircle2 /> : <Clock3 />}
@@ -136,7 +137,7 @@ export function GptDirectOrderPage() {
           {cancellableStatuses.has(order.status) && <Button size="sm" variant="outline" onClick={() => cancelOrder.mutate(order.id)} disabled={cancelOrder.isPending}>{t("cancel")}</Button>}
           {!cancellableStatuses.has(order.status) && canStopRetry(order) && <Button size="sm" variant="outline" onClick={() => cancelOrder.mutate(order.id)} disabled={cancelOrder.isPending}>{t("gptStopRetry")}</Button>}
         </div>
-        {cancelOrder.isError && <p role="alert" className="error">{cancelOrder.error instanceof Error ? cancelOrder.error.message : t("gptCancelFailed")}</p>}
+        {cancelOrder.isError && <Notice role="alert" className="error">{cancelOrder.error instanceof Error ? cancelOrder.error.message : t("gptCancelFailed")}</Notice>}
       </section>}
   </PageShell>;
 }

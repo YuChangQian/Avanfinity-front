@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "../components/ui/notice";
 import { formatDecimal } from "../decimal";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useAtom, useAtomValue } from "jotai";
@@ -1208,8 +1209,8 @@ function GptDirectContent() {
             <textarea aria-label={t("gptSessionCredential")} rows={4} value={sessionValue} onChange={(event) => { updateDraft({ sessionValue: event.target.value }); clearPreflight(); }} autoComplete="off" spellCheck={false} disabled={busy} required />
             <span className="gpt-session-help"><small>{t("gptSessionCredentialHint")}</small><a href="https://chatgpt.com/api/auth/session" target="_blank" rel="noreferrer">{t("gptGetSession")}</a></span>
             {sessionNeedsRelogin
-              ? <small className="gpt-session-warning" role="alert">{t("gptSessionNeedsRelogin")}</small>
-              : sessionValue.trim().startsWith("eyJ") && <small className="gpt-session-warning" role="alert">{t("gptSessionLooksLikeAccessToken")}</small>}
+              ? <Notice className="gpt-session-warning" role="alert">{t("gptSessionNeedsRelogin")}</Notice>
+              : sessionValue.trim().startsWith("eyJ") && <Notice className="gpt-session-warning" role="alert">{t("gptSessionLooksLikeAccessToken")}</Notice>}
           </label>}
           {isBatch && <label>{t(mode === "session_batch" ? "gptBatchSessions" : "gptBatchAccounts")}
             <textarea aria-label={t(mode === "session_batch" ? "gptBatchSessions" : "gptBatchAccounts")} rows={8} value={batchValue} onChange={(event) => { setImportedSessionBatch(null); setPreparedBatch(null); updateDraft({ batchValue: event.target.value }); setBatchError(""); }} autoComplete="off" spellCheck={false} disabled={busy} placeholder={t(mode === "session_batch" ? "gptBatchSessionPlaceholder" : "gptBatchPlaceholder")} required={!importedSessionBatch} />
@@ -1270,11 +1271,11 @@ function GptDirectContent() {
                 ? t("gptNoUpgrade", { defaultValue: i18n.language === "en" ? "You already have the highest plan. Credit packs below are still available." : "已存在最高级套餐；下方额度仍可直充。" })
                 : t("gptNoUpgrade", { defaultValue: i18n.language === "en" ? "You already have the highest plan. No upgrades are available." : "已存在最高级套餐，暂无可升级套餐，不再展示价格。" })}</p>}
           {preflightData && Object.entries(preflightData.quoteErrors ?? {}).map(([plan, message]) =>
-            <p key={plan} role="alert" className="gpt-quote-error"><AlertTriangle />{message}</p>)}
+            <Notice key={plan} role="alert" className="gpt-quote-error"><AlertTriangle />{message}</Notice>)}
           {!isBatch && preflightData && preflightData.currentPlan !== "free" && dismissedRegionSwitch !== preflightData.preflightToken
             && Object.entries(preflightData.upgradeCurrencies ?? {}).filter(([plan]) => !handoff || handoff.plan === plan).map(([plan, currency]) => {
               const regions = (plansQuery.data?.data.checkoutCountries ?? []).filter((region) => region.currency === currency && region.country !== preflightData.paymentCountry);
-              return <div key={plan} role="alert" className="gpt-quote-error gpt-region-consent">
+              return <Notice key={plan} role="alert" className="gpt-quote-error gpt-region-consent">
                 <p>{t("gptUpgradeRegionConsent", { defaultValue: i18n.language === "en"
                   ? "Your {{currentPlan}} subscription is still active. The {{plan}} upgrade quote is in {{currency}}, not the selected {{selectedCurrency}}. Do you agree to recheck in a matching billing region using its platform proxy? The new quote must be reviewed before payment."
                   : "当前账号的 {{currentPlan}} 套餐仍有效，{{plan}} 升级报价使用 {{currency}}，与所选地区的 {{selectedCurrency}} 不一致。是否同意切换至匹配账单币种的地区，并使用平台对应地区节点重新预检？新报价需由你确认后再提交支付。",
@@ -1283,7 +1284,7 @@ function GptDirectContent() {
                   onClick={() => void acceptUpgradeRegion(plan, region)}>{t("gptAgreeUpgradeRegion", { defaultValue: i18n.language === "en" ? "Agree: switch to {{region}} and recheck" : "同意切换至{{region}}并重新预检", region: regionNames.of(region.country) ?? region.country })}</Button>)
                   : <p>{t("gptUpgradeRegionUnavailable", { defaultValue: i18n.language === "en" ? "No matching billing region is currently enabled. Please contact support." : "暂未开放匹配此账单币种的地区，请联系客服；不会使用其他币种代替。" })}</p>}
                 <Button type="button" variant="ghost" disabled={busy} onClick={() => setDismissedRegionSwitch(preflightData.preflightToken)}>{t("gptKeepUpgradeRegion", { defaultValue: i18n.language === "en" ? "Keep my selected region" : "暂不切换，保持所选地区" })}</Button>
-              </div>;
+              </Notice>;
             })}
           {!preflightData && <div className="gpt-observed-quote">
             <Clock3 />
@@ -1292,12 +1293,12 @@ function GptDirectContent() {
               <small>{t("gptRecentObservedQuoteHint")}</small>
             </div>
           </div>}
-          {plansQuery.isError && <p role="alert" className="error">{t("gptPlansLoadFailed")}</p>}
+          {plansQuery.isError && <Notice role="alert" className="error">{t("gptPlansLoadFailed")}</Notice>}
           <Button type="submit" size="lg" disabled={busy || plans.length === 0 || (mode === "session" && sessionNeedsRelogin) || (isBatch && ((!batchValue.trim() && !importedSessionBatch) || !batchPaymentReady || !retryReady || batchCapacity === 0))}>
             <RefreshCw className={preflightPending || batchPending ? "is-spinning" : "is-reserved"} /><StableSwap state={preflightPending || batchPending ? (isBatch ? "batchBusy" : "busy") : (isBatch ? "batch" : "idle")} labels={{ idle: t("gptStartPreflight"), batch: t("gptStartBatch"), busy: t("gptPreflighting"), batchBusy: t("gptBatchRunning") }} />
           </Button>
-          {preflightError && <p role="alert" className="error">{preflightError}</p>}
-          {batchError && <p role="alert" className="error">{batchError}</p>}
+          {preflightError && <Notice role="alert" className="error">{preflightError}</Notice>}
+          {batchError && <Notice role="alert" className="error">{batchError}</Notice>}
           {savedProgress.previewStatus && !preparedBatch && batchResults.length === 0 && <p role="status">{t("gptBatchReloadPreview")}</p>}
           {preparedBatch && <section className="gpt-batch-preview" aria-label={t("gptBatchPreview")}>
             <strong>{t("gptBatchPreview")}</strong><p>{t("gptBatchPreviewHint")}</p>
@@ -1346,10 +1347,10 @@ function GptDirectContent() {
             </label>
           </fieldset>
 
-          {selectedCardMode === "existing" ? cardsQuery.isError ? <div className="error" role="alert">
+          {selectedCardMode === "existing" ? cardsQuery.isError ? <Notice className="error" role="alert">
             {cardsQuery.error.message}
             <Button variant="outline" disabled={cardsQuery.isFetching} onClick={() => void cardsQuery.refetch()}>{t("retry")}</Button>
-          </div> : !activeCards.length && !cardsQuery.isLoading ? <div className="gpt-empty-card">
+          </Notice> : !activeCards.length && !cardsQuery.isLoading ? <div className="gpt-empty-card">
             <CreditCard /><strong>{t("gptNoActiveCard")}</strong><p>{t("gptNoActiveCardDesc")}</p>
             <div className="gpt-empty-actions"><Button asChild variant="outline"><Link to="/cards">{t("gptOpenCardFirst")}</Link></Button><Button asChild><Link to="/cdk/redeem">{t("gptUseCdkAutoCard")}</Link></Button></div>
           </div> : <label>{t("gptPaymentCard")}
@@ -1374,7 +1375,7 @@ function GptDirectContent() {
           </div> : <div className="gpt-auto-card-review">
             {isBatch && <label className="gpt-one-card-per-account"><input type="checkbox" aria-label={t("gptOneCardPerAccount")} checked={oneCardPerAccount} disabled={busy} onChange={(event) => setOneCardPerAccount(event.target.checked)} /><span>{t("gptOneCardPerAccount")}<small>{t("gptOneCardPerAccountHint")}</small></span></label>}
             <div className="gpt-auto-card-heading"><Sparkles /><span><strong>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccount" : "gptSmartCard" : "gptAutoOpenCard")}</strong><small>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccountHint" : "gptSmartCardSafety" : "gptAutoCardOneOnly")}</small></span></div>
-            {!preflightData ? <p>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccountHint" : "gptSmartCardBatchHint" : "gptAutoCardAwaitingQuote")}</p> : !autoProduct ? <p className={productsQuery.isLoading || openAiPricesQuery.isLoading ? undefined : "error"} role={productsQuery.isLoading || openAiPricesQuery.isLoading ? "status" : "alert"}>{productsQuery.isLoading || openAiPricesQuery.isLoading ? <DataSkeleton /> : t("gptAutoCardUnavailable")}</p> : <>
+            {!preflightData ? <p>{t(isBatch ? oneCardPerAccount ? "gptOneCardPerAccountHint" : "gptSmartCardBatchHint" : "gptAutoCardAwaitingQuote")}</p> : !autoProduct ? <>{productsQuery.isLoading || openAiPricesQuery.isLoading ? <p role="status"><DataSkeleton /></p> : <Notice tone="error">{t("gptAutoCardUnavailable")}</Notice>}</> : <>
               <dl>
                 <div><dt>{t(isCreditPlan(selectedPlanKey) ? "gptCreditsEstimateUsd" : "gptSubscriptionEstimateUsd")}</dt><dd>${formatDecimal(displayQuoteUsd)}</dd></div>
                 <div><dt>{t("gptAutoCardBuffer")}</dt><dd>+${formatDecimal(autoCardBufferUsd.toFixed(2))}</dd></div>
@@ -1384,7 +1385,7 @@ function GptDirectContent() {
                 <div><dt>{t("gptServiceFeeLabel")}</dt><dd>${formatDecimal(customerFee)}</dd></div>
                 <div><dt>{t("gptAutoCardTotalDebit")}</dt><dd>${formatDecimal(autoEstimatedDebit)}</dd></div>
               </dl>
-              <p className="gpt-auto-card-notice"><ShieldCheck />{t(isCreditPlan(selectedPlanKey) ? "gptCreditsAutoCardFundingNotice" : "gptAutoCardFundingNotice", { buffer: formatDecimal(autoCardBufferUsd.toFixed(2)) })}</p>
+              <Notice className="gpt-auto-card-notice"><ShieldCheck />{t(isCreditPlan(selectedPlanKey) ? "gptCreditsAutoCardFundingNotice" : "gptAutoCardFundingNotice", { buffer: formatDecimal(autoCardBufferUsd.toFixed(2)) })}</Notice>
             </>}
           </div>}
 
@@ -1420,15 +1421,15 @@ function GptDirectContent() {
             <small>{t("gptQuoteExpiry", { time: new Date(preflightData.preflightExpiresAt).toLocaleString(locale) })}</small>
           </div>}
           {!isBatch && preflightData && selectedPlanKey && !selectedQuote && !quoteError && !preflightData.quoteErrors?.[selectedPlanKey]
-            && <p role="alert" className="error" data-testid="gpt-selected-plan-unavailable"><AlertTriangle />{t(`gptPlan.${selectedPlanKey}`, { defaultValue: selectedPlan?.label ?? selectedPlanKey })}：{t("gptBatchPlanUnavailable")}</p>}
-          {!isBatch && quoteError && <p role="alert" className="gpt-quote-error"><AlertTriangle />{quoteError}</p>}
+            && <Notice role="alert" className="error" data-testid="gpt-selected-plan-unavailable"><AlertTriangle />{t(`gptPlan.${selectedPlanKey}`, { defaultValue: selectedPlan?.label ?? selectedPlanKey })}：{t("gptBatchPlanUnavailable")}</Notice>}
+          {!isBatch && quoteError && <Notice role="alert" className="gpt-quote-error"><AlertTriangle />{quoteError}</Notice>}
           {!isBatch && <Button size="lg" onClick={submitOrder} disabled={createDisabled}><StableSwap state={orderPending ? "busy" : isCreditPlan(selectedPlanKey) ? "alt" : "idle"} labels={{ idle: t("gptSubmitOrder"), alt: t("gptSubmitCreditsOrder"), busy: t("gptSubmitting") }} /></Button>}
           <p className="gpt-charge-note"><ShieldCheck />{t(isCreditPlan(selectedPlanKey) ? "gptCreditsChargeNotice" : "gptChargeNotice")}</p>
-          {orderError && <p role="alert" className="error">{orderError}</p>}
-          {singleUncertain && <div role="alert"><p>{t("gptBatchReloadUnknown")}</p><Button type="button" variant="outline" onClick={() => { setSingleUncertain(false); setOrderError(""); orderIntent.current = null; clearPreflight(); }}>{t("gptConfirmHistoryChecked")}</Button></div>}
+          {orderError && <Notice role="alert" className="error">{orderError}</Notice>}
+          {singleUncertain && <Notice role="alert"><p>{t("gptBatchReloadUnknown")}</p><Button type="button" variant="outline" onClick={() => { setSingleUncertain(false); setOrderError(""); orderIntent.current = null; clearPreflight(); }}>{t("gptConfirmHistoryChecked")}</Button></Notice>}
           </>}
 
-          {cancelOrder.isError && <p role="alert" className="error">{cancelOrder.error instanceof Error ? cancelOrder.error.message : t("gptCancelFailed")}</p>}
+          {cancelOrder.isError && <Notice role="alert" className="error">{cancelOrder.error instanceof Error ? cancelOrder.error.message : t("gptCancelFailed")}</Notice>}
         </div>
       </section>
     </div>
@@ -1460,12 +1461,12 @@ function GptDirectContent() {
         const plan = custom ? creditPlanKey(points) : option;
         const quantityKey = `generate:${option}`;
         return <article key={option} className="is-available">
-        <div><span className="gpt-cdk-plan">{custom ? t("gptCreditsCustom") : t(`gptPlan.${plan}`, { defaultValue: plan })}</span><strong data-testid={`gpt-cdk-listed-price-${option}`}>{t("gptCdkGenerateFree", { price: "$0.00" })}</strong><small>{t("gptCdkGenerateHint")}</small>{custom && <label className="gpt-cdk-quantity"><span>{t("gptChooseCredits")}</span><input type="text" inputMode="numeric" autoComplete="off" aria-label="CDK 自定义点数" value={cdkCreditsDraft} placeholder={t("gptCreditsCustomPlaceholder")} disabled={Boolean(purchasingPlan)} onChange={event => setCdkCreditsDraft(event.target.value)} /><small>{t("gptCreditsCustomHint")}</small>{cdkCreditsDraft !== "" && !points && <small role="alert">{t("gptCreditsQuantityInvalid")}</small>}</label>}</div>
+        <div><span className="gpt-cdk-plan">{custom ? t("gptCreditsCustom") : t(`gptPlan.${plan}`, { defaultValue: plan })}</span><strong data-testid={`gpt-cdk-listed-price-${option}`}>{t("gptCdkGenerateFree", { price: "$0.00" })}</strong><small>{t("gptCdkGenerateHint")}</small>{custom && <label className="gpt-cdk-quantity"><span>{t("gptChooseCredits")}</span><input type="text" inputMode="numeric" autoComplete="off" aria-label="CDK 自定义点数" value={cdkCreditsDraft} placeholder={t("gptCreditsCustomPlaceholder")} disabled={Boolean(purchasingPlan)} onChange={event => setCdkCreditsDraft(event.target.value)} /><small>{t("gptCreditsCustomHint")}</small>{cdkCreditsDraft !== "" && !points && <Notice role="alert">{t("gptCreditsQuantityInvalid")}</Notice>}</label>}</div>
         <label className="gpt-cdk-quantity"><span>{t("quantity")}</span><input type="number" min={1} max={50} aria-label={custom ? "CDK 自定义张数" : t("quantity")} value={Math.min(cdkQuantities[quantityKey] ?? 1, 50)} disabled={Boolean(purchasingPlan)} onChange={(event) => setCdkQuantities((current) => ({ ...current, [quantityKey]: Math.min(Math.max(Number.parseInt(event.target.value, 10) || 1, 1), 50) }))} /></label>
         <Button data-testid={`gpt-cdk-generate-${option}`} onClick={() => generateCdk(plan, option)} disabled={Boolean(purchasingPlan) || (custom && !points)}><StableSwap state={purchasingPlan === `generate:${plan}` ? "busy" : "idle"} labels={{ idle: t("gptGenerateCdks", { count: Math.min(cdkQuantities[quantityKey] ?? 1, 50) }), busy: t("processing") }} /></Button>
       </article>;
       })}</div></>}
-      {purchaseError && <p className="admin-alert is-error" role="alert">{purchaseError}</p>}
+      {purchaseError && <Notice className="admin-alert is-error" role="alert">{purchaseError}</Notice>}
       {purchasedCdk && <div className="gpt-cdk-purchase-result" role="status" aria-live="polite">
         <CheckCircle2 />
         <div>{purchasedCdk.checkoutRegion && <p>结账地区：{regionNames.of(purchasedCdk.checkoutRegion.country)} · {purchasedCdk.checkoutRegion.currency}</p>}<strong>{t("gptCdkGenerateSuccessCount", { count: purchasedCdk.quantity ?? purchasedItems.length })}</strong><small>{t("gptCdkSavedDelivery")}{purchasedCdk.forceNewCard ? ` · ${t("gptCdkForceNewCardBadge")}` : ""}</small><div className="gpt-cdk-code-list">{purchasedItems.map((item) => <div key={item.cdkId}><code>{item.code ?? item.codePrefix}</code>{item.code && <Button size="xs" variant="utility" onClick={async () => { await navigator.clipboard.writeText(item.code!); setCopiedCdk(item.cdkId); }}>{copiedCdk === item.cdkId ? <Check /> : <Copy />}<StableSwap state={copiedCdk === item.cdkId ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} /></Button>}</div>)}</div></div>
@@ -1480,7 +1481,7 @@ function GptDirectContent() {
         <Button size="sm" type="submit">{t("search")}</Button>
         {orderSearch && <Button size="sm" type="button" variant="outline" onClick={() => { setOrderSearchDraft(""); setOrderSearch(""); }}>{t("resetFilters")}</Button>}
       </form>
-      {ordersQuery.isLoading ? <div aria-busy="true">{[0, 1, 2].map((item) => <div className="gpt-order-history-row" key={item}><div className="gpt-order-row"><div className="gpt-order-row-main is-static"><span className="gpt-status-dot" /><span><strong><DataSkeleton /></strong><small><DataSkeleton /></small></span><span className="gpt-order-row-state"><span className="gpt-row-progress-line"><i><b style={{ width: "35%" }} /></i><strong><DataSkeleton /></strong></span><small><DataSkeleton /></small></span></div></div></div>)}</div> : ordersQuery.isError ? <p className="gpt-list-state error" role="alert">{t("gptOrdersLoadFailed")}</p> : !ordersQuery.data?.data.list.length ? <p className="gpt-list-state">{t("gptNoOrders")}</p> : ordersQuery.data.data.list.map((order) => {
+      {ordersQuery.isLoading ? <div aria-busy="true">{[0, 1, 2].map((item) => <div className="gpt-order-history-row" key={item}><div className="gpt-order-row"><div className="gpt-order-row-main is-static"><span className="gpt-status-dot" /><span><strong><DataSkeleton /></strong><small><DataSkeleton /></small></span><span className="gpt-order-row-state"><span className="gpt-row-progress-line"><i><b style={{ width: "35%" }} /></i><strong><DataSkeleton /></strong></span><small><DataSkeleton /></small></span></div></div></div>)}</div> : ordersQuery.isError ? <Notice className="gpt-list-state error" role="alert">{t("gptOrdersLoadFailed")}</Notice> : !ordersQuery.data?.data.list.length ? <p className="gpt-list-state">{t("gptNoOrders")}</p> : ordersQuery.data.data.list.map((order) => {
         const invoiceUrls = stripeInvoiceUrls(order.invoiceUrls, order.invoiceUrl);
         const progress = orderProgressPercent(order);
         return <div className="gpt-order-history-row" key={order.id}>
@@ -1510,7 +1511,7 @@ function GptDirectContent() {
 
       {toolsTab === "lifecycle" && <div className="gpt-orders-panel gpt-direct-tool-panel">
       <div className="gpt-direct-tool-heading gpt-cdk-history-title"><h3>{t("gptCdkHistory")}</h3><div className="gpt-cdk-history-title-actions"><span>{cdksQuery.isLoading ? <DataSkeleton /> : t("records", { count: cdksQuery.data?.data.total ?? 0 })}</span><Button size="sm" variant="utility" onClick={() => void exportCdks()} disabled={exportingCdks || !cdksQuery.data?.data.total}>{exportingCdks ? <RefreshCw className="is-spinning" /> : <Download />}<StableSwap state={exportingCdks ? "busy" : "idle"} labels={{ idle: t("exportUnredeemedCdks"), busy: t("exportingCdks") }} /></Button></div></div>
-      {cdksQuery.isLoading ? <div aria-busy="true">{[0, 1, 2].map((item) => <div className="gpt-order-history-row" key={item}><div className="gpt-order-row"><div className="gpt-order-row-main is-static"><span className="gpt-status-dot" /><span><strong className="gpt-cdk-history-code"><DataSkeleton /></strong><small><DataSkeleton /></small></span><span className="gpt-cdk-history-state"><DataSkeleton /></span></div></div></div>)}</div> : cdksQuery.isError ? <p className="gpt-list-state error" role="alert">{t("gptCdksLoadFailed")}</p> : !cdksQuery.data?.data.list.length ? <p className="gpt-list-state">{t("gptNoCdks")}</p> : cdksQuery.data.data.list.map((cdk) => {
+      {cdksQuery.isLoading ? <div aria-busy="true">{[0, 1, 2].map((item) => <div className="gpt-order-history-row" key={item}><div className="gpt-order-row"><div className="gpt-order-row-main is-static"><span className="gpt-status-dot" /><span><strong className="gpt-cdk-history-code"><DataSkeleton /></strong><small><DataSkeleton /></small></span><span className="gpt-cdk-history-state"><DataSkeleton /></span></div></div></div>)}</div> : cdksQuery.isError ? <Notice className="gpt-list-state error" role="alert">{t("gptCdksLoadFailed")}</Notice> : !cdksQuery.data?.data.list.length ? <p className="gpt-list-state">{t("gptNoCdks")}</p> : cdksQuery.data.data.list.map((cdk) => {
         const invoiceUrls = stripeInvoiceUrls(cdk.invoiceUrls, cdk.invoiceUrl);
         const amount = quotedAmount(cdk.quotedAmountMinor, cdk.currency);
         const redeemed = Boolean(cdk.redemptionStatus || cdk.status === "consumed" || cdk.inventoryStatus === "CONSUMED");
@@ -1527,21 +1528,21 @@ function GptDirectContent() {
         </div>
         </div>;
       })}
-      {revealError && <p className="admin-alert is-error" role="alert">{revealError}</p>}
-      {exportError && <p className="admin-alert is-error" role="alert">{exportError}</p>}
+      {revealError && <Notice className="admin-alert is-error" role="alert">{revealError}</Notice>}
+      {exportError && <Notice className="admin-alert is-error" role="alert">{exportError}</Notice>}
       {cdkTotalPages > 1 && <div className="gpt-cdk-pagination"><Button size="sm" variant="outline" disabled={cdkPage <= 1} onClick={() => setCdkPage((page) => page - 1)}>{t("previousPage")}</Button><span>{t("pageOf", { page: cdkPage, total: cdkTotalPages })}</span><Button size="sm" variant="outline" disabled={cdkPage >= cdkTotalPages} onClick={() => setCdkPage((page) => page + 1)}>{t("nextPage")}</Button></div>}
       </div>}
     </section>
 
     <Dialog.Root open={Boolean(activeOrderId || activeCdkId)} onOpenChange={(open) => { if (!open) { setActiveOrderId(""); setActiveCdkId(""); } }}>
-      <Dialog.Portal><div className="dialog-overlay" data-state={activeOrderId || activeCdkId ? "open" : "closed"} aria-hidden="true" onClick={() => { setActiveOrderId(""); setActiveCdkId(""); }} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content gpt-progress-drawer">
+      <Dialog.Portal><div className="dialog-overlay" data-state={activeOrderId || activeCdkId ? "open" : "closed"} aria-hidden="true" onClick={() => { setActiveOrderId(""); setActiveCdkId(""); }} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content gpt-progress-drawer"><NoticeScope />
         <div className="card-transaction-drawer-head"><div><span>{drawerOrder && financiallyFinal(drawerOrder) && drawerOrder.status === "completed" ? <CheckCircle2 /> : <Clock3 />}</span><div><Dialog.Title>{drawerOrder ? orderHeadline(drawerOrder, t, statusLabel) : <DataSkeleton />}</Dialog.Title><Dialog.Description>{activeCdk ? `${t("gptCdkHistory")} · ${activeCdk.codePrefix}` : drawerOrder ? t("gptOrderNumber", { id: drawerOrder.id }) : activeOrderId}</Dialog.Description></div></div><Dialog.Close asChild><Button type="button" size="icon" variant="ghost" aria-label={t("close")}><X /></Button></Dialog.Close></div>
         {activeOrderId && orderQuery.isLoading && !drawerOrder ? <div className="gpt-progress-drawer-body" aria-busy="true"><div className="gpt-progress-order-meta"><DataSkeleton /><DataSkeleton /></div><div className="gpt-order-progress"><DataSkeleton /><DataSkeleton /><DataSkeleton /></div></div> : drawerOrder ? <div className="gpt-progress-drawer-body">
           <div className="gpt-progress-order-meta"><span>{t(`gptPlan.${drawerOrder.plan}`, { defaultValue: drawerOrder.plan })}</span><strong>{statusLabel(drawerOrder.status)}{drawerOrder.stage ? ` · ${stageLabel(drawerOrder.stage)}` : ""}</strong></div>
           <GptOrderProgress order={drawerOrder} events={drawerEvents} defaultExpanded renewalForm={!activeCdkId && drawerOrder.needsRenewalCancel ? { value: renewalSession, pending: renewalPending, error: renewalError, onChange: setRenewalSession, onSubmit: submitRenewal } : undefined} sessionRecoveryForm={!activeCdkId && drawerOrder.status === "requires_action" && (drawerOrder.nextAction === "submit_session" || (!drawerOrder.nextAction && drawerEvents?.at(-1)?.publicCode === "session_refresh_required")) ? { value: recoverySession, pending: recoveryPending, error: recoveryError, onChange: setRecoverySession, onSubmit: submitRecoverySession } : undefined} />
           {!activeCdkId && cancellableStatuses.has(drawerOrder.status) && <Button size="sm" variant="outline" onClick={() => cancelOrder.mutate(drawerOrder.id)} disabled={cancelOrder.isPending}>{t("cancel")}</Button>}
           {!activeCdkId && !cancellableStatuses.has(drawerOrder.status) && canStopRetry(drawerOrder) && <Button size="sm" variant="outline" onClick={() => cancelOrder.mutate(drawerOrder.id)} disabled={cancelOrder.isPending}>{t("gptStopRetry")}</Button>}
-        </div> : <p className="gpt-list-state error" role="alert">{t("gptOrdersLoadFailed")}</p>}
+        </div> : <Notice className="gpt-list-state error" role="alert">{t("gptOrdersLoadFailed")}</Notice>}
       </Dialog.Content></Dialog.Portal>
     </Dialog.Root>
   </PageShell>;

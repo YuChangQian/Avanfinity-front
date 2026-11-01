@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useEffect, useState } from "react";
 import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -76,7 +77,7 @@ export function SupportTicketsPage() {
         <label>{t("supportSubject")}<input value={subject} onChange={(event) => setSubject(event.target.value)} maxLength={120} required /></label>
         <label>{t("supportProblemDescription")}<textarea value={message} onChange={(event) => setMessage(event.target.value)} maxLength={5000} rows={4} required /></label>
         <Button type="submit" disabled={createTicket.isPending}><StableSwap state={createTicket.isPending ? "busy" : "idle"} labels={{ idle: t("submitSupportTicket"), busy: t("processing") }} /></Button>
-        {createTicket.isError && <p className="error" role="alert">{createTicket.error instanceof Error ? createTicket.error.message : t("supportActionFailed")}</p>}
+        {createTicket.isError && <Notice className="error" role="alert">{createTicket.error instanceof Error ? createTicket.error.message : t("supportActionFailed")}</Notice>}
       </form>
     </section>
 
@@ -84,7 +85,7 @@ export function SupportTicketsPage() {
       <aside className="support-ticket-list" aria-label={t("mySupportTickets")}>
         <div className="section-title"><h2><LifeBuoy />{t("mySupportTickets")}</h2><span>{tickets.isLoading ? <DataSkeleton /> : tickets.data?.data.length ?? 0}</span></div>
         {tickets.isLoading && <div aria-busy="true">{[0, 1, 2].map((item) => <button type="button" className="support-ticket-row" disabled key={item}><span><strong><DataSkeleton /></strong><small><DataSkeleton /></small></span><DataSkeleton /></button>)}</div>}
-        {tickets.isError && <div className="empty-state query-error" role="alert"><span>{t("supportLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => void tickets.refetch()}>{t("retry")}</Button></div>}
+        {tickets.isError && <Notice className="empty-state query-error" role="alert"><span>{t("supportLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => void tickets.refetch()}>{t("retry")}</Button></Notice>}
         {tickets.data?.data.length === 0 && <div className="empty-state">{t("noSupportTickets")}</div>}
         {tickets.data?.data.map((ticket) => <button type="button" className="support-ticket-row" aria-current={activeId === ticket.id ? "true" : undefined} key={ticket.id} onClick={() => setSelectedId(ticket.id)}>
           <span><strong>{ticket.subject}</strong><small>#{ticket.id} · {t(`supportCategory.${ticket.category}`)} · {new Date(ticket.lastMessageAt).toLocaleString(locale)}</small></span>
@@ -95,18 +96,18 @@ export function SupportTicketsPage() {
       <article className="support-thread">
         {!activeId && <div className="empty-state">{t("selectSupportTicket")}</div>}
         {detail.isLoading && <div aria-busy="true"><header className="support-thread-header"><div><small><DataSkeleton /></small><h2><DataSkeleton /></h2></div><DataSkeleton /></header><div className="support-messages">{[0, 1, 2].map((item) => <div className={`support-message ${item % 2 ? "is-user" : "is-admin"}`} key={item}><div><strong><DataSkeleton /></strong><time><DataSkeleton /></time></div><p><DataSkeleton /></p></div>)}</div><form className="support-reply-form"><label>{t("supportReply")}<textarea rows={3} disabled /></label><Button disabled><Send />{t("sendReply")}</Button></form></div>}
-        {detail.isError && <div className="empty-state query-error" role="alert"><span>{t("supportLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => void detail.refetch()}>{t("retry")}</Button></div>}
+        {detail.isError && <Notice className="empty-state query-error" role="alert"><span>{t("supportLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => void detail.refetch()}>{t("retry")}</Button></Notice>}
         {selected && <>
           <header className="support-thread-header"><div><small>#{selected.ticket.id} · {t(`supportCategory.${selected.ticket.category}`)}{selected.ticket.cardNumberMasked ? ` · ${selected.ticket.cardNumberMasked}` : ""}</small><h2>{selected.ticket.subject}</h2></div><span className={`status-pill support-status-${selected.ticket.status}`}>{t(`supportStatus.${selected.ticket.status}`)}</span></header>
           <div className="support-messages">{selected.messages.map((item) => <div className={`support-message is-${item.senderRole}`} key={item.id}>
             <div><strong>{item.senderRole === "admin" ? t("supportTeam") : t("me")}</strong><time>{new Date(item.createdAt).toLocaleString(locale)}</time></div>
             <p>{item.body}</p>
           </div>)}</div>
-          {selected.ticket.status === "closed" ? <p className="support-closed-notice">{t("supportTicketClosed")}</p> : <form className="support-reply-form" onSubmit={(event) => { event.preventDefault(); sendReply.mutate(); }}>
+          {selected.ticket.status === "closed" ? <Notice className="support-closed-notice">{t("supportTicketClosed")}</Notice> : <form className="support-reply-form" onSubmit={(event) => { event.preventDefault(); sendReply.mutate(); }}>
             <label>{t("supportReply")}<textarea value={reply} onChange={(event) => setReply(event.target.value)} maxLength={5000} rows={3} required /></label>
             <Button type="submit" disabled={sendReply.isPending}><Send /><StableSwap state={sendReply.isPending ? "busy" : "idle"} labels={{ idle: t("sendReply"), busy: t("processing") }} /></Button>
             {selected.ticket.status === "resolved" && <small>{t("supportReplyReopens")}</small>}
-            {sendReply.isError && <p className="error" role="alert">{sendReply.error instanceof Error ? sendReply.error.message : t("supportActionFailed")}</p>}
+            {sendReply.isError && <Notice className="error" role="alert">{sendReply.error instanceof Error ? sendReply.error.message : t("supportActionFailed")}</Notice>}
           </form>}
         </>}
       </article>

@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal } from "../decimal";
 import { GPT_SESSION_MAX_BYTES } from "../gptSession";
@@ -96,8 +97,8 @@ function QuoteRefreshForm({ token, settings }: { token: string; settings: AdminG
         succeeded: settings.catalogProgress.succeeded ?? 0, failed: settings.catalogProgress.failed ?? 0 })}
       {settings.catalogProgress.rateLimited && ` · ${t("gptCatalogRateLimited")}`}
     </p>}
-    {!settings.notificationReady && <p className="admin-alert is-warning" role="note"><ShieldAlert />{t("cdkRefreshTelegramRequired")}</p>}
-    {error && <p className="admin-alert is-error" role="alert"><span>{error instanceof Error ? error.message : t("updateFailed")}</span>{recentAuthRequired && <Button type="button" size="xs" variant="outline" onClick={requestRecentAuth}>{t("verifyAgain")}</Button>}</p>}
+    {!settings.notificationReady && <Notice className="admin-alert is-warning" role="note"><ShieldAlert />{t("cdkRefreshTelegramRequired")}</Notice>}
+    {error && <Notice className="admin-alert is-error" role="alert"><span>{error instanceof Error ? error.message : t("updateFailed")}</span>{recentAuthRequired && <Button type="button" size="xs" variant="outline" onClick={requestRecentAuth}>{t("verifyAgain")}</Button>}</Notice>}
   </section>;
 }
 
@@ -187,15 +188,15 @@ export function AdminGptCdkPanel({ token }: { token: string }) {
     </div>
 
     {quoteRefresh.isLoading && <p className="admin-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</p>}
-    {quoteRefresh.isError && <p className="admin-state is-error" role="alert">{quoteRefresh.error instanceof Error ? quoteRefresh.error.message : t("adminLoadFailed")}</p>}
+    {quoteRefresh.isError && <Notice className="admin-state is-error" role="alert">{quoteRefresh.error instanceof Error ? quoteRefresh.error.message : t("adminLoadFailed")}</Notice>}
     {quoteRefresh.data && <QuoteRefreshForm key={`${quoteRefresh.data.data.configured}:${quoteRefresh.data.data.enabled}:${quoteRefresh.data.data.intervalMinutes}:${quoteRefresh.data.data.status}:${quoteRefresh.data.data.nextRefreshAt}`} token={token} settings={quoteRefresh.data.data} />}
 
     <section className="admin-surface">
       <div className="admin-section-heading"><div><span className="admin-kicker">PRICING</span><h3>{t("cdkPricing")}</h3><p>{t("cdkPricingHint")}</p></div><KeyRound /></div>
       {inventory.isLoading && <p className="admin-state loading-skeleton loading-skeleton-table" aria-label={t("loading")}>{t("loading")}</p>}
-      {inventory.isError && <p className="admin-state is-error" role="alert">{inventory.error instanceof Error ? inventory.error.message : t("adminLoadFailed")}</p>}
+      {inventory.isError && <Notice className="admin-state is-error" role="alert">{inventory.error instanceof Error ? inventory.error.message : t("adminLoadFailed")}</Notice>}
       <div className="admin-cdk-pricing-list">{inventory.data?.data.pricing.map((item) => <PricingForm key={`${item.plan}:${item.version}`} item={item} pending={pricing.isPending} save={(input) => pricing.mutate(input)} />)}</div>
-      {pricing.isError && <p className="admin-alert is-error" role="alert">{pricing.error instanceof Error ? pricing.error.message : t("updateFailed")}</p>}
+      {pricing.isError && <Notice className="admin-alert is-error" role="alert">{pricing.error instanceof Error ? pricing.error.message : t("updateFailed")}</Notice>}
     </section>
 
     <section className="admin-surface">

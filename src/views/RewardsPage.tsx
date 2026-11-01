@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { formatDecimal } from "../decimal";
 import { useEffect, useState } from "react";
 import { useAtomValue } from "jotai";
@@ -123,11 +124,11 @@ export function RewardsPage() {
       </article>)}</section>
     </div>
   </PageShell>;
-  if (!points.data || !lottery.data) return <main className="center error" role="alert">{t("rewardsLoadFailed")}</main>;
+  if (!points.data || !lottery.data) return <Notice className="center error" role="alert">{t("rewardsLoadFailed")}</Notice>;
   const checkinData = points.data.data.checkin;
   const activities = filter === "all" ? lottery.data.data : lottery.data.data.filter((item) => item.participationMode === filter);
   return <PageShell eyebrow="REWARDS" title={t("rewardsTitle")} description={t("rewardsDesc")}>
-    {notice && <p className={`notice ${notice.error ? "error" : ""}`} role={notice.error ? "alert" : "status"}>{notice.text}</p>}
+    {notice && <Notice className={`notice ${notice.error ? "error" : ""}`} role={notice.error ? "alert" : "status"}>{notice.text}</Notice>}
     <section className="rewards-hero-grid">
       <article className="finance-balance rewards-balance">
         <div className="stat-icon"><Sparkles /></div>

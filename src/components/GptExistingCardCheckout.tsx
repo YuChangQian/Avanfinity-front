@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "@tanstack/react-router";
@@ -177,9 +178,9 @@ export function GptExistingCardCheckout({ token, userKey, cardId, estimateUsd, s
         <div><dt>{t("gptFundingWallet")}</dt><dd>${formatDecimal(review.wallet)}</dd></div>
       </dl>
       <p>{t("gptFundingNotice")}</p>
-      {!fundingCovered(review.wallet, review.total) && <p role="alert" className="error">{t("gptFundingWalletLow")} <Link to="/finance">{t("gptFundingDeposit")}</Link></p>}
+      {!fundingCovered(review.wallet, review.total) && <Notice role="alert" className="error">{t("gptFundingWalletLow")} <Link to="/finance">{t("gptFundingDeposit")}</Link></Notice>}
     </div>}
-    {error && <p role="alert" className="error">{error} <Link to="/cards/$cardId" params={{ cardId: String(cardId) }}>{t("gptFundingViewCard")}</Link></p>}
+    {error && <Notice role="alert" className="error">{error} <Link to="/cards/$cardId" params={{ cardId: String(cardId) }}>{t("gptFundingViewCard")}</Link></Notice>}
     {pending && <p role="status">{t("gptFundingPending")} <Link to="/cards/$cardId" params={{ cardId: String(cardId) }}>{t("gptFundingViewCard")}</Link></p>}
     <Button size="lg" disabled={disabled && !pending || running.current || Boolean(review && !pending && !fundingCovered(review.wallet, review.total))} onClick={() => void execute(Boolean(review))}>
       <StableSwap state={running.current ? "busy" : pending ? "check" : review ? "confirm" : "idle"} labels={{ idle: t(submitLabel ?? "gptSubmitOrder"), check: t("gptFundingCheck"), confirm: t("gptFundingConfirm"), busy: t("processing") }} />

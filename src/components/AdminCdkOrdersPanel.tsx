@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Sparkles } from "lucide-react";
@@ -33,7 +34,7 @@ export function AdminCdkOrdersPanel({ token, onOpenCustomer, onOpenCard }: { tok
     </div>
     <section className="admin-surface"><div className="admin-section-heading"><div><span className="admin-kicker">ORDERS</span><h3>{t("gptOrderHistory")}</h3></div><Sparkles /></div>
     {orders.isLoading && <p>{t("loading")}</p>}
-    {orders.isError && <p className="admin-state is-error" role="alert">{t("adminLoadFailed")}</p>}
+    {orders.isError && <Notice className="admin-state is-error" role="alert">{t("adminLoadFailed")}</Notice>}
     {orders.data?.data.total === 0 && <p>{t("gptNoOrders")}</p>}
     <div className="admin-table-wrap"><table className="admin-table"><thead><tr>
       <th>{t("customer")}</th><th>{t("gptPlanLabel")}</th><th>{t("status")}</th><th>{t("gptOrderProgress")}</th><th>{t("amount")}</th><th>{t("targetCard")}</th><th>{t("createdTime")}</th><th>{t("details")}</th>

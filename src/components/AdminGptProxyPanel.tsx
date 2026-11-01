@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, RefreshCw, Wifi } from "lucide-react";
@@ -128,12 +129,12 @@ export function AdminGptProxyPanel({ token }: { token: string }) {
         </label>
         <Button type="submit" size="sm" disabled={pending || !url.trim()}><Plus />{t("gptProxyAdd")}</Button>
       </form>
-      {(pool.isError || add.isError || probeAll.isError || actionError) && <p className="admin-alert is-error" role="alert">
+      {(pool.isError || add.isError || probeAll.isError || actionError) && <Notice className="admin-alert is-error" role="alert">
         {actionError
           || (add.error instanceof Error ? add.error.message : "")
           || (probeAll.error instanceof Error ? probeAll.error.message : "")
           || (pool.error instanceof Error ? pool.error.message : t("adminLoadFailed"))}
-      </p>}
+      </Notice>}
     </section>
 
     <section className="admin-surface">

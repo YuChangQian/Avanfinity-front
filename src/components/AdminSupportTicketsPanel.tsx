@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LifeBuoy, Search, Send } from "lucide-react";
@@ -65,7 +66,7 @@ export function AdminSupportTicketsPanel({ token }: { token: string }) {
       <aside className="support-ticket-list">
         <div className="section-title"><h2><LifeBuoy />{t("supportQueue")}</h2><span>{tickets.data?.data.length ?? 0}</span></div>
         {tickets.isLoading && <div className="empty-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</div>}
-        {tickets.isError && <div className="empty-state query-error" role="alert">{t("supportLoadFailed")}</div>}
+        {tickets.isError && <Notice className="empty-state query-error" role="alert">{t("supportLoadFailed")}</Notice>}
         {tickets.data?.data.length === 0 && <div className="empty-state">{t("noSupportTickets")}</div>}
         {tickets.data?.data.map((ticket) => <button type="button" className="support-ticket-row" aria-current={activeId === ticket.id ? "true" : undefined} key={ticket.id} onClick={() => setSelectedId(ticket.id)}>
           <span><strong>{ticket.subject}</strong><small>#{ticket.id} · {t(`supportCategory.${ticket.category}`)} · {ticket.email ?? `#${ticket.userId}`} · {new Date(ticket.lastMessageAt).toLocaleString(locale)}</small></span>
@@ -75,7 +76,7 @@ export function AdminSupportTicketsPanel({ token }: { token: string }) {
       <article className="support-thread">
         {!activeId && <div className="empty-state">{t("selectSupportTicket")}</div>}
         {detail.isLoading && <div className="empty-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</div>}
-        {detail.isError && <div className="empty-state query-error" role="alert">{t("supportLoadFailed")}</div>}
+        {detail.isError && <Notice className="empty-state query-error" role="alert">{t("supportLoadFailed")}</Notice>}
         {selected && <>
           <header className="support-thread-header"><div><small>#{selected.ticket.id} · {t(`supportCategory.${selected.ticket.category}`)} · {selected.ticket.email ?? `#${selected.ticket.userId}`}{selected.ticket.cardNumberMasked ? ` · ${selected.ticket.cardNumberMasked}` : ""}</small><h2>{selected.ticket.subject}</h2></div><Select value={selected.ticket.status} onValueChange={(value) => updateStatus.mutate(value as SupportTicketStatus)} disabled={updateStatus.isPending}>
             <SelectTrigger className="support-status-trigger" aria-label={t("supportStatusLabel")}><SelectValue /></SelectTrigger>
@@ -85,10 +86,10 @@ export function AdminSupportTicketsPanel({ token }: { token: string }) {
             <div><strong>{item.senderRole === "admin" ? t("supportTeam") : selected.ticket.email ?? t("customer")}</strong><time>{new Date(item.createdAt).toLocaleString(locale)}</time></div>
             <p>{item.body}</p>
           </div>)}</div>
-          {selected.ticket.status === "closed" ? <p className="support-closed-notice">{t("supportTicketClosedAdmin")}</p> : <form className="support-reply-form" onSubmit={(event) => { event.preventDefault(); sendReply.mutate(); }}>
+          {selected.ticket.status === "closed" ? <Notice className="support-closed-notice">{t("supportTicketClosedAdmin")}</Notice> : <form className="support-reply-form" onSubmit={(event) => { event.preventDefault(); sendReply.mutate(); }}>
             <label>{t("supportAdminReply")}<textarea value={reply} onChange={(event) => setReply(event.target.value)} maxLength={5000} rows={3} required /></label>
             <Button type="submit" disabled={sendReply.isPending}><Send /><StableSwap state={sendReply.isPending ? "busy" : "idle"} labels={{ idle: t("sendReply"), busy: t("processing") }} /></Button>
-            {sendReply.isError && <p className="error" role="alert">{sendReply.error instanceof Error ? sendReply.error.message : t("supportActionFailed")}</p>}
+            {sendReply.isError && <Notice className="error" role="alert">{sendReply.error instanceof Error ? sendReply.error.message : t("supportActionFailed")}</Notice>}
           </form>}
         </>}
       </article>

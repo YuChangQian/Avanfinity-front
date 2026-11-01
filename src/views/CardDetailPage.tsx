@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "../components/ui/notice";
 import { formatDecimal, formatRateAsPercent } from "../decimal";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
@@ -376,22 +377,22 @@ export function CardDetailPage() {
       <section className="deposit-panel card-security-panel">
         <div className="section-title"><h2><ShieldCheck /> {t("cardSecurityDetails")}</h2><div className="card-detail-actions"><Button variant="outline" onClick={() => { setSyncNotice(null); sync.mutate(); }} disabled={sync.isPending}><RefreshCw className={sync.isPending ? "is-spinning" : undefined} /><StableSwap state={sync.isPending ? "busy" : "idle"} labels={{ idle: t("refreshCardData"), busy: t("refreshing") }} /></Button>{!readOnlyCard && <Button variant="outline" onClick={toggleSensitive}>{visible ? <EyeOff /> : <Eye />}<StableSwap state={visible ? "alt" : "idle"} labels={{ idle: t("showDetails"), alt: t("hideDetails") }} /></Button>}</div></div>
         <p>{t(cardClosing ? "cardClosingHint" : cardClosed ? "cardClosedHint" : "sensitiveCardHint")}</p>
-        {syncNotice && <p role={syncNotice.kind === "error" ? "alert" : "status"} className={syncNotice.kind === "error" ? "error" : "card-sync-status"}>{syncNotice.message}</p>}
+        {syncNotice && <Notice role={syncNotice.kind === "error" ? "alert" : "status"} className={syncNotice.kind === "error" ? "error" : "card-sync-status"}>{syncNotice.message}</Notice>}
         <div className="card-holder-summary"><UserRound /><div><span>{t("cardholder")}</span><strong>{holderName}</strong></div><div><span>{t("cardOpenedAt")}</span><strong>{new Date(loadedDetail.createdAt).toLocaleDateString()}</strong></div></div>
         <div className="stats compact-stats"><article><span>{t("expiry")}</span><strong>{revealed?.expire ?? (visible ? loadedDetail.expiry : "**/**")}</strong></article><article><span>CVV</span><strong>{revealed?.cvv ?? "***"}</strong></article><article><span>{t("status")}</span><strong>{statusLabel}</strong></article></div>
         {visible && sensitive.isFetching && <p role="status" className="card-sensitive-status loading-skeleton loading-skeleton-inline">{t("loadingCardDetails")}</p>}
-        {visible && sensitive.isError && <div role="alert" className="card-sensitive-error"><span>{t(recentAuthRequired ? "cardRecentAuthRequired" : "cardDetailsLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => {
+        {visible && sensitive.isError && <Notice role="alert" className="card-sensitive-error"><span>{t(recentAuthRequired ? "cardRecentAuthRequired" : "cardDetailsLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => {
           if (!recentAuthRequired) return void sensitive.refetch();
           sessionStorage.setItem("recentAuthReturnPath", window.location.pathname);
           window.location.assign("/login");
-        }}>{t(recentAuthRequired ? "verifyAgain" : "retry")}</Button></div>}
+        }}>{t(recentAuthRequired ? "verifyAgain" : "retry")}</Button></Notice>}
         {revealed && <div className="developer-secret-reveal" data-testid="card-billing-address">
           <p>{t("billingAddress")}</p>
           {fullBillingAddress ? <>
             <div data-testid="billing-address-full"><span>{t("billingAddressFull")}</span><code>{fullBillingAddress}</code><Button type="button" size="xs" variant="outline" aria-label={t("copyFullBillingAddress")} onClick={() => copyBillingAddress(fullBillingAddress, "full")}>{copiedAddress === "full" ? <Check /> : <Copy />}<StableSwap state={copiedAddress === "full" ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} /></Button></div>
             {billingAddressFields.map((field) => <div key={field.key} data-testid={`billing-address-${field.key}`}><span>{field.label}</span><code>{field.value || "—"}</code><Button type="button" size="xs" variant="outline" aria-label={t("copyBillingAddressField", { field: field.label })} disabled={!field.value} onClick={() => copyBillingAddress(field.value, field.key)}>{copiedAddress === field.key ? <Check /> : <Copy />}<StableSwap state={copiedAddress === field.key ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} /></Button></div>)}
           </> : <div><span>{t("billingAddress")}</span><code>{t("noBillingAddress")}</code></div>}
-          {sensitiveCopyError && <p role="alert" className="error">{sensitiveCopyError}</p>}
+          {sensitiveCopyError && <Notice role="alert" className="error">{sensitiveCopyError}</Notice>}
         </div>}
         {!readOnlyCard && <form className="inline-action" onSubmit={submit}><input name="note" maxLength={100} defaultValue={loadedDetail.note} aria-label={t("cardNote")} /><Button type="submit" disabled={note.isPending}>{t("save")}</Button></form>}
       </section>
@@ -419,7 +420,7 @@ export function CardDetailPage() {
     </section>}
     <section className="transaction-panel card-operations-panel">
       <div className="section-title"><div><h2><CreditCard /> {t("cardOperations")}</h2><p>{t("cardOperationsDesc")}</p></div><span className={`card-status-badge is-${statusClass}`}>{statusLabel}</span></div>
-      <p className="card-operation-warning"><ShieldCheck />{t("cardDeclineDeleteWarning", { count: loadedDetail.autoDeleteDeclines })}</p>
+      <Notice className="card-operation-warning"><ShieldCheck />{t("cardDeclineDeleteWarning", { count: loadedDetail.autoDeleteDeclines })}</Notice>
       {operationPending && <div className={`card-pending-operation ${operation.data?.data.status === "RECONCILE_REQUIRED" ? "is-warning" : ""}`} role="status">
         <span className="card-pending-operation-icon"><Clock3 /></span>
         {gptOrderPending ? <div>
@@ -442,8 +443,8 @@ export function CardDetailPage() {
         </div>
         <ProductFeeDetails product={loadedDetail} />
       </>}
-      {operationFailure && !syncNotice && <p role="alert" className="error">{operationFailure}</p>}
-      {actionError && !dialogAction && <p role="alert" className="error">{actionError}</p>}
+      {operationFailure && !syncNotice && <Notice role="alert" className="error">{operationFailure}</Notice>}
+      {actionError && !dialogAction && <Notice role="alert" className="error">{actionError}</Notice>}
     </section>
     <section className="transaction-panel" data-testid="card-funds-activities">
       <div className="section-title"><div><h2><ReceiptText />统一卡流水</h2><p>开卡、充值、退款、销卡退款、费用和消费按时间合并展示。</p></div><span>{unifiedLedger.length}</span></div>
@@ -487,18 +488,18 @@ export function CardDetailPage() {
     <Dialog.Root open={dialogAction !== null} onOpenChange={(open) => { if (!open && !action.isPending) { setDialogAction(null); setActionAmount(""); } }}>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog-content card-action-dialog">
+        <Dialog.Content className="dialog-content card-action-dialog"><NoticeScope />
           <Dialog.Title>{dialogAction === "recharge" ? t("rechargeCard") : dialogAction === "refund" ? t("refundCard") : t("deleteCard")}</Dialog.Title>
           <Dialog.Description>{loadedDetail.cardNumberMasked} · {t("currentBalance")} ${formatDecimal(loadedDetail.availableAmount)}</Dialog.Description>
           {dialogAction === "delete" ? <div className="card-delete-confirmation">
             <p>{t("deleteCardWarning")}</p>
-            {actionError && <p role="alert" className="error">{actionError}</p>}
+            {actionError && <Notice role="alert" className="error">{actionError}</Notice>}
             <div><Dialog.Close asChild><Button type="button" variant="outline" disabled={action.isPending}>{t("cancel")}</Button></Dialog.Close><Button type="button" variant="destructive" onClick={() => runAction("delete")} disabled={action.isPending}><StableSwap state={action.isPending ? "busy" : "idle"} labels={{ idle: t("confirmDeleteCard"), busy: t("processing") }} /></Button></div>
           </div> : <form onSubmit={submitCardAction}>
             {dialogAction === "refund" && <p>{t("refundBalanceSyncHint")}</p>}
             <label>{t("amountUsd")}<input name="amount" type="number" inputMode="decimal" step="0.0001" min={dialogAction === "recharge" ? loadedDetail.minAmount : "1"} max={dialogAction === "recharge" ? loadedDetail.maxAmount : maximumRefund} placeholder={dialogAction === "recharge" ? loadedDetail.minAmount : maximumRefund} value={actionAmount} onChange={(event) => { setActionAmount(event.target.value); setActionError(""); }} disabled={action.isPending} required /><small>{dialogAction === "recharge" ? t("rechargeAmountRange", { min: formatDecimal(loadedDetail.minAmount), max: formatDecimal(loadedDetail.maxAmount) }) : t("refundAmountRange", { max: formatDecimal(maximumRefund), minimum: formatDecimal(loadedDetail.refundKeepMinimum) })}</small></label>
             {dialogAction === "recharge" && <CardRechargeQuoteSummary amount={actionAmount} amountIsValid={rechargeQuote.amountIsValid} isFetching={rechargeQuote.isFetching} isError={rechargeQuote.isError} quote={rechargeQuote.currentQuote} error={rechargeQuote.error} spendableBalance={spendableBalance} onRetry={() => { void rechargeQuote.refetch(); }} />}
-            {actionError && <p role="alert" className="error">{actionError}</p>}
+            {actionError && <Notice role="alert" className="error">{actionError}</Notice>}
             <div className="card-action-dialog-buttons"><Dialog.Close asChild><Button type="button" variant="outline" disabled={action.isPending}>{t("cancel")}</Button></Dialog.Close><Button type="submit" disabled={action.isPending || (dialogAction === "recharge" && (!rechargeQuote.currentQuote || rechargeQuote.isFetching || rechargeQuote.isError || rechargeDebitExceedsSpendable(rechargeQuote.currentQuote.totalDebit, spendableBalance)))}><StableSwap state={action.isPending ? "busy" : "idle"} labels={{ idle: t("confirmAction"), busy: t("processing") }} /></Button></div>
           </form>}
         </Dialog.Content>

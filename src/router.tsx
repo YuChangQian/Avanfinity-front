@@ -1,3 +1,5 @@
+import { NoticeProvider } from "./components/ui/notice";
+import { ConfirmProvider } from "./components/ui/confirm";
 import { createRootRoute, createRoute, createRouter, lazyRouteComponent, Navigate, Outlet } from "@tanstack/react-router";
 import { AppShell } from "./components/AppShell";
 import { SeoMetadata } from "./components/SeoMetadata";
@@ -39,7 +41,7 @@ const SupportTicketsPage = lazyRouteComponent(() => import("./views/SupportTicke
 const TermsPage = lazyRouteComponent(() => import("./views/LegalDocumentPage"), "TermsPage");
 const UserAgreementPage = lazyRouteComponent(() => import("./views/LegalDocumentPage"), "UserAgreementPage");
 
-const rootRoute = createRootRoute({ component: () => <><SeoMetadata /><Outlet /></> });
+const rootRoute = createRootRoute({ component: () => <NoticeProvider><ConfirmProvider><SeoMetadata /><Outlet /></ConfirmProvider></NoticeProvider> });
 const gptRetrySearch = (search: Record<string, unknown>): { gptRetry?: boolean } =>
   search.gptRetry === true || search.gptRetry === "true" || search.gptRetry === "1" ? { gptRetry: true } : {};
 const gptDirectSearch = (search: Record<string, unknown>): { cardId?: number } => {

@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "../components/ui/notice";
 import { useConfirm } from "@/components/ui/confirm";
 import { LedgerFilters } from "../components/LedgerFilters";
 import type { LedgerFilters as LedgerFilterValues } from "../api";
@@ -213,7 +214,7 @@ function AdminTrendChart({ data }: { data: AdminOverviewTrend[] }) {
 }
 
 function AdminState({ children, error = false }: { children: ReactNode; error?: boolean }) {
-  return <div className={`admin-state ${error ? "is-error" : ""}`} role={error ? "alert" : undefined}>{children}</div>;
+  return error ? <Notice tone="error">{children}</Notice> : <div className="admin-state">{children}</div>;
 }
 
 function AdminRowsSkeleton({ count = 3 }: { count?: number }) {
@@ -308,7 +309,7 @@ function ReferralPolicyEditor({ token, policy, onApplied }: { token: string; pol
       <Button type="submit" variant="outline" disabled={previewMutation.isPending}><StableSwap state={previewMutation.isPending ? "busy" : "idle"} labels={{ idle: t("previewReferralPolicy"), busy: t("processing") }} /></Button>
       <p id="referral-policy-rule" className="pricing-formula-hint">{t("referralPolicySettlementRule")}</p>
     </form>
-    {previewMutation.isError && <p className="admin-alert is-error" role="alert">{previewMutation.error instanceof Error ? previewMutation.error.message : t("updateFailed")}</p>}
+    {previewMutation.isError && <Notice className="admin-alert is-error" role="alert">{previewMutation.error instanceof Error ? previewMutation.error.message : t("updateFailed")}</Notice>}
     <div className="referral-policy-preview" aria-live="polite" data-testid="admin-referral-policy-preview">
       <div className="admin-alert is-neutral"><ShieldCheck /><span>{t("referralPolicyPreviewSummary", { rate: formatRateAsPercent(shown.profitShareRate) })}</span></div>
       <div className="referral-policy-preview-grid">{shown.tiers.map((tier) => <div key={tier.code}>
@@ -319,8 +320,8 @@ function ReferralPolicyEditor({ token, policy, onApplied }: { token: string; pol
       {shown.tiers.length === 0 && <AdminState>{t("referralEstimateUnavailable")}</AdminState>}
       {preview && <div className="admin-card-actions"><Button onClick={() => applyMutation.mutate()} disabled={applyMutation.isPending}><StableSwap state={applyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveReferralPolicy"), busy: t("processing") }} /></Button></div>}
     </div>
-    {applyMutation.isError && <p className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</p>}
-    {notice && <p className="admin-alert is-success" role="status">{notice}</p>}
+    {applyMutation.isError && <Notice className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</Notice>}
+    {notice && <Notice className="admin-alert is-success" role="status">{notice}</Notice>}
   </article>;
 }
 
@@ -416,7 +417,7 @@ function PricingTierEditor({ token, tier, onApplied, section = "pricing" }: { to
         <label>{t("tierThreshold")}<input type="number" min="0" step="0.0001" value={profile.thresholdAmount} onChange={(event) => setProfile((current) => ({ ...current, thresholdAmount: event.target.value }))} required /></label>
         <div className="tier-form-actions"><Button disabled={profileMutation.isPending}><StableSwap state={profileMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierProfile"), busy: t("processing") }} /></Button></div>
       </form>
-      {profileMutation.isError && <p className="admin-alert is-error" role="alert">{profileMutation.error instanceof Error ? profileMutation.error.message : t("updateFailed")}</p>}
+      {profileMutation.isError && <Notice className="admin-alert is-error" role="alert">{profileMutation.error instanceof Error ? profileMutation.error.message : t("updateFailed")}</Notice>}
     </>}
     {section === "decline" && <>
       <form className="tier-profile-form is-decline" data-testid={`tier-decline-policy-${tier.code}`} onSubmit={(event) => { event.preventDefault(); setNotice(""); declinePolicyMutation.mutate(); }}>
@@ -431,7 +432,7 @@ function PricingTierEditor({ token, tier, onApplied, section = "pricing" }: { to
         <label>{t("authDeclineFreezeMargin")}<input type="number" min="0" step="0.0001" value={declinePolicy.freezeMargin} onChange={(event) => setDeclinePolicy((current) => ({ ...current, freezeMargin: event.target.value }))} required /></label>
         <div className="tier-form-actions"><Button disabled={declinePolicyMutation.isPending}><StableSwap state={declinePolicyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("saveTierDeclinePolicy"), busy: t("processing") }} /></Button></div>
       </form>
-      {declinePolicyMutation.isError && <p className="admin-alert is-error" role="alert">{declinePolicyMutation.error instanceof Error ? declinePolicyMutation.error.message : t("updateFailed")}</p>}
+      {declinePolicyMutation.isError && <Notice className="admin-alert is-error" role="alert">{declinePolicyMutation.error instanceof Error ? declinePolicyMutation.error.message : t("updateFailed")}</Notice>}
     </>}
     {section === "direct" && <div className="pricing-tier-direct">
       <AdminXDirectFees token={token} tierCode={tier.code} /><AdminTgDirectFees token={token} tierCode={tier.code} />
@@ -457,7 +458,7 @@ function PricingTierEditor({ token, tier, onApplied, section = "pricing" }: { to
         <p className="pricing-formula-hint">{t("refundPricingFormula")}</p>
         <p className="pricing-formula-hint">{t("gptDirectPricingFormula")}</p>
       </form>
-      {previewMutation.isError && <p className="admin-alert is-error" role="alert">{previewMutation.error instanceof Error ? previewMutation.error.message : t("updateFailed")}</p>}
+      {previewMutation.isError && <Notice className="admin-alert is-error" role="alert">{previewMutation.error instanceof Error ? previewMutation.error.message : t("updateFailed")}</Notice>}
       {preview && <div className="pricing-preview" aria-live="polite">
         <div className="admin-table-wrap">
           <table className="admin-table">
@@ -471,13 +472,13 @@ function PricingTierEditor({ token, tier, onApplied, section = "pricing" }: { to
         <div className="admin-alert is-neutral" data-testid="decline-fee-preview"><ShieldCheck /><span>{t("declineFeePreview", { amount: formatDecimal(preview.declineFee) })}</span></div>
         {preview.referralOpenReward != null && <div className="admin-alert is-neutral" data-testid="referral-reward-preview"><ShieldCheck /><span>{t("referralPricingPreview", { open: preview.referralOpenReward, rate: displayRate(preview.referralRechargeRate ?? null) })}</span></div>}
         {preview.gptDirectPlans && preview.gptDirectPlans.length > 0 && <div className="admin-alert is-neutral" data-testid="gpt-direct-fee-preview"><ShieldCheck /><span>{t("gptDirectPlansPreview")}：{preview.gptDirectPlans.map((item) => `${t(`gptPlan.${item.plan}`, { defaultValue: item.plan })} $${formatDecimal(item.saleFee)}`).join(" · ")}</span></div>}
-        {invalidMargin && <p className="admin-alert is-error" role="alert">{t("negativeMarginBlocked")}</p>}
-        {hasFreeRecharge && <p className="admin-alert is-warning" role="status">{t("zeroRechargeRateWarning")}</p>}
+        {invalidMargin && <Notice className="admin-alert is-error" role="alert">{t("negativeMarginBlocked")}</Notice>}
+        {hasFreeRecharge && <Notice className="admin-alert is-warning" role="status">{t("zeroRechargeRateWarning")}</Notice>}
         <div className="admin-card-actions"><Button onClick={() => { applyMutation.mutate(); }} disabled={applyMutation.isPending || invalidMargin || preview.products.length === 0}><StableSwap state={applyMutation.isPending ? "busy" : "idle"} labels={{ idle: t("applyPricing"), busy: t("processing") }} /></Button></div>
       </div>}
-      {applyMutation.isError && <p className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</p>}
+      {applyMutation.isError && <Notice className="admin-alert is-error" role="alert">{applyMutation.error instanceof Error ? applyMutation.error.message : t("updateFailed")}</Notice>}
     </>}
-    {notice && <p className="admin-alert is-success" role="status">{notice}</p>}
+    {notice && <Notice className="admin-alert is-success" role="status">{notice}</Notice>}
   </article>;
 }
 
@@ -799,7 +800,7 @@ export function AdminPage() {
   } else if (activePanel === "upstreams") {
     panel = <div className="admin-panel-stack" data-testid="admin-panel-upstreams">
       <PanelHeading eyebrow="PROVIDERS" title={t("adminUpstreams")} description={t("adminUpstreamsDesc")} />
-      {actionMessage && <p className={`admin-alert ${upstreamAction.isError || upstreamUpdate.isError ? "is-error" : "is-success"}`} role={upstreamAction.isError || upstreamUpdate.isError ? "alert" : "status"}>{actionMessage}</p>}
+      {actionMessage && <Notice className={`admin-alert ${upstreamAction.isError || upstreamUpdate.isError ? "is-error" : "is-success"}`} role={upstreamAction.isError || upstreamUpdate.isError ? "alert" : "status"}>{actionMessage}</Notice>}
       {upstreams.isLoading && <AdminRowsSkeleton />}
       {upstreams.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
       {upstreams.data?.data.length === 0 && <AdminState>{t("noUpstreams")}</AdminState>}
@@ -857,8 +858,8 @@ export function AdminPage() {
           </section>
         </div>
         <p className="admin-provider-note">{t("credentialRotationHint")}</p>
-        {provider.lastError && <p className="admin-alert is-error" role="note">{provider.lastError}</p>}
-        {provider.lastProductError && <p className="admin-alert is-warning" role="note">{i18n.language === "en" ? "Product sync retrying" : "产品同步重试中"} · {provider.lastProductError}</p>}
+        {provider.lastError && <Notice className="admin-alert is-error" role="note">{provider.lastError}</Notice>}
+        {provider.lastProductError && <Notice className="admin-alert is-warning" role="note">{i18n.language === "en" ? "Product sync retrying" : "产品同步重试中"} · {provider.lastProductError}</Notice>}
         {!provider.lastError && provider.enabled && provider.runtimeActive && provider.configured && !operational && <p className="admin-alert is-neutral" role="note">{t("healthCheckStale")}</p>}
         {!canCall && <p className="admin-alert is-neutral" role="note"><RefreshCw />{t("runtimeRestartHint")}</p>}
         <div className="admin-provider-foot">
@@ -930,7 +931,7 @@ export function AdminPage() {
         <Button type="submit" size="sm">{t("filter")}</Button>
       </form>} />
       <section className="admin-surface">
-        {actionMessage && <p className={`admin-alert ${adminCardDelete.isError || adminCardUnfreeze.isError ? "is-error" : "is-success"}`} role={adminCardDelete.isError || adminCardUnfreeze.isError ? "alert" : "status"}>{actionMessage}</p>}
+        {actionMessage && <Notice className={`admin-alert ${adminCardDelete.isError || adminCardUnfreeze.isError ? "is-error" : "is-success"}`} role={adminCardDelete.isError || adminCardUnfreeze.isError ? "alert" : "status"}>{actionMessage}</Notice>}
         {cardDeleteRequest && <div className="admin-alert is-warning" data-testid="admin-card-delete-confirmation">
           <ShieldCheck />
           <div>
@@ -987,7 +988,7 @@ export function AdminPage() {
         <label><span>{t("type")}</span><select name="type" defaultValue={moneyQuery.type}><option value="">{t("allTypes")}</option>{["OPEN_CARD", "RECHARGE", "REFUND", "FREEZE", "UNFREEZE", "DELETE", "GPT_DIRECT", "TG_DIRECT"].map((type) => <option value={type} key={type}>{operationTypeLabel(type, i18n.language === "en")}</option>)}</select></label>
         <Button type="submit" size="sm">{t("filter")}</Button>
       </form>} />
-      {actionMessage && <p className={`admin-alert ${resolve.isError || deleteReconciliationAction.isError || manualConfirmDeposit.isError ? "is-error" : "is-success"}`} role={resolve.isError || deleteReconciliationAction.isError || manualConfirmDeposit.isError ? "alert" : "status"}>{actionMessage}</p>}
+      {actionMessage && <Notice className={`admin-alert ${resolve.isError || deleteReconciliationAction.isError || manualConfirmDeposit.isError ? "is-error" : "is-success"}`} role={resolve.isError || deleteReconciliationAction.isError || manualConfirmDeposit.isError ? "alert" : "status"}>{actionMessage}</Notice>}
       <section className="admin-surface" data-testid="admin-deposit-orders">
         <div className="admin-section-heading"><div><span className="admin-kicker">DEPOSITS</span><h2>{t("adminDepositOrders")}</h2><p>{t("adminDepositOrdersDesc")}</p></div>{deposits.data && <span>{t("serverTimeLabel")}: {displayDate(deposits.data.data.serverTime, locale)}</span>}</div>
         <form className="admin-filter-bar" data-testid="admin-deposit-filter" onSubmit={(event) => {
@@ -1106,7 +1107,7 @@ export function AdminPage() {
         <div className="admin-section-heading"><div><span className="admin-kicker">RECONCILIATION</span><h2>{t("reconciliation")}</h2><p>{t("reconciliationDesc")}</p></div><span>{openItems.length}</span></div>
         {reconciliation.isLoading && <AdminRowsSkeleton />}
         {reconciliation.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
-        {resolve.isError && <p className="admin-alert is-error" role="alert">{resolve.error instanceof Error ? resolve.error.message : t("updateFailed")}</p>}
+        {resolve.isError && <Notice className="admin-alert is-error" role="alert">{resolve.error instanceof Error ? resolve.error.message : t("updateFailed")}</Notice>}
         {reconciliation.data && openItems.length === 0 && <AdminState>{t("noOpenReconciliation")}</AdminState>}
         <div className="admin-list">{openItems.map((item) => {
           const closable = reconciliationIsClosable(item.operationStatus, item.dispatchState);
@@ -1119,7 +1120,7 @@ export function AdminPage() {
               <small>{t("amount")}: ${formatDecimal(item.amount)} · {t("customerFee")}: ${formatDecimal(item.fee)} · {t("customerCharge")}: ${formatDecimal(item.totalAmount)}</small>
               <small>{t("upstreamEvidence")}: {item.upstreamBusinessId ?? "—"}</small>
               <small>{item.reason}{item.lastError ? ` · ${item.lastError}` : ""}</small>
-              {!closable && <p className="admin-alert is-warning" role="status">{t("reconciliationEvidenceRequired")}</p>}
+              {!closable && <Notice className="admin-alert is-warning" role="status">{t("reconciliationEvidenceRequired")}</Notice>}
               {canProveDeleteNoEffect && <div className="delete-reconciliation-actions">
                 <small>{t("deleteNoEffectEvidenceHint")}</small>
                 <div className="admin-card-actions">
@@ -1169,8 +1170,8 @@ export function AdminPage() {
   } else if (activePanel === "announcements") {
     panel = <div className="admin-panel-stack" data-testid="admin-panel-announcements">
       <PanelHeading eyebrow="COMMUNICATIONS" title={t("adminAnnouncements")} description={t("adminAnnouncementsDesc")} />
-      {actionMessage && <p className="admin-alert is-success" role="status">{actionMessage}</p>}
-      {announcementError && <p className="admin-alert is-error" role="alert">{announcementError}</p>}
+      {actionMessage && <Notice className="admin-alert is-success" role="status">{actionMessage}</Notice>}
+      {announcementError && <Notice className="admin-alert is-error" role="alert">{announcementError}</Notice>}
       <section className="admin-surface">
         <div className="admin-section-heading"><div><span className="admin-kicker">BROADCAST</span><h2><Megaphone />{t("publishAnnouncement")}</h2><p>{t("publishAnnouncementHint")}</p></div></div>
         <form className="admin-product-form admin-announcement-form" onSubmit={(event) => { event.preventDefault(); announcementAction.mutate(); }}>
@@ -1246,7 +1247,7 @@ export function AdminPage() {
         <section className="admin-panel" aria-live="polite">{panel}</section>
       </PageShell>
     <Dialog.Root open={Boolean(selectedMoneyId)} onOpenChange={(open) => !open && setSelectedMoneyId(null)}>
-      <Dialog.Portal><div className="dialog-overlay" data-state={selectedMoneyId ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedMoneyId(null)} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-observability-drawer">
+      <Dialog.Portal><div className="dialog-overlay" data-state={selectedMoneyId ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedMoneyId(null)} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-observability-drawer"><NoticeScope />
         <div className="card-transaction-drawer-head"><div><span><WalletCards /></span><div><Dialog.Title>资金操作详情</Dialog.Title><Dialog.Description>{selectedMoneyId}</Dialog.Description></div></div><Dialog.Close asChild><Button size="icon" variant="ghost" aria-label={t("close")}><X /></Button></Dialog.Close></div>
         {moneyOperationDetail.isLoading && <div className="admin-observability-body" aria-busy="true"><dl className="admin-metrics wide">{[0, 1, 2, 3].map((item) => <div key={item}><dt><DataSkeleton /></dt><dd><DataSkeleton /></dd></div>)}</dl><AdminRowsSkeleton /></div>}
         {moneyOperationDetail.isError && <AdminState error>{t("adminLoadFailed")}</AdminState>}
@@ -1277,7 +1278,7 @@ export function AdminPage() {
               <div className="is-emphasis"><dt>费用</dt><dd>{formatDecimal(moneyOperationDetail.data.data.operation.customerFee ?? "—")}</dd></div>
             </dl>
           </section>
-          {moneyOperationDetail.data.data.operation.lastError && <p className="admin-alert is-error" role="note">{moneyOperationDetail.data.data.operation.lastError}</p>}
+          {moneyOperationDetail.data.data.operation.lastError && <Notice className="admin-alert is-error" role="note">{moneyOperationDetail.data.data.operation.lastError}</Notice>}
           <section className="admin-drawer-section">
             <header><span>EVIDENCE</span><h3>定价快照与核对证据</h3></header>
             <details className="admin-json" open><summary>查看 JSON</summary><pre>{JSON.stringify({ pricingSnapshot: moneyOperationDetail.data.data.operation.pricingSnapshot, reconciliation: moneyOperationDetail.data.data.reconciliation, upstreamEvidence: moneyOperationDetail.data.data.upstreamEvidence }, null, 2)}</pre></details>
@@ -1287,7 +1288,7 @@ export function AdminPage() {
       </Dialog.Content></Dialog.Portal>
     </Dialog.Root>
     <Dialog.Root open={Boolean(selectedAudit)} onOpenChange={(open) => !open && setSelectedAudit(null)}>
-      <Dialog.Portal><div className="dialog-overlay" data-state={selectedAudit ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedAudit(null)} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-observability-drawer">
+      <Dialog.Portal><div className="dialog-overlay" data-state={selectedAudit ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedAudit(null)} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-observability-drawer"><NoticeScope />
         <div className="card-transaction-drawer-head"><div><span><ClipboardList /></span><div><Dialog.Title>{selectedAudit ? auditActionCopy(selectedAudit.action, i18n.language === "en").label : "审计详情"}</Dialog.Title><Dialog.Description>{selectedAudit?.requestId}</Dialog.Description></div></div><Dialog.Close asChild><Button size="icon" variant="ghost" aria-label={t("close")}><X /></Button></Dialog.Close></div>
         {selectedAudit && <div className="admin-observability-body">
           <div className="admin-drawer-hero">

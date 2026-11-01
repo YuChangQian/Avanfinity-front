@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal } from "../decimal";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -31,7 +32,7 @@ import {
 import { adminCustomerReturnPath, type AdminCustomerView } from "../adminCustomerReturnPath";
 
 function AdminState({ children, error = false }: { children: ReactNode; error?: boolean }) {
-  return <div className={`admin-state ${error ? "is-error" : ""}`} role={error ? "alert" : undefined}>{children}</div>;
+  return error ? <Notice tone="error">{children}</Notice> : <div className="admin-state">{children}</div>;
 }
 
 function PanelHeading({ eyebrow, title, description, actions }: { eyebrow: string; title: string; description: string; actions?: ReactNode }) {
@@ -278,12 +279,12 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
     window.location.assign("/login");
   };
   const managementAlert = managementMessage ? (
-    <div className={`admin-alert ${managementFailed ? "is-error" : "is-success"}`} role={managementFailed ? "alert" : "status"}>
+    <Notice className={`admin-alert ${managementFailed ? "is-error" : "is-success"}`} role={managementFailed ? "alert" : "status"}>
       <span>{managementMessage}</span>
       {(profileRecentAuthRequired || passwordRecentAuthRequired) && (
         <Button type="button" size="xs" variant="outline" onClick={() => requestRecentAuth(expandedCardId)}>{t("verifyAgain")}</Button>
       )}
-    </div>
+    </Notice>
   ) : null;
   return <div className={`admin-customer-detail is-${view}-view`} data-testid="admin-customer-detail">
     {managementAlert}
@@ -445,8 +446,8 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
           <div><strong>{item.kind}</strong><small>{t("riskChargeKindCount", { count: item.count })}</small></div><span><strong>${formatDecimal(item.total)}</strong></span>
         </article>)}
       </div>}
-      {riskActionBlocked && <p className="admin-alert is-error" role="alert">{t("riskReasonMissing")}</p>}
-      {riskMessage && <p className={`admin-alert ${riskAction.isError ? "is-error" : "is-success"}`} role={riskAction.isError ? "alert" : "status"}>{riskMessage}</p>}
+      {riskActionBlocked && <Notice className="admin-alert is-error" role="alert">{t("riskReasonMissing")}</Notice>}
+      {riskMessage && <Notice className={`admin-alert ${riskAction.isError ? "is-error" : "is-success"}`} role={riskAction.isError ? "alert" : "status"}>{riskMessage}</Notice>}
       {hasRiskAction && <form className="admin-product-form" onSubmit={(event) => {
         event.preventDefault();
         setRiskMessage("");
@@ -495,10 +496,10 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
           </div>
           {expanded && <div className="admin-customer-card-transactions" data-testid={`admin-customer-card-transactions-${card.id}`}>
             {revealed?.loading && <AdminState><span className="loading-skeleton loading-skeleton-block" aria-label={t("loadingCardDetails")}>{t("loadingCardDetails")}</span></AdminState>}
-            {Boolean(revealed?.error) && <div role="alert" className="card-sensitive-error"><span>{t(recentAuthRequired ? "cardRecentAuthRequired" : "cardDetailsLoadFailed")}</span><Button type="button" size="xs" variant="outline" onClick={() => {
+            {Boolean(revealed?.error) && <Notice role="alert" className="card-sensitive-error"><span>{t(recentAuthRequired ? "cardRecentAuthRequired" : "cardDetailsLoadFailed")}</span><Button type="button" size="xs" variant="outline" onClick={() => {
               if (!recentAuthRequired) return void revealSensitive(card.id);
               requestRecentAuth(card.id);
-            }}>{t(recentAuthRequired ? "verifyAgain" : "retry")}</Button></div>}
+            }}>{t(recentAuthRequired ? "verifyAgain" : "retry")}</Button></Notice>}
             {revealed?.data && <div className="developer-secret-reveal" data-testid={`admin-customer-card-sensitive-data-${card.id}`}>
               <div><span>{t("cardNumber")}</span><code>{revealed.data.cardNumber}</code></div>
               <div><span>{t("expiry")}</span><code>{revealed.data.expire}</code></div>
@@ -506,7 +507,7 @@ function CustomerDetail({ detail, initialCardId, locale, onSelectCustomer, onVie
               <div><span>{t("billingAddress")}</span><code>{address ? [address.addressLineOne, address.addressLineTwo, address.city, address.state, address.postCode, address.country].filter(Boolean).join(", ") : t("noBillingAddress")}</code></div>
             </div>}
             {cardTransactions.isLoading && <AdminState><span className="loading-skeleton loading-skeleton-table" aria-label={t("loading")}>{t("loading")}</span></AdminState>}
-            {cardTransactions.isError && <div className="admin-customer-card-transactions-state" role="alert"><span>{t("adminCardTransactionsLoadFailed")}</span><Button type="button" size="xs" variant="outline" onClick={() => void cardTransactions.refetch()}>{t("retry")}</Button></div>}
+            {cardTransactions.isError && <Notice className="admin-customer-card-transactions-state" role="alert"><span>{t("adminCardTransactionsLoadFailed")}</span><Button type="button" size="xs" variant="outline" onClick={() => void cardTransactions.refetch()}>{t("retry")}</Button></Notice>}
             {cardTransactions.data && <>
               <dl className="admin-card-technical-grid">
                 <div><dt>平台卡 ID</dt><dd>#{cardTransactions.data.data.card.id}</dd></div><div><dt>上游 Provider ID</dt><dd>#{cardTransactions.data.data.card.providerId}</dd></div>

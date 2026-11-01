@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useEffect, useRef, useState } from "react";
 import { useSetAtom } from "jotai";
 import { Link } from "@tanstack/react-router";
@@ -35,7 +36,7 @@ export function TelegramLoginPage() {
     <div className="auth-card">
       <div className="mobile-brand"><div className="logo"><BrandIcon /></div><strong>AVANFINITY</strong></div>
       {!error && <p>{t("loggingIn")}</p>}
-      {error && <><p className="error" role="alert">{error}</p><Button asChild><Link to="/login">{t("backToLogin")}</Link></Button></>}
+      {error && <><Notice className="error" role="alert">{error}</Notice><Button asChild><Link to="/login">{t("backToLogin")}</Link></Button></>}
     </div>
   </main>;
 }

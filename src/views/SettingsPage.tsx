@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -135,7 +136,7 @@ export function SettingsPage() {
           <label>{t("oldPassword")}<input name="old" type="password" autoComplete="current-password" required /></label>
           <label>{t("newPassword")}<input name="next" type="password" autoComplete="new-password" minLength={12} required /></label>
           <label>{t("confirmPassword")}<input name="confirm" type="password" autoComplete="new-password" minLength={12} required /></label>
-          {error && <p role="alert" className="error">{error}</p>}
+          {error && <Notice role="alert" className="error">{error}</Notice>}
           <Button disabled={mutation.isPending}>{t("saveRelogin")}</Button>
         </form>
       </article> : <EmailLoginSetup token={session.token} verificationPending={settings.emailVerificationPending ?? false} initialEmail={settings.pendingEmail ?? settings.email ?? ""} onComplete={() => void client.invalidateQueries({ queryKey: ["settings"] })} />}
@@ -145,7 +146,7 @@ export function SettingsPage() {
           ? <div className="deposit-address">
             <strong>@{telegram.data.data.username ?? telegram.data.data.chatId}</strong>
             {!canUnbind
-              ? <p className="security-warning">{t("emailLoginRequiredBeforeUnbind")}</p>
+              ? <Notice className="security-warning">{t("emailLoginRequiredBeforeUnbind")}</Notice>
               : !activeTelegramUnbind
               ? <Button variant="outline" disabled={issueUnbindCode.isPending} onClick={() => issueUnbindCode.mutate()}>{t("sendTelegramUnbindCode")}</Button>
               : <form key={activeTelegramUnbind.id} onSubmit={(event) => {
@@ -164,7 +165,7 @@ export function SettingsPage() {
                 </div>
               </form>}
             {canUnbind && <small>{t("emailDeliveryCheckSpamHint")}</small>}
-            {telegramError && <p role="alert" className="error">{telegramError}</p>}
+            {telegramError && <Notice role="alert" className="error">{telegramError}</Notice>}
           </div>
           : !flags.telegram ? <div className="feature-disabled"><Send /><p>{t("featureUnavailable")}</p></div>
           : !telegram.data.data.botConfigured ? <div className="feature-disabled"><Send /><p>{t("telegramBotUnavailable")}</p></div>

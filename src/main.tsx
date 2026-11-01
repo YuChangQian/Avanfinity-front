@@ -8,7 +8,6 @@ import { RouterProvider } from "@tanstack/react-router";
 import "./i18n";
 import "./styles.css";
 import "./controls.css";
-import { ConfirmProvider } from "./components/ui/confirm";
 import { ApiError, captureReferralAttribution } from "./api";
 import { normalizeInviteCode, referralCodeFromUrl, removeReferralQuery } from "./referralAttribution";
 import { router } from "./router";
@@ -51,5 +50,5 @@ function ReferralAttributionTracker() {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode><Provider><ReferralAttributionTracker /><QueryClientProvider client={queryClient}><ConfirmProvider><RouterProvider router={router} /></ConfirmProvider></QueryClientProvider></Provider></StrictMode>,
+  <StrictMode><Provider><ReferralAttributionTracker /><QueryClientProvider client={queryClient}><RouterProvider router={router} /></QueryClientProvider></Provider></StrictMode>,
 );

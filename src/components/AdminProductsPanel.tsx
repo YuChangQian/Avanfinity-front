@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { formatDecimal, formatRateAsPercent } from "../decimal";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -46,7 +47,7 @@ function PricingOverrideEditor({ token, product, onClose }: { token: string; pro
   return <section className="admin-override-editor" aria-labelledby="override-title">
     <div className="admin-section-heading"><div><span className="admin-kicker">OVERRIDE</span><h3 id="override-title"><SlidersHorizontal /> {t("singleProductOverride")}</h3><p>{product.productCode} · {t("overrideGuardrail")}</p></div><Button size="icon-sm" variant="ghost" onClick={onClose} aria-label={t("cancel")}><X /></Button></div>
     {pricing.isLoading && <div className="admin-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</div>}
-    {pricing.isError && <div className="admin-state is-error" role="alert">{t("adminLoadFailed")}</div>}
+    {pricing.isError && <Notice className="admin-state is-error" role="alert">{t("adminLoadFailed")}</Notice>}
     {pricing.data && pricing.data.data.tiers.length > 0 && <form key={`${product.productCode}-${selectedTier}-${current?.version ?? 0}`} className="admin-override-form" onSubmit={(event) => {
       event.preventDefault();
       const data = new FormData(event.currentTarget);
@@ -58,8 +59,8 @@ function PricingOverrideEditor({ token, product, onClose }: { token: string; pro
       <div className="admin-card-actions"><Button type="submit" disabled={save.isPending}><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: t("saveOverride"), busy: t("processing") }} /></Button>{current && <Button type="button" variant="outline" onClick={() => remove.mutate(current)} disabled={remove.isPending}><Trash2 />{t("removeOverride")}</Button>}</div>
     </form>}
     {pricing.data?.data.tiers.length === 0 && <div className="admin-state">{t("noMembershipTiers")}</div>}
-    {error && <p className="admin-alert is-error" role="alert">{error instanceof Error ? error.message : t("updateFailed")}</p>}
-    {notice && <p className="admin-alert is-success" role="status">{notice}</p>}
+    {error && <Notice className="admin-alert is-error" role="alert">{error instanceof Error ? error.message : t("updateFailed")}</Notice>}
+    {notice && <Notice className="admin-alert is-success" role="status">{notice}</Notice>}
   </section>;
 }
 
@@ -92,7 +93,7 @@ function ProductPresentationEditor({ token, product, onClose }: { token: string;
       <label>{t("localCategoryOverride")}<input name="categoryOverride" defaultValue={product.categoryOverride ?? ""} maxLength={128} placeholder={t("categoryPlaceholder")} /></label>
       <div className="admin-card-actions"><Button type="submit" disabled={save.isPending}><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: t("savePresentation"), busy: t("processing") }} /></Button><Button type="button" variant="outline" disabled={save.isPending || (product.descriptionOverride === null && product.categoryOverride === null)} onClick={() => save.mutate({ descriptionOverride: null, categoryOverride: null })}>{t("restoreUpstreamPresentation")}</Button></div>
     </form>
-    {save.error && <p className="admin-alert is-error" role="alert">{save.error instanceof Error ? save.error.message : t("updateFailed")}</p>}
+    {save.error && <Notice className="admin-alert is-error" role="alert">{save.error instanceof Error ? save.error.message : t("updateFailed")}</Notice>}
   </section>;
 }
 
@@ -134,11 +135,11 @@ export function AdminProductsPanel({ token }: { token: string }) {
         <p>{t("upstreamProductHint")}</p>
       </div>
     </div>
-    {error && <p role="alert" className="admin-alert is-error">{error}</p>}
+    {error && <Notice role="alert" className="admin-alert is-error">{error}</Notice>}
     {overrideProduct && <PricingOverrideEditor token={token} product={overrideProduct} onClose={() => setOverrideProduct(null)} />}
     {presentationProduct && <ProductPresentationEditor token={token} product={presentationProduct} onClose={() => setPresentationProduct(null)} />}
     {products.isLoading && <div className="admin-state loading-skeleton loading-skeleton-table" aria-live="polite" aria-label={t("loading")}>{t("loading")}</div>}
-    {products.isError && <div className="admin-state is-error" role="alert">{t("updateFailed")}</div>}
+    {products.isError && <Notice className="admin-state is-error" role="alert">{t("updateFailed")}</Notice>}
     {products.data?.data.length === 0 && <div className="admin-state">{t("noCardProducts")}</div>}
     {products.data && products.data.data.length > 0 && <div className="admin-product-list" data-testid="admin-product-list">
       {products.data.data.map((product) => <article key={product.productCode} data-testid={`admin-product-${product.productCode}`}>

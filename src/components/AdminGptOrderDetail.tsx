@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "./ui/notice";
 import { type ReactNode } from "react";
 import { ArrowRight, ExternalLink, Sparkles, X } from "lucide-react";
 import { Dialog } from "radix-ui";
@@ -25,10 +26,10 @@ export function AdminGptOrderDetail({ selectedId, order, events = [], isLoading,
   const renewLabel = order?.willRenew === false ? "已取消" : renewalRecovery ? t("gptRenewalUnknown") : order?.needsRenewalCancel ? "等待取消" : "—";
   return (
     <Dialog.Root open={Boolean(selectedId)} onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal><div className="dialog-overlay" data-state={selectedId ? "open" : "closed"} aria-hidden="true" onClick={() => onClose()} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-gpt-order-drawer">
+      <Dialog.Portal><div className="dialog-overlay" data-state={selectedId ? "open" : "closed"} aria-hidden="true" onClick={() => onClose()} onWheel={(event) => event.preventDefault()} onTouchMove={(event) => event.preventDefault()} /><Dialog.Content className="dialog-content admin-gpt-order-drawer"><NoticeScope />
         <div className="card-transaction-drawer-head"><div><span><Sparkles /></span><div><Dialog.Title>{title ?? "GPT 直充订单详情"}</Dialog.Title><Dialog.Description>{selectedId}</Dialog.Description></div></div><Dialog.Close asChild><Button type="button" size="icon" variant="ghost" aria-label="关闭"><X /></Button></Dialog.Close></div>
         {isLoading && <p className="admin-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</p>}
-        {isError && <div className="admin-state is-error" role="alert"><span>{t("adminLoadFailed")}</span><Button size="xs" variant="outline" onClick={() => void onRetry()}>{t("retry")}</Button></div>}
+        {isError && <Notice className="admin-state is-error" role="alert"><span>{t("adminLoadFailed")}</span><Button size="xs" variant="outline" onClick={() => void onRetry()}>{t("retry")}</Button></Notice>}
         {order && <div className="admin-gpt-order-detail-body">
           {actions && <div className="admin-drawer-toolbar">{actions}</div>}
           <div className="admin-drawer-hero">

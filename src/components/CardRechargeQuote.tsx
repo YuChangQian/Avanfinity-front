@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { formatDecimal } from "../decimal";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -91,14 +92,14 @@ export function CardRechargeQuoteSummary({
     {!amount ? <p>{t("rechargeQuoteEnterAmount")}</p>
       : !amountIsValid ? <p>{t("rechargeQuoteInvalidAmount")}</p>
         : isFetching ? <p role="status" className="loading-skeleton loading-skeleton-inline">{t("rechargeQuoteLoading")}</p>
-          : isError ? <div><p role="alert" className="error">{t(error instanceof ApiError && error.errorCode === "RECHARGE_PRICING_UNAVAILABLE" ? "rechargePricingUnavailable" : "rechargeQuoteFailed")}</p>{onRetry && <button type="button" onClick={onRetry}>{t("retry")}</button>}</div>
+          : isError ? <div><Notice role="alert" className="error">{t(error instanceof ApiError && error.errorCode === "RECHARGE_PRICING_UNAVAILABLE" ? "rechargePricingUnavailable" : "rechargeQuoteFailed")}</Notice>{onRetry && <button type="button" onClick={onRetry}>{t("retry")}</button>}</div>
             : quote ? <>
               <dl>
                 <div><dt>{t("rechargeQuoteAmount")}</dt><dd data-testid="recharge-quote-amount">${formatDecimal(quote.amount)}</dd></div>
                 <div><dt>{t("rechargeQuoteFee", { rate: formatRateAsPercent(quote.effectiveRechargeRate) })}</dt><dd data-testid="recharge-quote-fee">${formatDecimal(quote.fee)}</dd></div>
                 <div><dt>{t("rechargeQuoteWalletDebit")}</dt><dd data-testid="recharge-quote-total">${formatDecimal(quote.totalDebit)}</dd></div>
               </dl>
-              {insufficient && <p role="alert" className="error">{t("rechargeSpendableInsufficient")}</p>}
+              {insufficient && <Notice role="alert" className="error">{t("rechargeSpendableInsufficient")}</Notice>}
             </>
               : <p>{t("rechargeQuoteEnterAmount")}</p>}
   </div>;

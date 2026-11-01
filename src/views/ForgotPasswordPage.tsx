@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -63,9 +64,9 @@ export function ForgotPasswordPage() {
         {captcha.data.data.image && <img src={captcha.data.data.image} alt={t("captchaImageAlt")} />}
         <Button type="button" size="icon" variant="outline" onClick={async () => { setCaptchaCode(""); await captcha.refetch(); }} aria-label={t("refreshCaptcha")} disabled={captcha.isFetching}><RefreshCw /></Button>
       </span></label>}
-      {captcha.isError && <div className="captcha-load-error" role="alert"><span>{t("captchaLoadFailed")}</span><Button type="button" size="sm" variant="outline" onClick={() => void captcha.refetch()}>{t("retry")}</Button></div>}
-      {message && <p role="status" className="success-note">{message}</p>}
-      {error && <p role="alert" className="error">{error}</p>}
+      {captcha.isError && <Notice className="captcha-load-error" role="alert"><span>{t("captchaLoadFailed")}</span><Button type="button" size="sm" variant="outline" onClick={() => void captcha.refetch()}>{t("retry")}</Button></Notice>}
+      {message && <Notice role="status" className="success-note">{message}</Notice>}
+      {error && <Notice role="alert" className="error">{error}</Notice>}
       <Button size="lg" className="primary" disabled={sending || remaining > 0 || captcha.isLoading || captcha.isError}><StableSwap state={sending ? "busy" : remaining > 0 ? "wait" : "idle"} labels={{ idle: t("sendPasswordReset"), busy: t("sending"), wait: t("passwordResetCountdown", { seconds: remaining }), reserve: t("passwordResetCountdown", { seconds: 60 }) }} /></Button>
       <p className="secure-note"><ShieldCheck size={14} /> {t("emailDeliveryCheckSpamHint")}</p>
       <Button asChild variant="ghost"><Link to="/login">{t("backToLogin")}</Link></Button>

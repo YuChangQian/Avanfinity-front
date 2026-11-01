@@ -1,3 +1,4 @@
+import { NoticeScope } from "./notice";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertDialog } from "radix-ui";
 import { useTranslation } from "react-i18next";
@@ -35,7 +36,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         <AlertDialog.Content className="dialog-content confirmation-dialog" onCloseAutoFocus={(event) => {
           event.preventDefault();
           if (opener.current?.isConnected) opener.current.focus();
-        }}>
+        }}><NoticeScope />
           <AlertDialog.Title>{t("confirmAction")}</AlertDialog.Title>
           <AlertDialog.Description>{message}</AlertDialog.Description>
           <div className="confirmation-actions">

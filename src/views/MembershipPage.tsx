@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { formatDecimal, formatRateAsPercent } from "../decimal";
 import { useAtomValue } from "jotai";
 import { useQuery } from "@tanstack/react-query";
@@ -37,10 +38,10 @@ export function MembershipPage() {
 
   if (!session) return <Navigate to="/login" />;
   if (query.isError) return <PageShell eyebrow="MEMBERSHIP" title={t("membershipTitle")} description={t("membershipDesc")}>
-    <section className="deposit-panel query-error" role="alert">
+    <Notice className="deposit-panel query-error" role="alert">
       <strong>{t("membershipLoadFailed")}</strong>
       <Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button>
-    </section>
+    </Notice>
   </PageShell>;
   if (!query.data) return <PageShell eyebrow="MEMBERSHIP" title={t("membershipTitle")} description={t("membershipDesc")} className="membership-page">
     <div aria-busy="true">

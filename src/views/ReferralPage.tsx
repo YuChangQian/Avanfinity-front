@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useState } from "react";
 import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,10 +36,10 @@ export function ReferralPage() {
   });
   if (!session) return <Navigate to="/login" />;
   if (query.isError) return <PageShell eyebrow="AGENT" title={t("referralTitle")} description={t("referralDesc")}>
-    <section className="deposit-panel query-error" role="alert">
+    <Notice className="deposit-panel query-error" role="alert">
       <strong>{t("referralLoadFailed")}</strong>
       <Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button>
-    </section>
+    </Notice>
   </PageShell>;
   if (!query.data) return <PageShell eyebrow="AGENT" title={t("referralTitle")} description={t("referralDesc")} className="referral-page">
     <div aria-busy="true">
@@ -63,7 +64,7 @@ export function ReferralPage() {
     <p className="referral-balance-note">{t("promoBalanceUsageHint")}</p>
 
     <InviteLinksPanel referral={data} />
-    {actionError && <p className="admin-alert is-error" role="alert">{actionError}</p>}
+    {actionError && <Notice className="admin-alert is-error" role="alert">{actionError}</Notice>}
 
     <section className="referral-tier-overview" data-testid="referral-tier-overview">
       <div className="section-title"><h2><Network />{t("referralTierOverview")}</h2><span>{t("records", { count: data.referralCount })}</span></div>

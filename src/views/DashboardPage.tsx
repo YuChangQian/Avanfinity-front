@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { formatDecimal } from "../decimal";
 import { useAtomValue } from "jotai";
 import { useQuery } from "@tanstack/react-query";
@@ -28,10 +29,10 @@ export function DashboardPage() {
 
   if (!session) return <Navigate to="/login" />;
   if (query.error instanceof ApiError && query.error.errorCode === "AUTH_REQUIRED") return <Navigate to="/login" />;
-  if (query.isError) return <main className="center"><div role="alert" className="error">
+  if (query.isError) return <main className="center"><Notice role="alert" className="error">
     <p>{query.error instanceof Error ? query.error.message : "Request failed"}</p>
     <Button type="button" variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button>
-  </div></main>;
+  </Notice></main>;
   if (!query.data) return <main className="dashboard" aria-busy="true">
     <header><div><span className="eyebrow">ACCOUNT OVERVIEW</span><h1>{t("welcome")}</h1><p><span className="loading-skeleton loading-skeleton-inline">{t("loading")}</span></p></div>
       <Button asChild size="lg"><Link to="/cards"><Plus /> {t("newCard")}</Link></Button>

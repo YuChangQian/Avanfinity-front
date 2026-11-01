@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Save } from "lucide-react";
@@ -17,10 +18,10 @@ export function AdminLegalDocumentsPanel({ token }: { token: string }) {
   if (documents.isError || !documents.data) {
     return (
       <section className="admin-surface legal-editor">
-        <div className="admin-state is-error" role="alert">
+        <Notice className="admin-state is-error" role="alert">
           <span>协议内容加载失败。</span>
           <Button size="sm" variant="outline" onClick={() => void documents.refetch()}>重试</Button>
-        </div>
+        </Notice>
       </section>
     );
   }
@@ -52,7 +53,7 @@ function LegalDocumentsForm({ token, initial }: { token: string; initial: LegalD
       <label>服务条款<textarea value={terms} onChange={(event) => setTerms(event.target.value)} rows={20} minLength={100} required /></label>
       <label>用户协议<textarea value={userAgreement} onChange={(event) => setUserAgreement(event.target.value)} rows={16} minLength={100} required /></label>
       <div className="admin-form-actions"><Button disabled={save.isPending || terms.trim().length < 100 || userAgreement.trim().length < 100}><Save /><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: "保存协议", busy: "保存中…" }} /></Button><span>版本 {version}</span></div>
-      {notice && <p className={`admin-alert ${save.isError ? "is-error" : "is-success"}`} role={save.isError ? "alert" : "status"}>{notice}</p>}
+      {notice && <Notice className={`admin-alert ${save.isError ? "is-error" : "is-success"}`} role={save.isError ? "alert" : "status"}>{notice}</Notice>}
     </form>
   </section>;
 }

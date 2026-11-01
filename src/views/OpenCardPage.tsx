@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { formatDecimal, formatRateAsPercent } from "../decimal";
 import { useRef, useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
@@ -236,7 +237,7 @@ export function OpenCardPage() {
             <div><dt>{t("estimatedDebit")}</dt><dd data-testid="open-summary-total">${formatDecimal(estimatedTotal)}</dd></div>
           </dl>
           <ProductFeeDetails product={product} />
-          {error && <p role="alert" className="error">{error}</p>}
+          {error && <Notice role="alert" className="error">{error}</Notice>}
           {mutation.isPending && <p role="status">{t("openCardWaiting")}</p>}
           {pendingOperation && !mutation.isPending && <div role="status">
             <p>{t("openCardStillProcessing")}</p>

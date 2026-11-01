@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { MailCheck, ShieldCheck } from "lucide-react";
@@ -69,7 +70,7 @@ export function VerifyEmailPage() {
       <div className="auth-heading"><span className="eyebrow">EMAIL VERIFICATION</span><h1>{t("verifyEmailTitle")}</h1><p>{token ? t("verifyingEmail") : t("verifyEmailPrompt")}</p></div>
       <p className="secure-note"><ShieldCheck size={14} /> {t("emailDeliveryCheckSpamHint")}</p>
       {status === "loading" && <p>{t("verifyingEmail")}</p>}
-      {message && <p role={status === "error" ? "alert" : "status"} className={status === "error" ? "error" : "success-note"}>{message}</p>}
+      {message && <Notice role={status === "error" ? "alert" : "status"} className={status === "error" ? "error" : "success-note"}>{message}</Notice>}
       {status === "success" && token && <Button asChild size="lg"><Link to="/login">{t("continueToLogin")}</Link></Button>}
       {(!token || status === "error") && <form className="stacked-form" onSubmit={resend}>
         <label>{t("email")}<input name="email" type="email" autoComplete="email" value={pending.email} onChange={(event) => setPending({ email: event.target.value, resendAt: pending.resendAt })} required /></label>

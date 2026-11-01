@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "../components/ui/notice";
 import { formatDecimal, formatRateAsPercent } from "../decimal";
 import { useRef, useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
@@ -257,7 +258,7 @@ export function CardsPage() {
         <p>{t("cardTools.searchHint")}</p>
       </form>
       <CardClosurePanel key={String(sessionIdentity(session))} owner={String(sessionIdentity(session))} token={session.token} enabled={flags.cardDelete} />
-      {cards.isError && <p role="alert" className="error">{t("cardTools.searchError")} <Button variant="outline" onClick={() => void cards.refetch()}>{t("cardTools.refresh")}</Button></p>}
+      {cards.isError && <Notice role="alert" className="error">{t("cardTools.searchError")} <Button variant="outline" onClick={() => void cards.refetch()}>{t("cardTools.refresh")}</Button></Notice>}
     </div>}
     {showingOwnedCards && cards.data && <section className="owned-cards">
       <div className="section-title"><h2>{t("cardList")}</h2><span>{t("cardCountLabel", { count: cards.data.data.total })}</span></div>
@@ -300,7 +301,7 @@ export function CardsPage() {
         <Button variant="outline" disabled={cardPage >= ownedTotalPages} onClick={() => setCardPage((value) => value + 1)}>{t("nextPage")}<ChevronRight /></Button>
       </div>}
     </section>}
-    {error && !cardAction && <p role="alert" className="error">{error}</p>}
+    {error && !cardAction && <Notice role="alert" className="error">{error}</Notice>}
     <Dialog.Root open={Boolean(cardAction && (cardAction.action === "recharge" ? flags.cardRecharge : flags.cardManagement))} onOpenChange={(open) => {
       if (!open && !actionMutation.isPending) {
         setCardAction(null);
@@ -309,14 +310,14 @@ export function CardsPage() {
     }}>
       <Dialog.Portal>
         <Dialog.Overlay className="dialog-overlay" />
-        <Dialog.Content className="dialog-content">
+        <Dialog.Content className="dialog-content"><NoticeScope />
           <Dialog.Title>{cardAction?.action === "recharge" ? t("recharge") : t("refund")}</Dialog.Title>
           <Dialog.Description>{cardAction?.card.cardNumberMasked} · {t("currentBalance")} ${formatDecimal(cardAction?.card.balance)}</Dialog.Description>
           <form onSubmit={submitAction}>
             {cardAction?.action === "refund" && <p>{t("refundBalanceSyncHint")}</p>}
             <label>{t("amountUsd")}<input name="amount" type="number" inputMode="decimal" step="0.0001" min={actionMinimum} max={actionMaximum} placeholder={actionMinimum ?? "10.00"} value={actionAmount} onChange={(event) => { setActionAmount(event.target.value); setError(""); }} disabled={actionMutation.isPending} required /><small>{cardAction?.action === "recharge" ? t("rechargeAmountRange", { min: formatDecimal(actionMinimum), max: formatDecimal(actionMaximum) }) : t("refundAmountRange", { max: formatDecimal(actionMaximum), minimum: formatDecimal(cardAction?.card.refundKeepMinimum) })}</small></label>
             {cardAction?.action === "recharge" && <CardRechargeQuoteSummary amount={actionAmount} amountIsValid={rechargeQuote.amountIsValid} isFetching={rechargeQuote.isFetching} isError={rechargeQuote.isError} quote={rechargeQuote.currentQuote} error={rechargeQuote.error} spendableBalance={spendableBalance} onRetry={() => { void rechargeQuote.refetch(); }} />}
-            {error && <p role="alert" className="error">{error}</p>}
+            {error && <Notice role="alert" className="error">{error}</Notice>}
             <Button type="submit" size="lg" disabled={actionMutation.isPending || (cardAction?.action === "recharge" && (!rechargeQuote.currentQuote || rechargeQuote.isFetching || rechargeQuote.isError || rechargeDebitExceedsSpendable(rechargeQuote.currentQuote.totalDebit, spendableBalance)))}>
               <StableSwap state={actionMutation.isPending ? "busy" : "idle"} labels={{ idle: t("confirmAction"), busy: t("processing") }} />
             </Button>

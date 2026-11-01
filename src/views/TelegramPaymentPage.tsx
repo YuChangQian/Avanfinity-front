@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { formatDecimal } from "../decimal";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useAtomValue } from "jotai";
@@ -70,13 +71,13 @@ export function TelegramPaymentPage() {
     if (state && ["succeeded", "failed", "cancelled"].includes(state)) sessionStorage.removeItem(storageKey);
   }, [query.data]);
 
-  if (!token) return <main className="center"><div role="alert" className="error">{t("telegramPaymentInvalid")}</div></main>;
+  if (!token) return <main className="center"><Notice role="alert" className="error">{t("telegramPaymentInvalid")}</Notice></main>;
   const loadingCard = <main className="center"><section className="security-card telegram-payment-confirm" aria-busy="true"><ShieldCheck /><h1>{t("telegramPaymentConfirmTitle")}</h1><p>{t("telegramPaymentConfirmDesc")}</p><dl>{["cards", "recharge", "fee", "totalDebit"].map((label) => <div key={label}><dt>{t(label)}</dt><dd><DataSkeleton /></dd></div>)}</dl><Button disabled>{t("telegramPaymentConfirm")}</Button><p className="muted">{t("telegramPaymentSensitiveGuard")}</p></section></main>;
   if (!session) return loadingCard;
   if (query.isPending) return loadingCard;
-  if (query.isError) return <main className="center"><div role="alert" className="error">{query.error instanceof Error ? query.error.message : t("telegramPaymentInvalid")}</div></main>;
+  if (query.isError) return <main className="center"><Notice role="alert" className="error">{query.error instanceof Error ? query.error.message : t("telegramPaymentInvalid")}</Notice></main>;
   const intent = query.data?.data;
-  if (!intent) return <main className="center"><div role="alert" className="error">{t("telegramPaymentInvalid")}</div></main>;
+  if (!intent) return <main className="center"><Notice role="alert" className="error">{t("telegramPaymentInvalid")}</Notice></main>;
   const state = confirm.data?.data.state ?? intent.state;
   const status = state === "processing"
     ? { icon: <Clock3 />, title: t("telegramPaymentProcessing"), description: t("telegramPaymentProcessingDesc") }
@@ -89,7 +90,7 @@ export function TelegramPaymentPage() {
           : null;
   if (status) return <main className="center"><section className="security-card telegram-payment-confirm">{status.icon}<h1>{status.title}</h1><p>{status.description}</p></section></main>;
   if (intent.kind === "gpt_direct" && state === "awaiting_web") return loadingCard;
-  if (intent.kind !== "card_recharge" || state !== "awaiting_web") return <main className="center"><div role="alert" className="error">{t("telegramPaymentInvalid")}</div></main>;
+  if (intent.kind !== "card_recharge" || state !== "awaiting_web") return <main className="center"><Notice role="alert" className="error">{t("telegramPaymentInvalid")}</Notice></main>;
 
   return <main className="center"><section className="security-card telegram-payment-confirm">
     <ShieldCheck />
@@ -101,7 +102,7 @@ export function TelegramPaymentPage() {
       <div><dt>{t("fee")}</dt><dd>${formatDecimal(intent.fee)}</dd></div>
       <div><dt>{t("totalDebit")}</dt><dd>${formatDecimal(intent.totalAmount)}</dd></div>
     </dl>
-    {confirm.error ? <p role="alert" className="error">{confirm.error instanceof Error ? confirm.error.message : t("telegramPaymentFailed")}</p> : null}
+    {confirm.error ? <Notice role="alert" className="error">{confirm.error instanceof Error ? confirm.error.message : t("telegramPaymentFailed")}</Notice> : null}
     <Button type="button" onClick={() => confirm.mutate()} disabled={confirm.isPending || intent.state !== "awaiting_web"}>
       <StableSwap state={confirm.isPending ? "busy" : "idle"} labels={{ idle: t("telegramPaymentConfirm"), busy: t("processing") }} />
     </Button>

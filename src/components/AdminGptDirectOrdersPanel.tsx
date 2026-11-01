@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal } from "../decimal";
 import { useState, type FormEvent } from "react";
@@ -68,7 +69,7 @@ function DirectOrdersPanel({ token, onOpenCustomer, onOpenCard }: Props) {
     <section className="admin-surface">
       <div className="admin-section-heading"><div><span className="admin-kicker">ORDERS</span><h3>{t("gptOrderHistory")}</h3></div><Sparkles /></div>
       {orders.isLoading && <p className="admin-state loading-skeleton loading-skeleton-table" aria-label={t("loading")}>{t("loading")}</p>}
-      {orders.isError && <p className="admin-state is-error" role="alert">{t("adminLoadFailed")}</p>}
+      {orders.isError && <Notice className="admin-state is-error" role="alert">{t("adminLoadFailed")}</Notice>}
       {orders.data?.data.list.length === 0 && <p className="admin-state">{t("gptNoOrders")}</p>}
       {orders.data && orders.data.data.list.length > 0 && <div className="admin-table-wrap"><table className="admin-table" data-testid="admin-gpt-direct-table">
         <thead><tr><th>{t("customer")}</th><th>{t("gptPlanLabel")}</th><th>{t("status")}</th><th>{t("gptOrderProgress")}</th><th>{t("amount")}</th><th>{t("targetCard")}</th><th>{t("createdTime")}</th><th>{t("details")}</th></tr></thead>
@@ -87,7 +88,7 @@ function DirectOrdersPanel({ token, onOpenCustomer, onOpenCard }: Props) {
     <AdminGptOrderDetail selectedId={selectedOrderId} order={detail} events={orderDetail.data?.data.events}
       isLoading={orderDetail.isLoading} isError={orderDetail.isError} onRetry={() => orderDetail.refetch()}
       onClose={() => setSelectedOrderId(null)} onOpenCustomer={onOpenCustomer} onOpenCard={onOpenCard}
-      actions={orderDetail.data && <>{orderDetail.data.data.order.status === "requires_action" && <section className="admin-alert is-warning"><div>{renewalRecovery ? <><strong>{t("gptRenewalSessionTitle")}</strong><p>{t("adminGptRenewalSessionHint")}</p></> : <p>{t("adminGptEndOrderWarning")}</p>}</div><Button type="button" size="sm" variant="outline" disabled={endOrder.isPending} onClick={async () => { if (await confirm(t("adminGptEndOrderConfirm"))) endOrder.mutate(orderDetail.data.data.order.id); }}><CircleStop />{endOrder.isPending ? t("adminGptEndingOrder") : t("adminGptEndOrder")}</Button>{endOrder.isError && <p className="admin-alert is-error" role="alert">{endOrder.error instanceof Error ? endOrder.error.message : t("adminLoadFailed")}</p>}</section>}</>} />
+      actions={orderDetail.data && <>{orderDetail.data.data.order.status === "requires_action" && <Notice className="admin-alert is-warning"><div>{renewalRecovery ? <><strong>{t("gptRenewalSessionTitle")}</strong><p>{t("adminGptRenewalSessionHint")}</p></> : <p>{t("adminGptEndOrderWarning")}</p>}</div><Button type="button" size="sm" variant="outline" disabled={endOrder.isPending} onClick={async () => { if (await confirm(t("adminGptEndOrderConfirm"))) endOrder.mutate(orderDetail.data.data.order.id); }}><CircleStop />{endOrder.isPending ? t("adminGptEndingOrder") : t("adminGptEndOrder")}</Button>{endOrder.isError && <Notice className="admin-alert is-error" role="alert">{endOrder.error instanceof Error ? endOrder.error.message : t("adminLoadFailed")}</Notice>}</Notice>}</>} />
 
   </div>;
 }

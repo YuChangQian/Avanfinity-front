@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, Bot, Brain, Gift, RefreshCw, Send, ShieldCheck, Trash2, Users } from "lucide-react";
@@ -166,7 +167,7 @@ export function AdminTelegramPanel({ token, onSelectCustomer }: { token: string;
     <nav className="admin-telegram-tabs" aria-hidden="true">{[0, 1, 2, 3].map((item) => <button type="button" key={item} disabled><span><strong><DataSkeleton /></strong></span></button>)}</nav>
     <section className="admin-metric-grid admin-telegram-metrics">{[0, 1, 2, 3].map((item) => <article key={item}><span><DataSkeleton /></span><strong><DataSkeleton /></strong><small><DataSkeleton /></small></article>)}</section>
   </div>;
-  if (telegram.isError || !data) return <div className="admin-state is-error" role="alert"><span>{t("telegramAdminLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => void telegram.refetch()}>{t("retry")}</Button></div>;
+  if (telegram.isError || !data) return <Notice className="admin-state is-error" role="alert"><span>{t("telegramAdminLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => void telegram.refetch()}>{t("retry")}</Button></Notice>;
 
   const healthy = data.configured && data.featureEnabled && data.health.botCanReceiveUpdates;
 
@@ -176,7 +177,7 @@ export function AdminTelegramPanel({ token, onSelectCustomer }: { token: string;
       <div className="admin-heading-actions"><Button size="sm" variant="outline" disabled={command.isPending || !data.configured} onClick={() => { setNotice(""); command.mutate({ action: "health" }); }}><RefreshCw />{t("checkTelegramHealth")}</Button></div>
     </div>
 
-    {notice && <p className={`admin-alert ${command.isError || saveAi.isError || knowledgeAction.isError ? "is-error" : "is-success"}`} role={command.isError || saveAi.isError || knowledgeAction.isError ? "alert" : "status"}>{notice}</p>}
+    {notice && <Notice className={`admin-alert ${command.isError || saveAi.isError || knowledgeAction.isError ? "is-error" : "is-success"}`} role={command.isError || saveAi.isError || knowledgeAction.isError ? "alert" : "status"}>{notice}</Notice>}
 
     <nav className="admin-telegram-tabs" aria-label={t("adminTelegram")}>
       {tabs.map((item) => {
@@ -233,7 +234,7 @@ export function AdminTelegramPanel({ token, onSelectCustomer }: { token: string;
 
     {tab === "queue" && <section className="admin-surface" data-testid="admin-telegram-member-verifications">
       <div className="admin-section-heading"><div><span className="admin-kicker">NEW MEMBERS</span><h3>{t("telegramMemberVerificationQueue")}</h3><p>{t("telegramMemberVerificationQueueHint")}</p></div><span>{data.memberVerifications.length}</span></div>
-      {memberPassNotice && <p className={`admin-alert ${memberPassNotice.status === "error" ? "is-error" : "is-success"}`} role={memberPassNotice.status === "error" ? "alert" : "status"} data-testid="admin-telegram-member-feedback">{memberPassNotice.status === "error" ? memberPassNotice.message : t(data.memberVerifications.find((item) => item.id === memberPassNotice.id)?.status === "passed" || memberPassNotice.status === "passed" ? "telegramMemberPassed" : "telegramMemberPassQueued")}</p>}
+      {memberPassNotice && <Notice className={`admin-alert ${memberPassNotice.status === "error" ? "is-error" : "is-success"}`} role={memberPassNotice.status === "error" ? "alert" : "status"} data-testid="admin-telegram-member-feedback">{memberPassNotice.status === "error" ? memberPassNotice.message : t(data.memberVerifications.find((item) => item.id === memberPassNotice.id)?.status === "passed" || memberPassNotice.status === "passed" ? "telegramMemberPassed" : "telegramMemberPassQueued")}</Notice>}
       <div className="admin-list">{data.memberVerifications.map((verification) => {
         const isTargetPending = command.isPending && command.variables?.action === "member_verification_pass" && command.variables.challengeId === verification.id;
         const isTerminal = verification.completedAt !== null || ["passed", "released", "kicked"].includes(verification.status);
@@ -314,7 +315,7 @@ export function AdminTelegramPanel({ token, onSelectCustomer }: { token: string;
         <label>{t("search")}<input name="q" placeholder={t("telegramBindingSearchPlaceholder")} /></label><Button type="submit" size="sm">{t("search")}</Button>
       </form>
       {bindings.isLoading && <div className="admin-state loading-skeleton loading-skeleton-table" aria-label={t("loading")}>{t("loading")}</div>}
-      {bindings.isError && <div className="admin-state is-error" role="alert"><span>{t("telegramBindingsLoadFailed")}</span><Button size="xs" variant="outline" onClick={() => void bindings.refetch()}>{t("retry")}</Button></div>}
+      {bindings.isError && <Notice className="admin-state is-error" role="alert"><span>{t("telegramBindingsLoadFailed")}</span><Button size="xs" variant="outline" onClick={() => void bindings.refetch()}>{t("retry")}</Button></Notice>}
       {bindings.data?.data.list.length === 0 && <div className="admin-state">{t("noTelegramBindings")}</div>}
       {bindings.data && bindings.data.data.list.length > 0 && <div className="admin-telegram-binding-list">{bindings.data.data.list.map((binding) => <button type="button" key={binding.userId} className="admin-telegram-binding-row" onClick={() => onSelectCustomer(binding.userId)} aria-label={t("viewCustomerDetails", { email: binding.email ?? binding.displayName ?? `#${binding.userId}` })}>
         <span><strong>{binding.email ?? binding.displayName}</strong><small>{binding.memberTier} · {binding.status}</small></span><span><strong>{binding.telegramUsername ? `@${binding.telegramUsername.replace(/^@/, "")}` : t("telegramUsernameUnavailable")}</strong><small>{t("telegramVerifiedAt")} {new Date(binding.verifiedAt).toLocaleString(locale)}</small></span>

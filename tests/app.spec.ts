@@ -1632,7 +1632,7 @@ test("admin saves tier presentation even when product pricing preview is unavail
   await expect.poll(() => previewBody).toEqual({ tierCode: "none", version: 1, openMultiplier: "1.25", minimumOpenFee: "0",
     rechargeMultiplier: "1.25", minimumRechargeRate: "0", declineFee: "0", refundMultiplier: "1.25",
     gptDirectMultiplier: "1.25", gptDirectMinimumFee: "1" });
-  await expect(editor.getByRole("alert").filter({ hasText: "产品同步暂不可用" })).toBeVisible();
+  await expect(page.locator(".notification-stack").getByRole("alert").filter({ hasText: "产品同步暂不可用" })).toBeVisible();
   await page.getByTestId("tier-section-profile").click();
   await editor.getByLabel("中文名称", { exact: true }).fill("无限会员");
   await editor.getByLabel("英文名称", { exact: true }).fill("Infinite");
@@ -3647,7 +3647,8 @@ test("logged-in CDK history shows a trusted Stripe invoice", async ({ page }) =>
   await expect(history.getByText("u***@example.com")).toBeVisible();
 });
 
-test("feedback duration keeps Session errors readable beside the operation", async ({ page }) => {
+test("feedback duration keeps Session errors readable in floating notifications", async ({ page }) => {
+  await page.clock.install();
   await mockAuthenticatedShell(page, "customer");
   await mockGptDirect(page);
   await page.route("**/api/gpt-direct/preflight", route => route.fulfill({ status: 400,
@@ -3655,13 +3656,13 @@ test("feedback duration keeps Session errors readable beside the operation", asy
   await page.goto("/gpt-direct");
   await page.getByLabel("Session 凭据", { exact: true }).fill("test-expired-session-json");
   await page.getByRole("button", { name: "验证凭据与获取报价", exact: true }).click();
-  const notice = page.locator("p.error[role=alert]");
+  const notice = page.locator(".notification-stack [role=alert]").filter({ hasText: "Session 已失效" });
   await expect(notice).toContainText("Session 已失效");
-  await expect(notice).toHaveCSS("position", "static");
-  await expect(notice).toHaveCSS("animation-name", "none");
-  await page.clock.install();
-  await page.clock.fastForward(30_000);
+  await expect(page.locator(".notification-stack")).toHaveCSS("position", "fixed");
+  await page.clock.fastForward(8_000);
   await expect(notice).toBeVisible();
+  await page.clock.fastForward(2_100);
+  await expect(notice).toHaveCount(0);
 });
 
 test("payment card last four is shown in direct and CDK history and drawers", async ({ page }) => {
@@ -5840,7 +5841,7 @@ test("deposit network selection creates on BSC and SOL without mixing pending or
   await expect(fee).toHaveValue("0");
   await expect(total).toHaveText("100.000073 USDT");
   await expect(page.getByText(solMint, { exact: true })).toBeVisible();
-  await expect(page.getByRole("note").filter({ hasText: "USDT Token Mint:" })).toBeVisible();
+  await expect(page.locator(".notification-stack").getByRole("alert").filter({ hasText: "USDT Token Mint:" })).toBeVisible();
 });
 
 test("expired deposit history does not appear as the current order", async ({ page }) => {
@@ -7192,7 +7193,7 @@ test("admin system settings keep SMTP secrets ephemeral and feature switches pre
   await expect(password).toHaveValue("");
   expect(testedSmtp).not.toHaveProperty("recipient");
   await expect(system.locator(".admin-system-section").first().getByText("已就绪", { exact: true })).toBeVisible();
-  await expect(system.getByText("SMTP 服务器已接受测试邮件，请检查收件箱与垃圾邮件。", { exact: true })).toBeVisible();
+  await expect(page.locator(".notification-stack").getByText("SMTP 服务器已接受测试邮件，请检查收件箱与垃圾邮件。", { exact: true })).toBeVisible();
 
   const paymentRiskSection = system.getByTestId("payment-risk-settings");
   const minAttempts = paymentRiskSection.getByLabel("最少终态样本数", { exact: true });
@@ -7224,8 +7225,8 @@ test("admin system settings keep SMTP secrets ephemeral and feature switches pre
   await page.getByRole("button", { name: "中文", exact: true }).click();
   await reserveRatio.fill("25");
   await saveRisk.click();
-  await expect(paymentRiskSection.getByRole("alert")).toContainText("请重新认证后继续敏感操作");
-  await paymentRiskSection.getByRole("button", { name: "重新登录验证", exact: true }).click();
+  await expect(page.locator(".notification-stack").getByRole("alert").filter({ hasText: "请重新认证后继续敏感操作" })).toBeVisible();
+  await page.locator(".notification-stack").getByRole("button", { name: "重新登录验证", exact: true }).click();
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem("recentAuthReturnPath"))).toBe("/admin?panel=system");
   await expect(page).toHaveURL(/\/login$/);
   await page.getByPlaceholder("your@email.com").fill("admin@danewcard.local");
@@ -7239,7 +7240,7 @@ test("admin system settings keep SMTP secrets ephemeral and feature switches pre
     version: 6, enabled: true, windowDays: 30, minAttempts: 100,
     lockThresholdBps: 3000, releaseThresholdBps: 2000, reserveBps: 2500,
   });
-  await expect(reauthenticatedPaymentRisk).toContainText("支付风控策略已保存");
+  await expect(page.locator(".notification-stack")).toContainText("支付风控策略已保存");
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem("recentAuthReturnPath"))).toBeNull();
 
   const declineSection = page.getByTestId("admin-panel-system").getByTestId("decline-threshold-settings");
@@ -7272,8 +7273,8 @@ test("admin system settings keep SMTP secrets ephemeral and feature switches pre
   await expect(depositFeature).toBeEnabled();
   await expect(depositNetwork).toContainText("TRON · TRC20");
   await expect(depositSection.getByTestId("deposit-address-pool")).toHaveValue(tronAddresses.join("\n"));
-  await expect(depositSection).toContainText("绝不要填写钱包私钥、助记词或 Keystore");
-  await expect(depositSection).toContainText("公共限额模式只能安全监控一个实际收款地址");
+  await expect(page.locator(".notification-stack")).toContainText("绝不要填写钱包私钥、助记词或 Keystore");
+  await expect(page.locator(".notification-stack")).toContainText("公共限额模式只能安全监控一个实际收款地址");
   await expect(depositSection.getByRole("checkbox", { name: /移除已保存的 TronGrid Key/ })).toHaveCount(0);
   await expect(depositSection).toContainText("使用公共限额");
   await expect(depositTest).toBeEnabled();
@@ -7303,7 +7304,7 @@ test("admin system settings keep SMTP secrets ephemeral and feature switches pre
 
   await chooseNetwork("BNB Smart Chain · BEP20");
   await expect(depositKey).toBeVisible();
-  await expect(depositSection).toContainText("公共 BSC RPC 会限流或缺少历史状态");
+  await expect(page.locator(".notification-stack")).toContainText("公共 BSC RPC 会限流或缺少历史状态");
   await expect(depositSection).toContainText(bscAssetId);
   await expect(depositSection.getByTestId("deposit-address-pool")).toHaveValue("0x1111111111111111111111111111111111111111");
   await depositSection.getByTestId("deposit-address-pool").fill(bscDraftAddress);
@@ -7345,7 +7346,7 @@ test("admin system settings keep SMTP secrets ephemeral and feature switches pre
   await removeDepositKey.check();
   await expect(depositKey).toBeDisabled();
   await expect(depositTest).toBeDisabled();
-  await expect(depositSection).toContainText("公共限额模式只能安全监控一个实际收款地址");
+  await expect(page.locator(".notification-stack")).toContainText("公共限额模式只能安全监控一个实际收款地址");
   await depositSection.getByTestId("deposit-address-pool").fill(tronAddresses[0]);
   await depositSave.click();
   await expect.poll(() => savedDepositRequests).toHaveLength(5);

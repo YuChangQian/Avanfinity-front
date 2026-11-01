@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useLayoutEffect, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { KeyRound, ShieldCheck } from "lucide-react";
@@ -48,14 +49,14 @@ export function ResetPasswordPage() {
     <section className="auth-story"><div className="brand-mark"><BrandIcon /> AVANFINITY</div><div><span className="eyebrow"><KeyRound size={14} /> SECURE RESET</span><h2>{t("resetPasswordStory")}</h2><p>{t("resetPasswordStoryDesc")}</p></div><div className="trust"><ShieldCheck /> {t("loginSecurityLabel")}</div></section>
     <section className="auth-card">
       <div className="auth-heading"><span className="eyebrow">NEW PASSWORD</span><h1>{t("resetPasswordTitle")}</h1><p>{t("passwordResetRequirements")}</p></div>
-      {!token && <p role="alert" className="error">{t("passwordResetLinkInvalid")}</p>}
+      {!token && <Notice role="alert" className="error">{t("passwordResetLinkInvalid")}</Notice>}
       {token && !success && <form className="stacked-form" onSubmit={submit}>
         <label>{t("newPassword")}<input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={72} required /></label>
         <label>{t("confirmPassword")}<input name="confirmation" type="password" autoComplete="new-password" minLength={12} maxLength={72} required /></label>
-        {message && <p role="alert" className="error">{message}</p>}
+        {message && <Notice role="alert" className="error">{message}</Notice>}
         <Button size="lg" className="primary" disabled={submitting}><StableSwap state={submitting ? "busy" : "idle"} labels={{ idle: t("resetPasswordAction"), busy: t("processing") }} /></Button>
       </form>}
-      {success && <p role="status" className="success-note">{message}</p>}
+      {success && <Notice role="status" className="success-note">{message}</Notice>}
       <Button asChild variant={success ? "default" : "ghost"}><Link to="/login">{success ? t("continueToLogin") : t("backToLogin")}</Link></Button>
       <p className="secure-note"><ShieldCheck size={14} /> {t("passwordResetSessionNotice")}</p>
     </section>

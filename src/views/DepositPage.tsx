@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useConfirm } from "@/components/ui/confirm";
 import { formatDecimal, shiftDecimal } from "../decimal";
 import { useEffect, useState } from "react";
@@ -191,7 +192,7 @@ export function DepositPage() {
             />
           </label>
           <small id="deposit-amount-help">{t("depositAmountHint")}</small>
-          {touched && !amountValid && <p role="alert" className="error">{t("invalidDepositAmount")}</p>}
+          {touched && !amountValid && <Notice role="alert" className="error">{t("invalidDepositAmount")}</Notice>}
         </div>
         <Button className="deposit-create-button" size="lg" type="submit" disabled={!amountValid || !selectedNetworkAvailable || mutation.isPending || cancelMutation.isPending || (serverStatus === "pending" && secondsLeft > 0)}>
           <ArrowDownToLine /><StableSwap state={mutation.isPending ? "busy" : "idle"} labels={{ idle: t("createDepositOrder"), busy: t("creating") }} />
@@ -211,7 +212,7 @@ export function DepositPage() {
                 onChange={(event) => { if (selectedNetwork) setFees((current) => ({ ...current, [selectedNetwork]: event.target.value })); setCopied(null); }} />
             </label>
             <small id="deposit-fee-help">{t("depositTransferFeeHint")}</small>
-            {feeUnits === null && <p role="alert" className="error">{t("invalidDepositTransferFee")}</p>}
+            {feeUnits === null && <Notice role="alert" className="error">{t("invalidDepositTransferFee")}</Notice>}
           </div>
           <div className="deposit-transfer-summary" aria-live="polite">
             <div><span>{t(activeOrder ? "depositTransferTotal" : "depositTransferEstimate")}</span><strong data-testid="deposit-transfer-total">{transferTotal ?? "—"} USDT</strong></div>
@@ -224,17 +225,17 @@ export function DepositPage() {
         </div>
       </details>}
       {flags.deposits && !selectedNetworkAvailable && <div className="feature-disabled" role="status"><ShieldCheck /><p>{t("depositNetworkUnavailable")}</p></div>}
-      {error && <p role="alert" className="error">{error}</p>}
+      {error && <Notice role="alert" className="error">{error}</Notice>}
 
       {currentOrder && <article className="deposit-order" data-testid="deposit-current-order" data-status={status} aria-live="polite">
         <div className="deposit-order-heading">
           <div><span>{t("depositOrder")} · {t(`depositNetworkName.${currentOrder.network}`)}</span><strong className={`deposit-status ${status}`}>{t(`depositStatus.${status}`)}</strong></div>
           {status === "pending" && <span className="deposit-countdown"><Clock3 />{formatCountdown(secondsLeft)}</span>}
         </div>
-        {status === "cancelled" ? <div className="deposit-network-warning" role="note" data-testid="deposit-cancelled-terminal">
+        {status === "cancelled" ? <Notice className="deposit-network-warning" role="note" data-testid="deposit-cancelled-terminal">
           <AlertTriangle />
           <p><strong>{t("depositCancelledTerminal")}</strong><span>{t("orderNumber")}: <code>{currentOrder.gatewayRef}</code></span></p>
-        </div> : <>
+        </Notice> : <>
           <div className="deposit-amount-due">
           <span>{t("exactPaymentAmount")}</span>
           <strong data-testid="deposit-expected-amount">{formatDecimal(currentOrder.expectedAmount)} <small>USDT</small></strong>
@@ -242,7 +243,7 @@ export function DepositPage() {
             {copied === "amount" ? <Check /> : <Copy />}<StableSwap state={copied === "amount" ? "busy" : "idle"} labels={{ idle: t("copy"), busy: t("copied") }} />
           </Button>
           </div>
-          <p className="deposit-exact-warning"><AlertTriangle />{t("exactAmountWarning")}</p>
+          <Notice className="deposit-exact-warning"><AlertTriangle />{t("exactAmountWarning")}</Notice>
           {status === "pending" && currentOrder.cancellable && <div className="deposit-cancel-action">
             <Button
               type="button"
@@ -277,10 +278,10 @@ export function DepositPage() {
               <small>{t("orderNumber")}: <code data-testid="gateway-ref">{currentOrder.gatewayRef}</code></small>
             </div>
           </div>
-          {currentNetworkStatus && <div className="deposit-network-warning" role="note">
+          {currentNetworkStatus && <Notice className="deposit-network-warning" role="note">
             <ShieldCheck />
             <p><strong>{t("networkOnlyWarning", { network: t(`depositNetworkName.${currentNetworkStatus.network}`) })}</strong><span>{currentNetworkStatus.network === "SOL" ? t("usdtTokenMint") : t("usdtContract")}: <code>{currentNetworkStatus.tokenContract}</code></span></p>
-          </div>}
+          </Notice>}
         </>}
       </article>}
       <span className="sr-only" aria-live="polite">{copied ? t("copied") : ""}</span>

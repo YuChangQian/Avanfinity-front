@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useConfirm } from "@/components/ui/confirm";
 import { useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
@@ -139,9 +140,9 @@ function DeveloperWebhooks({ token, keys }: { token: string; keys: DeveloperKey[
           </Button>
         </div>
         {!selectedKey.webhookUrl && <p className="developer-webhook-note">{t("webhookConfigureFirst")}</p>}
-        {actionError && <p className="admin-alert is-error" role="alert">{actionError}</p>}
+        {actionError && <Notice className="admin-alert is-error" role="alert">{actionError}</Notice>}
         {deliveries.isError
-          ? <div className="developer-webhook-state" role="alert"><span>{t("webhookDeliveriesLoadFailed")}</span><Button variant="outline" size="sm" onClick={() => void deliveries.refetch()}>{t("retry")}</Button></div>
+          ? <Notice className="developer-webhook-state" role="alert"><span>{t("webhookDeliveriesLoadFailed")}</span><Button variant="outline" size="sm" onClick={() => void deliveries.refetch()}>{t("retry")}</Button></Notice>
           : deliveries.isPending
             ? <div className="developer-webhook-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</div>
             : result?.list.length === 0
@@ -291,7 +292,7 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
   });
 
   if (query.isError) return <section className="openapi-browser" id="api-reference">
-    <div className="developer-webhook-state" role="alert"><span>{t("openApiLoadFailed")}</span><Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button></div>
+    <Notice className="developer-webhook-state" role="alert"><span>{t("openApiLoadFailed")}</span><Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button></Notice>
   </section>;
   if (!query.data) return <section className="openapi-browser" id="api-reference"><div className="developer-webhook-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</div></section>;
 
@@ -541,10 +542,10 @@ export function DeveloperPage() {
 
   if (!session) return <Navigate to="/login" />;
   if (query.isError) return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")} className="developer-page">
-    <section className="deposit-panel query-error" role="alert">
+    <Notice className="deposit-panel query-error" role="alert">
       <strong>{t("developerKeysLoadFailed")}</strong>
       <Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button>
-    </section>
+    </Notice>
   </PageShell>;
   if (!query.data) return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")} className="developer-page">
     <div aria-busy="true">
@@ -724,7 +725,7 @@ const operation = await call("/operations/" + operationId);`;
         </div>
       </div>}
     </section>
-    {error && <p className="admin-alert is-error" role="alert">{error}</p>}
+    {error && <Notice className="admin-alert is-error" role="alert">{error}</Notice>}
     <section className="transaction-panel developer-keys" id="developer-apps">
       <div className="section-title"><h2>{i18n.language === "en" ? "Applications" : "应用管理"}</h2><span>{query.data.data.length} / 5</span></div>
       {query.data.data.length === 0

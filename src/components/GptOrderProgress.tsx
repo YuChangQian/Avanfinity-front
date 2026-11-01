@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
@@ -196,7 +197,7 @@ export function GptOrderProgress({ order, events = [], defaultExpanded = false, 
       {safeToRetry(order) && ["refresh_session_and_reorder", "retry_preflight"].includes(order.nextAction ?? "") && <Button asChild size="sm"><Link to="/gpt-direct">{t("gptRetryPreflight")}</Link></Button>}
     </section>}
     {order.payment && <p>{t("gptEvidencePayment")}：{t(`gptEvidencePaymentStatus.${order.payment.status}`, { defaultValue: t("gptEvidenceUnknown") })}</p>}
-    {order.failure && order.failure.message !== currentLabel && <p role="status">{order.failure.message}</p>}
+    {order.failure && order.failure.message !== currentLabel && <Notice role="status">{order.failure.message}</Notice>}
     {order.attempts?.length && <section data-testid="gpt-order-attempts" className="gpt-order-events">
       <strong>{t("gptRetryAttempts")}</strong>
       <ol>{order.attempts.map((attempt, index) => <li key={attempt.id}>
@@ -218,7 +219,7 @@ export function GptOrderProgress({ order, events = [], defaultExpanded = false, 
         <textarea aria-label={t("gptSessionCredential")} value={sessionRecoveryForm.value} onChange={(event) => sessionRecoveryForm.onChange(event.target.value)} rows={5} autoComplete="off" spellCheck={false} required />
         <small>{t("gptSessionCredentialHint")}</small>
       </label>
-      {sessionRecoveryForm.error && <p role="alert" className="error">{sessionRecoveryForm.error}</p>}
+      {sessionRecoveryForm.error && <Notice role="alert" className="error">{sessionRecoveryForm.error}</Notice>}
       <Button type="submit" size="sm" disabled={sessionRecoveryForm.pending || !sessionRecoveryForm.value.trim()}><StableSwap state={sessionRecoveryForm.pending ? "busy" : renewalRecovery ? "alt" : "idle"} labels={{ idle: t("gptSubmitRecoverySession"), alt: t("gptRenewalSessionSubmit"), busy: t("processing") }} /></Button>
     </form>}
     {order.needsRenewalCancel && renewalForm && <form className="gpt-renewal-form" onSubmit={renewalForm.onSubmit}>
@@ -227,7 +228,7 @@ export function GptOrderProgress({ order, events = [], defaultExpanded = false, 
         <textarea aria-label={t("gptSessionCredential")} value={renewalForm.value} onChange={(event) => renewalForm.onChange(event.target.value)} rows={5} autoComplete="off" spellCheck={false} required />
         <small>{t("gptSessionCredentialHint")}</small>
       </label>
-      {renewalForm.error && <p role="alert" className="error">{renewalForm.error}</p>}
+      {renewalForm.error && <Notice role="alert" className="error">{renewalForm.error}</Notice>}
       <Button type="submit" size="sm" disabled={renewalForm.pending || !renewalForm.value.trim()}><StableSwap state={renewalForm.pending ? "busy" : "idle"} labels={{ idle: t("gptSubmitRenewalSession"), busy: t("processing") }} /></Button>
     </form>}
     {expanded && events.length > 0 && <section className="gpt-order-events">

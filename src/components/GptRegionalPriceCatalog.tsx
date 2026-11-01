@@ -1,3 +1,4 @@
+import { Notice } from "./ui/notice";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -66,7 +67,7 @@ export function GptRegionalPriceCatalog({ token, regions, enabledPlans, disabled
       </Select></label>
       <label>{en ? "Search countries or regions" : "搜索国家或地区"}<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder={en ? "Country name or code" : "国家名称或代码，例如 JP"} /></label>
     </div>
-    {query.isError && <p className="gpt-catalog-error" role="alert">{en ? "Prices could not be loaded." : "价格暂时无法加载。"}<Button size="sm" variant="outline" onClick={() => void query.refetch()}>{en ? "Retry" : "重试"}</Button></p>}
+    {query.isError && <Notice className="gpt-catalog-error" role="alert">{en ? "Prices could not be loaded." : "价格暂时无法加载。"}<Button size="sm" variant="outline" onClick={() => void query.refetch()}>{en ? "Retry" : "重试"}</Button></Notice>}
     {query.isLoading ? <p role="status">{en ? "Loading prices…" : "正在加载地区价格…"}</p> : <div className="gpt-catalog-scroll" tabIndex={0} role="region" aria-label={en ? "Regional price table" : "地区价格表"}>
       <table><thead><tr>{[en ? "Country / region" : "国家 / 地区", en ? "Plan" : "套餐", en ? "Monthly reference price" : "月度参考价", en ? "USD estimate" : "美元估算", en ? "Updated / status" : "更新时间 / 状态", en ? "Checkout" : "充值"].map(title => <th key={title} scope="col">{title}</th>)}</tr></thead>
         <tbody>{rows.map(({ country, price }) => {

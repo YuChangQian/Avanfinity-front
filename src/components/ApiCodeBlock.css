@@ -12,5 +12,4 @@
 .api-code-block .api-token-number { color:#f0c586; }
 .api-code-block .api-token-keyword { color:#d2b5ed; }
 .api-code-block .api-token-comment { color:#a1a8b4; }
-.api-code-copy-error { margin:0; padding:8px 14px; color:#f1c98e; font-size:12px; }
 @media(max-width:600px) { .api-code-block pre,.developer-page .api-code-block pre { padding:14px; font-size:11px; max-height:300px; } }

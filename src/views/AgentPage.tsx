@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
@@ -22,9 +23,9 @@ export function AgentPage() {
     <section className="transaction-panel" aria-busy="true">{[0, 1, 2].map((item) => <form className="transaction-row" key={item}><div className="transaction-icon"><Network /></div><div><strong><DataSkeleton /></strong><label>{t("cost")}<input disabled /></label><label>{t("customer")}<input disabled /></label></div><div><span className="positive"><DataSkeleton /></span>{flags.agent && <Button size="xs" disabled>{t("save")}</Button>}</div></form>)}</section>
   </PageShell>;
   return <PageShell eyebrow="AGENT" title={t("agentTitle")} description={t("agentDesc")}>
-    {!flags.agent && <p className="admin-alert" role="status">{t("featureUnavailable")}</p>}
-    {!query.data.data.pricingEffective && <p className="admin-alert" role="status">{t("agentPricingPaused")}</p>}
-    {update.isError && <p className="error" role="alert">{update.error instanceof Error ? update.error.message : t("updateFailed")}</p>}
+    {!flags.agent && <Notice className="admin-alert" role="status">{t("featureUnavailable")}</Notice>}
+    {!query.data.data.pricingEffective && <Notice className="admin-alert" role="status">{t("agentPricingPaused")}</Notice>}
+    {update.isError && <Notice className="error" role="alert">{update.error instanceof Error ? update.error.message : t("updateFailed")}</Notice>}
     <section className="transaction-panel">{query.data.data.subUsers.length === 0 ? <div className="empty-state">{t("noSubUsers")}</div> : query.data.data.subUsers.map((user) => <form className="transaction-row" key={user.id} onSubmit={(event) => { event.preventDefault(); if (!flags.agent) return; const data = new FormData(event.currentTarget); update.mutate({ id: user.id, cost: String(data.get("cost")), customer: String(data.get("customer")) }); }}><div className="transaction-icon"><Network /></div><div><strong>{user.email ?? `#${user.id}`}</strong><label>{t("cost")}<input name="cost" inputMode="decimal" defaultValue={user.agentRechargeRate} readOnly={!flags.agent} required /></label><label>{t("customer")}<input name="customer" inputMode="decimal" defaultValue={user.subRechargeRate} readOnly={!flags.agent} required /></label></div><div><span className="positive">spread {user.spreadRate}</span>{flags.agent && <Button size="xs">{t("save")}</Button>}</div></form>)}</section>
   </PageShell>;
 }

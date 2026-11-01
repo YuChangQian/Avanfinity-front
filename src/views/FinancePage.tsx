@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "../components/ui/notice";
 import { LedgerFilters } from "../components/LedgerFilters";
 import type { LedgerFilters as LedgerFilterValues } from "../api";
 import { formatDecimal } from "../decimal";
@@ -108,7 +109,7 @@ export function FinancePage() {
         <Dialog.Trigger asChild><Button size="lg"><Send /> {t("transfer")}</Button></Dialog.Trigger>
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />
-          <Dialog.Content className="dialog-content">
+          <Dialog.Content className="dialog-content"><NoticeScope />
             <Dialog.Title>{t("transfer")}</Dialog.Title>
             <Dialog.Description>{t("transferWarning")}</Dialog.Description>
             <form onSubmit={submit}>
@@ -116,7 +117,7 @@ export function FinancePage() {
               <small className="field-hint">{t("recipientInviteCodeHint")}</small>
               <label>{t("transferAmount")}<input name="amount" value={amount} onChange={(event) => changeTransferTarget(recipientCode, event.target.value)} inputMode="decimal" pattern="[0-9]+([.][0-9]{1,4})?" placeholder="10.00" disabled={Boolean(challenge)} required /></label>
               {challenge && <><p className="transfer-verification-hint">{t(challenge.deliveryChannel === "telegram" ? "transferCodeSentTelegram" : "transferCodeSentEmail", { destination: challenge.destination })}</p><label>{t("transferVerificationCode")}<input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} placeholder="000000" required /></label>{challenge.deliveryChannel === "email" && <small className="field-hint">{t("transferEmailSpamHint")}</small>}</>}
-              {error && <p role="alert" className="error">{error}</p>}
+              {error && <Notice role="alert" className="error">{error}</Notice>}
               <Button type="submit" disabled={mutation.isPending || challengeMutation.isPending} size="lg"><StableSwap state={challengeMutation.isPending ? "code" : mutation.isPending ? "transfer" : challenge ? "confirm" : "send"} labels={{ send: t("sendTransferVerificationCode"), code: t("sendingVerificationCode"), transfer: t("transferring"), confirm: t("confirmTransfer") }} /></Button>
             </form>
           </Dialog.Content>
@@ -145,7 +146,7 @@ export function FinancePage() {
       <div className="section-title"><h2>{t("ledger")}</h2><span>{t("records", { count: transactions.data?.data.total ?? 0 })}</span></div>
       <LedgerFilters id="wallet-ledger-filter" applied={ledgerFilters} wallet types={transactions.data?.data.types ?? ["deposit", "card_open", "card_recharge", "card_refund", "card_transaction_fee", "transfer_in", "transfer_out"]} onApply={filters => {if (ledgerPage === 1 && JSON.stringify(filters) === JSON.stringify(ledgerFilters)) void transactions.refetch();setLedgerFilters(filters);setLedgerPage(1);}} />
       {transactions.isPlaceholderData && <p role="status">{t("loading")}</p>}
-      {transactions.isError && <p role="alert" className="error">{t("adminLoadFailed")}</p>}
+      {transactions.isError && <Notice role="alert" className="error">{t("adminLoadFailed")}</Notice>}
       {(transactions.data?.data.list.length ?? 0) === 0 ? <div className="empty-state">{t("noLedger")}</div> :
         transactions.data?.data.list.map((item) => <article className="transaction-row" key={item.id}>
           <div className="transaction-icon"><ArrowUpRight /></div>

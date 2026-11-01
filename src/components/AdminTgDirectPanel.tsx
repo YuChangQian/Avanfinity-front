@@ -1,3 +1,4 @@
+import { Notice, NoticeScope } from "./ui/notice";
 import { tgOrderStatus, tgOrderExplanation, TgOrderTiming } from "./TgOrderStatus";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,7 +42,7 @@ export function AdminTgDirectFees({ token, tierCode }: { token: string; tierCode
       <div className="admin-system-form">
         <p className="admin-settings-note">{en ? "Applies to customers in this tier, including CDKs and API orders. USD 0–10,000, with up to two decimal places. Fee changes require fresh quotes." : "适用于本等级客户的直充、兑换码及 API 订单。可设置 USD 0–10,000，最多两位小数；修改后需重新获取报价。"}</p>
         {settings.isLoading && <p>{en ? "Loading fees…" : "正在加载费用…"}</p>}
-        {settings.isError && <p className="admin-alert is-error" role="alert">{en ? "Unable to load fees." : "费用加载失败。"}<Button type="button" size="sm" variant="outline" onClick={() => void settings.refetch()}>{en ? "Retry" : "重试"}</Button></p>}
+        {settings.isError && <Notice className="admin-alert is-error" role="alert">{en ? "Unable to load fees." : "费用加载失败。"}<Button type="button" size="sm" variant="outline" onClick={() => void settings.refetch()}>{en ? "Retry" : "重试"}</Button></Notice>}
         <div className="admin-system-form-grid">{settings.data?.data.plans.map(plan => {
           const value = drafts[plan.key] ?? plan.serviceFee;
           const invalid = !/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(value) || Number(value) > 10000;
@@ -50,11 +51,11 @@ export function AdminTgDirectFees({ token, tierCode }: { token: string; tierCode
             <div className="admin-form-actions"><Button type="submit" size="sm" disabled={save.isPending || invalid || value === plan.serviceFee}><Save />{save.isPending && save.variables.plan === plan.key ? (en ? "Saving…" : "正在保存…") : (en ? "Save fee" : "保存服务费")}</Button></div>
           </form>;
         })}</div>
-        {save.isSuccess && <p className="admin-alert is-success" role="status">{en ? "Service fee saved." : "服务费已保存。"}</p>}
-        {save.isError && <div className="admin-alert is-error" role="alert"><span>{recentAuth ? (en ? "Verify your administrator account again before changing fees." : "修改费用需要重新认证管理员身份。") : conflict ? (en ? "Another administrator changed these fees. Reload before saving." : "费用已被其他管理员修改，请重新加载后再保存。") : (en ? "Unable to save fees. Retry later." : "费用保存失败，请稍后重试。")}</span>
+        {save.isSuccess && <Notice className="admin-alert is-success" role="status">{en ? "Service fee saved." : "服务费已保存。"}</Notice>}
+        {save.isError && <Notice className="admin-alert is-error" role="alert"><span>{recentAuth ? (en ? "Verify your administrator account again before changing fees." : "修改费用需要重新认证管理员身份。") : conflict ? (en ? "Another administrator changed these fees. Reload before saving." : "费用已被其他管理员修改，请重新加载后再保存。") : (en ? "Unable to save fees. Retry later." : "费用保存失败，请稍后重试。")}</span>
           {conflict && <Button type="button" size="sm" variant="outline" disabled={settings.isFetching} onClick={() => void reloadFees()}>{en ? "Reload fees" : "重新加载费用"}</Button>}
           {recentAuth && <Button type="button" size="sm" variant="outline" onClick={() => { sessionStorage.setItem("recentAuthReturnPath", "/admin?panel=tiers"); window.location.assign("/login"); }}>{en ? "Verify again" : "重新认证"}</Button>}
-        </div>}
+        </Notice>}
       </div>
     </section>;
 }
@@ -100,7 +101,7 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
         <Button type="submit" size="sm">{t("filter")}</Button>
       </form>
       {orders.isLoading && <p className="admin-state" aria-busy="true">{t("loading")}</p>}
-      {orders.isError && <p className="admin-state is-error" role="alert">{en ? "Unable to load orders. Refresh records to retry." : "订单加载失败，请刷新记录重试。"}</p>}
+      {orders.isError && <Notice className="admin-state is-error" role="alert">{en ? "Unable to load orders. Refresh records to retry." : "订单加载失败，请刷新记录重试。"}</Notice>}
       {orders.data?.data.list.length === 0 && <p className="admin-state">{en ? "No matching orders." : "暂无符合条件的订单。"}</p>}
       {orders.data && orders.data.data.list.length > 0 && <div className="admin-table-wrap"><table className="admin-table">
         <thead><tr><th>{t("customer")}</th><th>{en ? "TG account / plan" : "TG 账号 / 套餐"}</th><th>{t("status")}</th><th>{en ? "Official card amount" : "官方扣卡金额"}</th><th>{en ? "Wallet service fee" : "钱包服务费"}</th><th>{t("createdTime")}</th><th>{t("details")}</th></tr></thead>
@@ -118,10 +119,10 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
     </section>
     <Dialog.Root open={Boolean(selectedId)} onOpenChange={open => { if (!open) setSelectedId(null); }}><Dialog.Portal>
       <div className="dialog-overlay" data-state={selectedId ? "open" : "closed"} aria-hidden="true" onClick={() => setSelectedId(null)} />
-      <Dialog.Content className="dialog-content admin-gpt-order-drawer">
+      <Dialog.Content className="dialog-content admin-gpt-order-drawer"><NoticeScope />
         <div className="card-transaction-drawer-head"><div><span><CircleDollarSign /></span><div><Dialog.Title>{en ? "TG order details" : "TG 直充订单详情"}</Dialog.Title><Dialog.Description>{selectedId}</Dialog.Description></div></div><Dialog.Close asChild><Button type="button" variant="ghost" size="icon" aria-label={t("close")}><X /></Button></Dialog.Close></div>
         {detail.isLoading && <p className="admin-state">{t("loading")}</p>}
-        {detail.isError && <p className="admin-state is-error" role="alert">{en ? "Unable to load order details." : "订单详情加载失败。"}</p>}
+        {detail.isError && <Notice className="admin-state is-error" role="alert">{en ? "Unable to load order details." : "订单详情加载失败。"}</Notice>}
         <div className="admin-gpt-order-detail-body">
           <div className="admin-drawer-toolbar">
             <Button type="button" size="sm" variant="outline" disabled={detail.isFetching} onClick={() => void detail.refetch()}><RefreshCw />{en ? "Refresh saved details" : "刷新已保存详情"}</Button>
@@ -142,7 +143,7 @@ function TgDirectOrders({ token, plans }: { token: string; plans: Array<{ key: s
                 </dl>
               </div>
             </div>
-            {tgOrderExplanation(order) && <p className="admin-alert is-warning" role="note">{tgOrderExplanation(order)}</p>}
+            {tgOrderExplanation(order) && <Notice className="admin-alert is-warning" role="note">{tgOrderExplanation(order)}</Notice>}
             <section className="admin-drawer-section">
               <header><span>ACCOUNT</span><h3>{en ? "Customer & payment" : "客户与支付"}</h3></header>
               <dl className="admin-drawer-facts">

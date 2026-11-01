@@ -1,3 +1,4 @@
+import { Notice } from "../components/ui/notice";
 import { useState, type FormEvent } from "react";
 import { useSetAtom } from "jotai";
 import { useNavigate } from "@tanstack/react-router";
@@ -109,9 +110,9 @@ export function LoginPage() {
           {captcha.data.data.image && <img src={captcha.data.data.image} alt={t("captchaImageAlt")} />}
           <Button type="button" size="icon" variant="outline" onClick={async () => { setCaptchaCode(""); await captcha.refetch(); }} aria-label={t("refreshCaptcha")} disabled={captcha.isFetching}><RefreshCw /></Button>
         </span></label>}
-        {captcha.isError && <div className="captcha-load-error" role="alert"><span>{t("captchaLoadFailed")}</span><Button type="button" size="sm" variant="outline" onClick={() => void captcha.refetch()}>{t("retry")}</Button></div>}
+        {captcha.isError && <Notice className="captcha-load-error" role="alert"><span>{t("captchaLoadFailed")}</span><Button type="button" size="sm" variant="outline" onClick={() => void captcha.refetch()}>{t("retry")}</Button></Notice>}
         {mfaRequired && <label>{t("mfaCredential")}<input name="mfaCode" autoComplete="one-time-code" maxLength={64} placeholder={t("mfaCredentialPlaceholder")} required autoFocus /></label>}
-        {error && <p role="alert" className="error">{error}</p>}
+        {error && <Notice role="alert" className="error">{error}</Notice>}
         <Button size="lg" className="primary" disabled={loading || captcha.isLoading || captcha.isError}>{loading ? t("loggingIn") : t("login")}</Button>
         {flags.telegram && <div className="telegram-login-options">
           <Button asChild size="lg" variant="outline"><a href="/api/auth/telegram?next=%2Fdashboard"><Send />{t("telegramLogin")}</a></Button>
