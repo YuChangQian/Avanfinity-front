@@ -1,3 +1,6 @@
+import { t } from "i18next";
+import { useTranslation } from "react-i18next";
+import { tgPlanLabel } from "./TgOrderStatus";
 import { Notice } from "./ui/notice";
 import { useRef, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,9 +12,10 @@ import { Button } from "./ui/button";
 import { StableSwap } from "./StableSwap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
-const statuses: Record<string, string> = { unused: "未使用", preparing: "正在预检", prepared: "等待确认", funding: "正在准备支付卡", funded: "支付卡已就绪", paying: "正在付款", review_required: "待核对", completed: "已完成", failed_precharge: "兑换未完成", ineligible: "账号不符合条件", revoked: "已撤销", paid_pending_delivery: "已付款，等待到账" };
+const statuses: Record<string, string> = { get unused() { return t("serviceText.unused"); }, get preparing() { return t("serviceText.runningPreflight2"); }, get prepared() { return t("serviceText.awaitingConfirmation2"); }, get funding() { return t("serviceText.preparingPaymentCard"); }, get funded() { return t("serviceText.paymentCardReady"); }, get paying() { return t("serviceText.paying"); }, get review_required() { return t("serviceText.underReview"); }, get completed() { return t("serviceText.completed"); }, get failed_precharge() { return t("serviceText.redemptionIncomplete"); }, get ineligible() { return t("serviceText.accountIneligible"); }, get revoked() { return t("serviceText.revoked"); }, get paid_pending_delivery() { return t("serviceText.paidAwaitingDelivery"); } };
 
 export function TgDirectCdkPanel({ token, plans, cards }: { token: string; plans: TgDirectPlan[]; cards: Card[] }) {
+  useTranslation();
   const tier = "premium";
   const [duration, setDuration] = useState("3m");
   const plan = `${tier}_${duration}`;
@@ -38,7 +42,7 @@ export function TgDirectCdkPanel({ token, plans, cards }: { token: string; plans
     if (busy) return;
     const data = new FormData(event.currentTarget);
     const officialMinor = shiftDecimal(String(data.get("officialAmount")), 2, 0);
-    if (!officialMinor || !Number.isSafeInteger(Number(officialMinor)) || Number(officialMinor) <= 0) { setError("官方金额上限需大于 0，最多两位小数。"); return; }
+    if (!officialMinor || !Number.isSafeInteger(Number(officialMinor)) || Number(officialMinor) <= 0) { setError(t("serviceText.officialAmountLimitMustBeGreaterThan0")); return; }
     const input = {
       plan, quantity: Number(data.get("quantity")), fundingAmountUsd: String(data.get("fundingAmountUsd")),
       maxWalletDebitUsd: String(data.get("maxWalletDebitUsd")), maxOfficialAmountMinor: Number(officialMinor), currency: "USD",
@@ -50,15 +54,15 @@ export function TgDirectCdkPanel({ token, plans, cards }: { token: string; plans
     try {
       const response = await generateTgDirectCdks(token, input, intent.current.key);
       setIssued(response.data.list); intent.current = null;
-      setNotice(`已免费生成 ${response.data.list.length} 张 CDK，请妥善保存兑换码。`);
+      setNotice(t("serviceText.generatedCdksForFreeStoreTheRedemptionCodes", { count: response.data.list.length }));
       await cdks.refetch();
-    } catch (cause) { fail(cause, "生成失败，请核对授权金额和卡片后重试；同一内容重试不会重复生成。"); }
+    } catch (cause) { fail(cause, t("serviceText.generationFailedCheckTheAuthorizedAmountsAndCard")); }
     finally { setBusy(false); }
   }
   async function copy(id: string) {
     setBusy(true); setError("");
-    try { const response = await exportTgDirectCdk(token, id); await navigator.clipboard.writeText(response.data.code); setNotice("兑换码已复制。"); }
-    catch (cause) { fail(cause, "复制失败，请重试或导出兑换码。"); }
+    try { const response = await exportTgDirectCdk(token, id); await navigator.clipboard.writeText(response.data.code); setNotice(t("serviceText.redemptionCodeCopied")); }
+    catch (cause) { fail(cause, t("serviceText.copyFailedRetryOrExportTheRedemptionCode")); }
     finally { setBusy(false); }
   }
   async function exportUnused() {
@@ -68,40 +72,40 @@ export function TgDirectCdkPanel({ token, plans, cards }: { token: string; plans
       const url = URL.createObjectURL(new Blob([codes.join("\n")], { type: "text/plain;charset=utf-8" }));
       const link = document.createElement("a"); link.href = url; link.download = "tg-cdks.txt"; link.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (cause) { fail(cause, "导出失败，请刷新列表后重试。"); }
+    } catch (cause) { fail(cause, t("serviceText.exportFailedRefreshTheListAndRetry")); }
     finally { setBusy(false); }
   }
   async function revoke(id: string) {
     setBusy(true); setError("");
-    try { await revokeTgDirectCdk(token, id); setIssued(current => current.filter(item => item.id !== id)); await cdks.refetch(); setNotice("未使用的 CDK 已撤销。"); }
-    catch (cause) { fail(cause, "撤销失败；已开始兑换的 CDK 无法撤销，请刷新状态。"); }
+    try { await revokeTgDirectCdk(token, id); setIssued(current => current.filter(item => item.id !== id)); await cdks.refetch(); setNotice(t("serviceText.unusedCdkRevoked")); }
+    catch (cause) { fail(cause, t("serviceText.revocationFailedACdkWhoseRedemptionHasStarted")); }
     finally { setBusy(false); }
   }
   return <section className="transaction-panel gpt-cdk-market mt-5" data-testid="tg-cdk-issuer">
-    <div className="section-title"><div><span className="eyebrow">TG CDK ISSUE</span><h2><KeyRound />免费生成 TG CDK</h2></div><Button asChild variant="outline" size="sm"><Link to="/tg-cdk/redeem">打开 TG CDK 兑换页</Link></Button></div>
-    <p className="gpt-cdk-market-intro">生成免费。兑换时由发行者的钱包承担授权范围内的开卡费、固定充值本金、充值费及 TG 服务费。官方款项从发行者所选卡扣除，兑换者无需登录或提供支付卡。</p>
+    <div className="section-title"><div><span className="eyebrow">TG CDK ISSUE</span><h2><KeyRound />{t("serviceText.generateTgCdksForFree")}</h2></div><Button asChild variant="outline" size="sm"><Link to="/tg-cdk/redeem">{t("serviceText.openTgCdkRedemption")}</Link></Button></div>
+    <p className="gpt-cdk-market-intro">{t("serviceText.generationIsFreeOnRedemptionTheIssuerS")}</p>
     <form className="admin-system-form" onSubmit={generate}>
       <div className="admin-system-form-grid">
         <p>Telegram Premium</p>
-        <label>充值时长<Select value={duration} onValueChange={setDuration} disabled={busy}><SelectTrigger aria-label="充值时长"><SelectValue /></SelectTrigger><SelectContent>{[["3m", "3 个月"], ["6m", "6 个月"], ["12m", "1 年"]].map(([value, label]) => <SelectItem value={value} key={value} disabled={!plans.find(item => item.key === `${tier}_${value}`)?.enabled}>{label}</SelectItem>)}</SelectContent></Select></label>
-        <label>数量<input name="quantity" type="number" min="1" max="50" step="1" defaultValue="1" required disabled={busy} /></label>
-        <label>支付卡模式<Select value={mode} onValueChange={setMode} disabled={busy}><SelectTrigger aria-label="支付卡模式"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="existing">使用现有卡</SelectItem><SelectItem value="new">每张 CDK 新开一张卡</SelectItem></SelectContent></Select></label>
-        {mode === "existing" ? <label>支付卡<Select value={cardId} onValueChange={setCardId} disabled={busy}><SelectTrigger aria-label="支付卡"><SelectValue placeholder="选择发行者卡片" /></SelectTrigger><SelectContent>{cards.filter(card => card.status === "ACTIVE" && !card.pendingOperationId).map(card => <SelectItem key={card.id} value={String(card.id)}>{card.cardNumberMasked} · USD {card.balance}</SelectItem>)}</SelectContent></Select></label> : <>
-          <label>开卡产品<Select value={productCode} onValueChange={setProductCode} disabled={busy || products.isLoading}><SelectTrigger aria-label="开卡产品"><SelectValue placeholder="选择开卡产品" /></SelectTrigger><SelectContent>{products.data?.data.map(item => <SelectItem value={item.productCode} key={item.productCode}>{item.network} · {item.productCode}</SelectItem>)}</SelectContent></Select></label>
-          <label>持卡人名<input name="firstName" required maxLength={64} disabled={busy} /></label><label>持卡人姓<input name="lastName" required maxLength={64} disabled={busy} /></label>
+        <label>{t("serviceText.subscriptionDuration")}<Select value={duration} onValueChange={setDuration} disabled={busy}><SelectTrigger aria-label={t("serviceText.subscriptionDuration")}><SelectValue /></SelectTrigger><SelectContent>{[["3m", t("serviceText.3Months")], ["6m", t("serviceText.6Months")], ["12m", t("serviceText.1Year")]].map(([value, label]) => <SelectItem value={value} key={value} disabled={!plans.find(item => item.key === `${tier}_${value}`)?.enabled}>{label}</SelectItem>)}</SelectContent></Select></label>
+        <label>{t("serviceText.quantity2")}<input name="quantity" type="number" min="1" max="50" step="1" defaultValue="1" required disabled={busy} /></label>
+        <label>{t("serviceText.paymentCardMode")}<Select value={mode} onValueChange={setMode} disabled={busy}><SelectTrigger aria-label={t("serviceText.paymentCardMode")}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="existing">{t("serviceText.useAnExistingCard")}</SelectItem><SelectItem value="new">{t("serviceText.openANewCardForEachCdk")}</SelectItem></SelectContent></Select></label>
+        {mode === "existing" ? <label>{t("serviceText.paymentCard")}<Select value={cardId} onValueChange={setCardId} disabled={busy}><SelectTrigger aria-label={t("serviceText.paymentCard")}><SelectValue placeholder={t("serviceText.chooseTheIssuerSCard")} /></SelectTrigger><SelectContent>{cards.filter(card => card.status === "ACTIVE" && !card.pendingOperationId).map(card => <SelectItem key={card.id} value={String(card.id)}>{card.cardNumberMasked} · USD {card.balance}</SelectItem>)}</SelectContent></Select></label> : <>
+          <label>{t("serviceText.cardProduct")}<Select value={productCode} onValueChange={setProductCode} disabled={busy || products.isLoading}><SelectTrigger aria-label={t("serviceText.cardProduct")}><SelectValue placeholder={t("serviceText.chooseACardProduct")} /></SelectTrigger><SelectContent>{products.data?.data.map(item => <SelectItem value={item.productCode} key={item.productCode}>{item.network} · {item.productCode}</SelectItem>)}</SelectContent></Select></label>
+          <label>{t("serviceText.cardholderFirstName")}<input name="firstName" required maxLength={64} disabled={busy} /></label><label>{t("serviceText.cardholderLastName")}<input name="lastName" required maxLength={64} disabled={busy} /></label>
         </>}
-        <label>每张卡固定充值金额（USD）<input name="fundingAmountUsd" type="number" min={mode === "new" ? product?.minAmount ?? "0.0001" : "0"} max={mode === "new" ? product?.maxAmount : undefined} step="0.0001" defaultValue="0" required disabled={busy} /></label>
-        <label>每张 CDK 钱包扣款上限（USD）<input name="maxWalletDebitUsd" type="number" min="0" max="10000" step="0.0001" required disabled={busy} /></label>
-        <label>官方金额上限（USD）<input name="officialAmount" type="number" min="0.01" step="0.01" required disabled={busy} /></label>
+        <label>{t("serviceText.fixedFundingAmountPerCardUsd")}<input name="fundingAmountUsd" type="number" min={mode === "new" ? product?.minAmount ?? "0.0001" : "0"} max={mode === "new" ? product?.maxAmount : undefined} step="0.0001" defaultValue="0" required disabled={busy} /></label>
+        <label>{t("serviceText.walletDebitLimitPerCdkUsd")}<input name="maxWalletDebitUsd" type="number" min="0" max="10000" step="0.0001" required disabled={busy} /></label>
+        <label>{t("serviceText.officialAmountLimitUsd")}<input name="officialAmount" type="number" min="0.01" step="0.01" required disabled={busy} /></label>
       </div>
-      {product && mode === "new" && <p>当前开卡费 USD {formatDecimal(product.openFee)}；充值费率 {formatDecimal(shiftDecimal(product.rechargeRate, 2))}%。执行前以后台核验的实际费用为准，超出授权上限即停止。</p>}
-      {products.isError && mode === "new" && <Notice role="alert" className="error">开卡产品加载失败，请稍后重试。</Notice>}
-      <p className="admin-settings-note">固定充值金额在兑换时执行，不自动追加充值。新开卡或充值后的剩余余额留在发行者卡内。钱包上限需覆盖全部钱包扣款；官方金额上限单独以 USD 授权，不把美元汇率估算当作扣款授权。</p>
-      <Button type="submit" disabled={busy || !plans.find(item => item.key === plan)?.enabled || (mode === "existing" ? !cardId : !productCode || products.isError)}><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: "免费生成 CDK", busy: "处理中…" }} /></Button>
+      {product && mode === "new" && <p>{t("serviceText.currentCardOpeningFeeUsd")}{formatDecimal(product.openFee)}{t("serviceText.fundingFeeRate")}{formatDecimal(shiftDecimal(product.rechargeRate, 2))}{t("serviceText.actualFeesAreVerifiedBeforeExecutionProcessingStops")}</p>}
+      {products.isError && mode === "new" && <Notice role="alert" className="error">{t("serviceText.failedToLoadCardProductsTryAgainLater")}</Notice>}
+      <p className="admin-settings-note">{t("serviceText.theFixedFundingAmountIsAppliedAtRedemption")}</p>
+      <Button type="submit" disabled={busy || !plans.find(item => item.key === plan)?.enabled || (mode === "existing" ? !cardId : !productCode || products.isError)}><StableSwap state={busy ? "busy" : "idle"} labels={{ idle: t("serviceText.generateCdksForFree"), busy: t("serviceText.processing2") }} /></Button>
     </form>
     {error && <Notice className="admin-alert is-error" role="alert">{error}</Notice>}{notice && <Notice className="admin-alert is-success" role="status">{notice}</Notice>}
-    {issued.length > 0 && <div className="gpt-cdk-purchase-result"><div className="gpt-cdk-code-list">{issued.map(item => <div key={item.id}><code>{item.code ?? item.codePrefix}</code><Button size="xs" variant="outline" disabled={busy} onClick={() => void copy(item.id)}><Copy />复制</Button></div>)}</div></div>}
-    <div className="section-title gpt-cdk-history-title"><h2>我的 TG CDK</h2><Button size="sm" variant="outline" disabled={busy || !unused.length} onClick={() => void exportUnused()}><Download />导出未用 CDK</Button></div>
-    {cdks.isLoading ? <p className="gpt-list-state">正在加载 CDK…</p> : cdks.isError ? <Notice className="gpt-list-state" role="alert">CDK 加载失败。<Button variant="outline" size="sm" onClick={() => void cdks.refetch()}>重试</Button></Notice> : !cdks.data?.data.list.length ? <p className="gpt-list-state">暂无 TG CDK</p> : cdks.data.data.list.map(item => <div className="gpt-order-history-row" key={item.id}><div className="gpt-order-row"><div className="gpt-order-row-main is-static"><span><strong>{item.codePrefix}</strong><small>{plans.find(p => p.key === item.plan)?.label ?? item.plan} · {statuses[item.status] ?? "待核对"}{item.recipient ? ` · @${item.recipient}` : ""}</small><small>兑换钱包预算 USD {formatDecimal(item.totalWalletDebitUsd)} / 授权上限 USD {formatDecimal(item.maxWalletDebitUsd)} · 服务费 USD {formatDecimal(item.serviceFee)}</small><small>{item.cardId != null ? `支付卡 #${item.cardId} · ` : ""}开卡费 USD {item.openFeeUsd == null ? "待查询" : formatDecimal(item.openFeeUsd)} · 充值费 USD {item.fundingFeeUsd == null ? "待查询" : formatDecimal(item.fundingFeeUsd)}{item.fundingDispatched ? " · 开卡/充值已发起" : ""}{item.paymentDispatched ? " · 官方付款已发起" : ""}</small><small>固定充值 USD {formatDecimal(item.fundingAmountUsd)} · 官方上限 {item.currency.toUpperCase()} {(item.maxOfficialAmountMinor / 100).toFixed(2)}</small></span><span className="gpt-cdk-history-actions">{item.status === "unused" && <><Button size="xs" variant="outline" disabled={busy} onClick={() => void copy(item.id)}>复制兑换码</Button><Button size="xs" variant="outline" disabled={busy} onClick={() => void revoke(item.id)}>撤销未用 CDK</Button></>}</span></div></div></div>)}
+    {issued.length > 0 && <div className="gpt-cdk-purchase-result"><div className="gpt-cdk-code-list">{issued.map(item => <div key={item.id}><code>{item.code ?? item.codePrefix}</code><Button size="xs" variant="outline" disabled={busy} onClick={() => void copy(item.id)}><Copy />{t("serviceText.copy")}</Button></div>)}</div></div>}
+    <div className="section-title gpt-cdk-history-title"><h2>{t("serviceText.myTgCdks")}</h2><Button size="sm" variant="outline" disabled={busy || !unused.length} onClick={() => void exportUnused()}><Download />{t("serviceText.exportUnusedCdks")}</Button></div>
+    {cdks.isLoading ? <p className="gpt-list-state">{t("serviceText.loadingCdks")}</p> : cdks.isError ? <Notice className="gpt-list-state" role="alert">{t("serviceText.failedToLoadCdks")}<Button variant="outline" size="sm" onClick={() => void cdks.refetch()}>{t("serviceText.retry")}</Button></Notice> : !cdks.data?.data.list.length ? <p className="gpt-list-state">{t("serviceText.noTgCdksYet")}</p> : cdks.data.data.list.map(item => <div className="gpt-order-history-row" key={item.id}><div className="gpt-order-row"><div className="gpt-order-row-main is-static"><span><strong>{item.codePrefix}</strong><small>{tgPlanLabel(item.plan, plans.find(p => p.key === item.plan)?.label)} · {statuses[item.status] ?? t("serviceText.underReview")}{item.recipient ? ` · @${item.recipient}` : ""}</small><small>{t("serviceText.redemptionWalletBudgetUsd")}{formatDecimal(item.totalWalletDebitUsd)} {t("serviceText.authorizedLimitUsd")}{formatDecimal(item.maxWalletDebitUsd)} {t("serviceText.serviceFeeUsd")}{formatDecimal(item.serviceFee)}</small><small>{item.cardId != null ? t("serviceText.paymentCard2", { cardId: item.cardId }) : ""}{t("serviceText.cardOpeningFeeUsd")}{item.openFeeUsd == null ? t("serviceText.pending") : formatDecimal(item.openFeeUsd)} {t("serviceText.fundingFeeUsd")}{item.fundingFeeUsd == null ? t("serviceText.pending") : formatDecimal(item.fundingFeeUsd)}{item.fundingDispatched ? t("serviceText.cardOpeningFundingInitiated") : ""}{item.paymentDispatched ? t("serviceText.officialPaymentInitiated") : ""}</small><small>{t("serviceText.fixedFundingUsd")}{formatDecimal(item.fundingAmountUsd)} {t("serviceText.officialLimit")}{item.currency.toUpperCase()} {(item.maxOfficialAmountMinor / 100).toFixed(2)}</small></span><span className="gpt-cdk-history-actions">{item.status === "unused" && <><Button size="xs" variant="outline" disabled={busy} onClick={() => void copy(item.id)}>{t("serviceText.copyRedemptionCode")}</Button><Button size="xs" variant="outline" disabled={busy} onClick={() => void revoke(item.id)}>{t("serviceText.revokeUnusedCdk")}</Button></>}</span></div></div></div>)}
   </section>;
 }

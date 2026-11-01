@@ -1,3 +1,4 @@
+import { t as ledgerT } from "i18next";
 import { Notice, NoticeScope } from "../components/ui/notice";
 import { formatDecimal, formatRateAsPercent } from "../decimal";
 import { useRef, useState, type FormEvent } from "react";
@@ -284,7 +285,7 @@ export function CardsPage() {
           {card.note?.trim() ? <p className="owned-card-note" data-testid="owned-card-note" title={card.note}>{card.note}</p> : null}
           {cardRate && <p className="owned-card-rate">{cardRate}</p>}
           {pendingStatus && <p role="status">{card.pendingOperationError || t(["FREEZE", "UNFREEZE"].includes(card.pendingOperationType ?? "") ? "cardStatusPendingHint" : "operationPendingDoNotRetry")}</p>}
-          {card.pendingOperationType === "GPT_DIRECT" && card.pendingOperationId && <p role="status">直充订单占用此卡 · <Link to="/gpt-direct/orders/$orderId" params={{ orderId: card.pendingOperationId }}>查看直充订单</Link></p>}
+          {card.pendingOperationType === "GPT_DIRECT" && card.pendingOperationId && <p role="status">{ledgerT("ledgerText.thisCardIsInUseByADirect")}<Link to="/gpt-direct/orders/$orderId" params={{ orderId: card.pendingOperationId }}>{ledgerT("ledgerText.viewDirectOrder")}</Link></p>}
           <div><small>{card.firstName} {card.lastName}</small><span className={`card-status-badge is-${statusClass}`}>{statusLabel}</span><b>${formatDecimal(card.balance)}</b></div>
           <div className="card-actions">
             <Button asChild size="xs" variant="outline"><Link to="/cards/$cardId" params={{ cardId: String(card.id) }}>{t("details")}</Link></Button>

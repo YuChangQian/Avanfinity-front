@@ -3911,7 +3911,7 @@ test("referral link preserves the first attribution across page restarts", async
   await expect(page.getByTestId("referral-policy-summary")).toContainText("confirmed positive profit");
   await expect(page.getByTestId("referral-policy")).toContainText("locked when the order is created");
   await expect(page.locator(".referral-balance-note")).toContainText("external addresses");
-  await page.getByRole("button", { name: "中文", exact: true }).click();
+  await page.getByRole("button", { name: "Chinese", exact: true }).click();
   referralDisplayMode = "profit_share";
   await page.reload();
   await expect(page.getByTestId("referral-policy-summary")).toContainText("50%");
@@ -7222,7 +7222,7 @@ test("admin system settings keep SMTP secrets ephemeral and feature switches pre
   await expect(paymentRiskSection).toContainText("低于 20% 时释放，等于 20% 时仍锁定");
   await page.getByRole("button", { name: "English", exact: true }).click();
   await expect(paymentRiskSection).toContainText("release below 20%, and remain reserved at exactly 20%");
-  await page.getByRole("button", { name: "中文", exact: true }).click();
+  await page.getByRole("button", { name: "Chinese", exact: true }).click();
   await reserveRatio.fill("25");
   await saveRisk.click();
   await expect(page.locator(".notification-stack").getByRole("alert").filter({ hasText: "请重新认证后继续敏感操作" })).toBeVisible();

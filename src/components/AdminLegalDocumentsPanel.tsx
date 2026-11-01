@@ -1,3 +1,5 @@
+import { t as adminT } from "i18next";
+import { useTranslation } from "react-i18next";
 import { Notice } from "./ui/notice";
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -7,11 +9,12 @@ import { Button } from "./ui/button";
 import { StableSwap } from "./StableSwap";
 
 export function AdminLegalDocumentsPanel({ token }: { token: string }) {
+  useTranslation();
   const documents = useQuery({ queryKey: ["legal-documents"], queryFn: getLegalDocuments, retry: false });
   if (documents.isLoading) {
     return (
       <section className="admin-surface legal-editor" aria-busy="true">
-        <div className="admin-state">正在加载服务条款与用户协议…</div>
+        <div className="admin-state">{adminT("adminText.loadingTermsOfServiceAndUserAgreement")}</div>
       </section>
     );
   }
@@ -19,8 +22,8 @@ export function AdminLegalDocumentsPanel({ token }: { token: string }) {
     return (
       <section className="admin-surface legal-editor">
         <Notice className="admin-state is-error" role="alert">
-          <span>协议内容加载失败。</span>
-          <Button size="sm" variant="outline" onClick={() => void documents.refetch()}>重试</Button>
+          <span>{adminT("adminText.unableToLoadLegalDocuments")}</span>
+          <Button size="sm" variant="outline" onClick={() => void documents.refetch()}>{adminT("adminText.retry")}</Button>
         </Notice>
       </section>
     );
@@ -29,6 +32,7 @@ export function AdminLegalDocumentsPanel({ token }: { token: string }) {
 }
 
 function LegalDocumentsForm({ token, initial }: { token: string; initial: LegalDocuments }) {
+  useTranslation();
   const client = useQueryClient();
   const [terms, setTerms] = useState(initial.terms);
   const [userAgreement, setUserAgreement] = useState(initial.userAgreement);
@@ -41,18 +45,18 @@ function LegalDocumentsForm({ token, initial }: { token: string; initial: LegalD
       setTerms(response.data.terms);
       setUserAgreement(response.data.userAgreement);
       client.setQueryData(["legal-documents"], response);
-      setNotice("服务条款与用户协议已更新");
+      setNotice(adminT("adminText.termsOfServiceAndUserAgreementUpdated"));
     },
-    onError: (error) => setNotice(error instanceof Error ? error.message : "保存失败"),
+    onError: (error) => setNotice(error instanceof Error ? error.message : adminT("adminText.unableToSave")),
   });
   function submit(event: FormEvent) { event.preventDefault(); save.mutate(); }
 
   return <section className="admin-surface legal-editor" data-testid="admin-legal-documents">
-    <div className="admin-section-heading"><div><span className="admin-kicker">LEGAL</span><h2><FileText />服务条款与用户协议</h2><p>修改后会立即展示在公开页面；内容以纯文本安全呈现。</p></div></div>
+    <div className="admin-section-heading"><div><span className="admin-kicker">LEGAL</span><h2><FileText />{adminT("adminText.termsOfServiceAndUserAgreement")}</h2><p>{adminT("adminText.changesAppearOnPublicPagesImmediatelyContent")}</p></div></div>
     <form onSubmit={submit}>
-      <label>服务条款<textarea value={terms} onChange={(event) => setTerms(event.target.value)} rows={20} minLength={100} required /></label>
-      <label>用户协议<textarea value={userAgreement} onChange={(event) => setUserAgreement(event.target.value)} rows={16} minLength={100} required /></label>
-      <div className="admin-form-actions"><Button disabled={save.isPending || terms.trim().length < 100 || userAgreement.trim().length < 100}><Save /><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: "保存协议", busy: "保存中…" }} /></Button><span>版本 {version}</span></div>
+      <label>{adminT("adminText.termsOfService")}<textarea value={terms} onChange={(event) => setTerms(event.target.value)} rows={20} minLength={100} required /></label>
+      <label>{adminT("adminText.userAgreement")}<textarea value={userAgreement} onChange={(event) => setUserAgreement(event.target.value)} rows={16} minLength={100} required /></label>
+      <div className="admin-form-actions"><Button disabled={save.isPending || terms.trim().length < 100 || userAgreement.trim().length < 100}><Save /><StableSwap state={save.isPending ? "busy" : "idle"} labels={{ idle: adminT("adminText.saveLegalDocuments"), busy: adminT("adminText.saving") }} /></Button><span>{adminT("adminText.version")}{version}</span></div>
       {notice && <Notice className={`admin-alert ${save.isError ? "is-error" : "is-success"}`} role={save.isError ? "alert" : "status"}>{notice}</Notice>}
     </form>
   </section>;

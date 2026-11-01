@@ -1,3 +1,4 @@
+import adminI18n from "i18next";
 import { Notice } from "./ui/notice";
 import { formatDecimal } from "../decimal";
 import { useState, type FormEvent } from "react";
@@ -335,7 +336,7 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
         <p className="admin-settings-note">{t("smtpTestRecipientHint", { email: smtp.fromEmail || "—" })} {smtpDirty ? t("smtpSaveBeforeTest") : ""}</p>
         <dl className="admin-smtp-status" aria-label={t("smtpDeliveryStatus")}>
           <div><dt>{t("smtpReady")}</dt><dd><span className={`status-pill ${smtp.ready ? "is-active" : ""}`}>{smtp.ready ? t("ready") : t("notReady")}</span></dd></div>
-          <div><dt>{t("smtpLastTest")}</dt><dd>{t(`smtpTestStatus.${smtp.lastTestStatus}`)}{smtp.lastTestAt ? ` · ${new Date(smtp.lastTestAt).toLocaleString()}` : ""}</dd></div>
+          <div><dt>{t("smtpLastTest")}</dt><dd>{t(`smtpTestStatus.${smtp.lastTestStatus}`)}{smtp.lastTestAt ? ` · ${new Date(smtp.lastTestAt).toLocaleString(adminI18n.language === "en" ? "en-US" : "zh-CN")}` : ""}</dd></div>
           {smtp.lastErrorCode && <div><dt>{t("smtpLastErrorCode")}</dt><dd><code>{smtp.lastErrorCode}</code></dd></div>}
         </dl>
         {smtpNotice && <Notice className={`admin-alert ${smtpNoticeError ? "is-error" : "is-success"}`} role={smtpNoticeError ? "alert" : "status"}>{smtpNotice}</Notice>}
@@ -414,10 +415,10 @@ function SystemSettingsForms({ token, initial }: { token: string; initial: Admin
           <div><dt>{deposit.network === "SOL" ? t("usdtTokenMint") : t("depositTokenContract")}</dt><dd><code>{deposit.tokenContract}</code></dd></div>
           {deposit.network !== "SOL" && <div><dt>{t("depositApiCredential")}</dt><dd>{deposit.apiKeyConfigured ? t("depositCredentialConfigured") : t("depositCredentialNotConfigured")}</dd></div>}
           <div><dt>{t("depositAddressCount")}</dt><dd>{deposit.addresses.length}</dd></div>
-          <div><dt>{t("depositLastTest")}</dt><dd>{t(`depositTestStatus.${deposit.lastTestStatus}`)}{deposit.lastTestAt ? ` · ${new Date(deposit.lastTestAt).toLocaleString()}` : ""}</dd></div>
-          <div><dt>{t("depositLastSuccess")}</dt><dd>{deposit.lastSuccessAt ? new Date(deposit.lastSuccessAt).toLocaleString() : "—"}</dd></div>
+          <div><dt>{t("depositLastTest")}</dt><dd>{t(`depositTestStatus.${deposit.lastTestStatus}`)}{deposit.lastTestAt ? ` · ${new Date(deposit.lastTestAt).toLocaleString(adminI18n.language === "en" ? "en-US" : "zh-CN")}` : ""}</dd></div>
+          <div><dt>{t("depositLastSuccess")}</dt><dd>{deposit.lastSuccessAt ? new Date(deposit.lastSuccessAt).toLocaleString(adminI18n.language === "en" ? "en-US" : "zh-CN") : "—"}</dd></div>
         </dl>
-        {deposit.lastError && <Notice className="admin-alert is-error" role="note"><span><strong>{t("depositLastError")}</strong>{deposit.lastErrorAt ? ` · ${new Date(deposit.lastErrorAt).toLocaleString()}` : ""}<br />{deposit.lastError}</span></Notice>}
+        {deposit.lastError && <Notice className="admin-alert is-error" role="note"><span><strong>{t("depositLastError")}</strong>{deposit.lastErrorAt ? ` · ${new Date(deposit.lastErrorAt).toLocaleString(adminI18n.language === "en" ? "en-US" : "zh-CN")}` : ""}<br />{deposit.lastError}</span></Notice>}
         {depositNotice && <Notice className={`admin-alert ${depositNoticeError ? "is-error" : "is-success"}`} role={depositNoticeError ? "alert" : "status"}>{depositNotice}</Notice>}
         <div className="admin-form-actions">
           <Button type="button" variant="outline" disabled={!savedDepositComplete || saveDeposits.isPending || testDeposits.isPending} onClick={() => { setDepositNotice(""); testDeposits.mutate(); }}><RefreshCw /><StableSwap state={testDeposits.isPending ? "busy" : "idle"} labels={{ idle: t("testDepositMonitor"), busy: t("depositTesting") }} /></Button>

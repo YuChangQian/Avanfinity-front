@@ -2780,12 +2780,12 @@ export const publicTgCdkResult = (input: { code: string; deviceToken: string; cl
 export type SmsMessage = { id: string; code: string | null; text: string | null; receivedAt: string };
 export type SmsOrder = { originalPrice?: string; durationHours?: number | null; canCancel: boolean; cancelAvailableAt: string | null; cancellationDeadline?: string | null; id: string; service: string; country: number; status: string; price: string; refundedAmount: string; currency: 'USD'; phone: string | null; expiresAt: string | null; createdAt: string; messages: SmsMessage[] };
 export type SmsOrderList = { list: SmsOrder[]; page: number; hasMore: boolean };
-export type SmsCatalog = { enabled: boolean; currency: 'USD'; services: Array<{ code: string; name: string }>; countries: Array<{ id: number; name: string }> };
+export type SmsCatalog = { enabled: boolean; currency: 'USD'; services: Array<{ code: string; name: string }>; countries: Array<{ id: number; name: string; nameEn?: string | null }> };
 export type SmsOffers = { currency: 'USD'; services?: Array<{ service: string; price: string; count: number; popularityRank?: number }>; countries?: Array<{ country: number; price: string; count: number; qualityRank?: number; popularityRank?: number; durationHours?: number | null }>; unavailableServices?: string[] };
 export const getSmsOffers = (token: string, service?: string) => request<{ code: number; data: SmsOffers }>(`/sms/offers${service ? `?service=${encodeURIComponent(service)}` : ''}`, { headers: smsHeaders(token) });
 export type SmsQuote = { durationHours?: number | null; id: string; price: string; currency: 'USD'; expiresAt: string };
 export type SmsSettings = { enabled: boolean; markupPercent: string; version: number; currency: 'USD'; configured: boolean; purchasesReady: boolean };
-export type AdminSmsOrder = SmsOrder & { ownerUserId: number; cost?: string | null; costLimit?: string; actualCost?: string | null; markupPercent: string; activationId: string | null };
+export type AdminSmsOrder = SmsOrder & { ownerUserId: number; ownerEmail: string | null; ownerDisplayName: string; cost: string | null; costLimit: string; actualCost: string | null; markupPercent: string; pricingVersion: number; activationId: string | null; creatorApiKeyId: number | null; purchaseStartedAt: string | null; cancellationConfirmedAt: string | null; updatedAt: string; walletEntries?: Array<{ id: number; type: string; amount: string; balanceBefore: string; balanceAfter: string; remark: string | null; createdAt: string }> };
 const smsHeaders = (token: string) => ({ authorization: `Bearer ${token}` });
 export const getSmsCatalog = (token: string) => request<{ code: number; data: SmsCatalog }>('/sms/catalog', { headers: smsHeaders(token) });
 export const getSmsQuote = (token: string, service: string, country: number, durationHours?: number) => request<{ code: number; data: SmsQuote }>('/sms/quotes', { method: 'POST', headers: smsHeaders(token), body: JSON.stringify({ service, country, ...(durationHours !== undefined ? { durationHours } : {}) }) });
@@ -2795,10 +2795,11 @@ export const getSmsOrder = (token: string, id: string) => request<{ code: number
 export const smsOrderAction = (token: string, id: string, action: 'cancel' | 'finish') => request<{ code: number; data: SmsOrder }>(`/sms/orders/${encodeURIComponent(id)}/${action}`, { method: 'POST', headers: smsHeaders(token), body: '{}' }, true);
 export const getAdminSmsSettings = (token: string) => request<{ code: number; data: SmsSettings }>('/admin/sms/settings', { headers: smsHeaders(token) });
 export const updateAdminSmsSettings = (token: string, input: { enabled: boolean; markupPercent: string; version: number }) => request<{ code: number; data: SmsSettings }>('/admin/sms/settings', { method: 'PATCH', headers: smsHeaders(token), body: JSON.stringify(input) });
-export const getAdminSmsOrders = (token: string, filters: { page: number; status?: string; userId?: number }) => {
+export const getAdminSmsOrders = (token: string, filters: { page: number; status?: string; userId?: number; q?: string }) => {
   const q = new URLSearchParams({ page: String(filters.page) });
   if (filters.status) q.set('status', filters.status);
   if (filters.userId) q.set('userId', String(filters.userId));
+  if (filters.q) { const value = filters.q.trim(); q.set('q', /^\+\d[\d\s()-]*$/.test(value) ? value.replace(/\D/g, '') : value); }
   return request<{ code: number; data: Omit<SmsOrderList, 'list'> & { list: AdminSmsOrder[] } }>(`/admin/sms/orders?${q}`, { headers: smsHeaders(token) });
 };
 export const getAdminSmsOrder = (token: string, id: string) => request<{ code: number; data: AdminSmsOrder }>(`/admin/sms/orders/${encodeURIComponent(id)}`, { headers: smsHeaders(token) });

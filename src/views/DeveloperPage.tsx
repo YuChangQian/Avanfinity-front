@@ -1,6 +1,7 @@
+import { localizeOpenApi } from "../locales/openapiDisplay";
 import { Notice } from "../components/ui/notice";
 import { useConfirm } from "@/components/ui/confirm";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useAtomValue } from "jotai";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "@tanstack/react-router";
@@ -44,8 +45,8 @@ const scopeGroups: Array<{ label: string; hint: string; options: Array<{ value: 
       { value: "account:read", label: "scopeAccountRead" },
       { value: "cards:read", label: "scopeCardsRead" },
       { value: "gpt:read", label: "scopeGptRead" },
-      { value: "sms:read", label: "读取收码服务与订单" },
-      { value: "tg-direct:read", label: "读取 TG 套餐与订单" },
+      { value: "sms:read", label: "siteText.smsRead" },
+      { value: "tg-direct:read", label: "siteText.tgRead" },
       { value: "cdk:read", label: "scopeCdkRead" },
       { value: "operations:read", label: "scopeOperationsRead" },
     ],
@@ -60,8 +61,8 @@ const scopeGroups: Array<{ label: string; hint: string; options: Array<{ value: 
       { value: "cards:recharge", label: "scopeCardsRecharge" },
       { value: "deposits:create", label: "scopeDepositsCreate" },
       { value: "gpt:write", label: "scopeGptWrite" },
-      { value: "sms:write", label: "购买收码号码、取消和结束订单" },
-      { value: "tg-direct:write", label: "提交 TG 直充" },
+      { value: "sms:write", label: "siteText.smsWrite" },
+      { value: "tg-direct:write", label: "siteText.tgWrite" },
       { value: "cdk:purchase", label: "scopeCdkPurchase" },
     ],
   },
@@ -281,7 +282,7 @@ function curlExample(
 }
 
 function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("");
@@ -291,14 +292,16 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
     staleTime: 5 * 60_000,
   });
 
+  const specification = useMemo(() => query.data ? localizeOpenApi(query.data, i18n.language) : undefined, [query.data, i18n.language]);
+
   if (query.isError) return <section className="openapi-browser" id="api-reference">
     <Notice className="developer-webhook-state" role="alert"><span>{t("openApiLoadFailed")}</span><Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button></Notice>
   </section>;
-  if (!query.data) return <section className="openapi-browser" id="api-reference"><div className="developer-webhook-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</div></section>;
+  if (!specification) return <section className="openapi-browser" id="api-reference"><div className="developer-webhook-state loading-skeleton loading-skeleton-block" aria-label={t("loading")}>{t("loading")}</div></section>;
 
   const spec = {
-    ...query.data,
-    paths: Object.fromEntries(Object.entries(query.data.paths).filter(([path]) => !/(?:^|\/)x-(?:direct|cdk)(?:\/|$)/.test(path))),
+    ...specification,
+    paths: Object.fromEntries(Object.entries(specification.paths).filter(([path]) => !/(?:^|\/)x-(?:direct|cdk)(?:\/|$)/.test(path))),
   };
   const operations = Object.entries(spec.paths).flatMap(([path, item]) => httpMethods.flatMap((method) => {
     const operation = item[method];
@@ -480,7 +483,7 @@ function OpenApiBrowser({ baseUrl }: { baseUrl: string }) {
 export function DeveloperPage() {
   const confirm = useConfirm();
   const session = useAtomValue(sessionAtom);
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const client = useQueryClient();
   const { flags } = useFeatures();
   const [secrets, setSecrets] = useState<{ appSecret?: string; webhookSecret: string } | null>(null);
@@ -612,7 +615,7 @@ export DEPOSIT_IDEMPOTENCY_KEY="$(uuidgen)"
 curl -sS "$BASE_URL/products" \\
   -H "X-App-Id: $APP_ID" -H "X-App-Secret: $APP_SECRET"
 
-# 从 products 的同一个产品对象复制以下字段；初始充值手续费按 INIT_AMOUNT * RECHARGE_RATE 向上取整到 4 位小数。
+# ${t("siteText.copyProductFields")}
 export PRODUCT_CODE='PRODUCT_CODE'
 export OPEN_FEE='OPEN_FEE'
 export OPEN_INITIAL_RECHARGE_FEE='INITIAL_RECHARGE_FEE'
@@ -627,7 +630,7 @@ curl -sS -X POST "$BASE_URL/cards/CARD_ID/recharge-quote" \\
   -H "X-App-Id: $APP_ID" -H "X-App-Secret: $APP_SECRET" -H "Content-Type: application/json" \\
   -d '{"amount":"10.00"}'
 
-# 从 recharge-quote 响应复制 data.fee；报价变化时重新报价并使用新的 Idempotency-Key。
+# ${t("siteText.copyRechargeFee")}
 export RECHARGE_FEE='RECHARGE_FEE'
 
 curl -sS -X POST "$BASE_URL/cards/CARD_ID/recharge" \\
@@ -695,9 +698,9 @@ const depositStatus = await call("/deposits/" + deposit.body.data.gatewayRef);
 const operation = await call("/operations/" + operationId);`;
 
   return <PageShell eyebrow="DEVELOPER" title={t("developerTitle")} description={t("developerDesc")} className="developer-page">
-    <nav className="developer-section-nav" aria-label="API 页面导航">
-      <a href="#developer-apps">{i18n.language === "en" ? "Applications" : "应用管理"}</a>
-      <a href="#developer-guide">{i18n.language === "en" ? "Integration guide" : "接入指南"}</a>
+    <nav className="developer-section-nav" aria-label={t("siteText.apiNavigation")}>
+      <a href="#developer-apps">{t("siteText.applications")}</a>
+      <a href="#developer-guide">{t("siteText.integrationGuide")}</a>
       <a href="#api-reference">{t("apiDocumentation")}</a>
     </nav>
     <section className="deposit-panel developer-key-create">
@@ -727,7 +730,7 @@ const operation = await call("/operations/" + operationId);`;
     </section>
     {error && <Notice className="admin-alert is-error" role="alert">{error}</Notice>}
     <section className="transaction-panel developer-keys" id="developer-apps">
-      <div className="section-title"><h2>{i18n.language === "en" ? "Applications" : "应用管理"}</h2><span>{query.data.data.length} / 5</span></div>
+      <div className="section-title"><h2>{t("siteText.applications")}</h2><span>{query.data.data.length} / 5</span></div>
       {query.data.data.length === 0
         ? <div className="empty-state">{t("noKeys")}</div>
         : query.data.data.map((key) => <form className="transaction-row developer-key-form" key={key.id} onSubmit={(event) => submitKey(event, key.id)}>
@@ -750,11 +753,11 @@ const operation = await call("/operations/" + operationId);`;
             </div>
             <fieldset className="developer-scope-fieldset">
               <legend>{t("apiScopes")}</legend>
-              <details><summary>已有接入的兼容设置</summary>
-              <label>兼容接口产品授权（逗号分隔）<input name="cdkProductIds" defaultValue={(key.cdkProductIds ?? []).join(',')} placeholder="gpt.plus,x.premium_3m,tg.premium_3m" /></label>
-              <p>权限预设仅修改 CDK scope；产品须明确填写，旧权限不会自动升级。写权限须 IP 白名单。</p>
-              {([['只读', ['cdk:read']], ['发行', ['cdk:read','cdk:configure','cdk:issue']], ['完整管理', ['cdk:read','cdk:configure','cdk:issue','cdk:export','cdk:revoke']]] as const).map(([label, selected]) => <button key={label} type="button" onClick={event => { const form = event.currentTarget.closest('form'); form?.querySelectorAll<HTMLInputElement>('input[name="scopes"]').forEach(input => { if (input.value.startsWith('cdk:') && input.value !== 'cdk:purchase') input.checked = (selected as readonly string[]).includes(input.value); }); }}>{label}</button>)}
-              <div className="developer-scopes">{([['configure','配置模板'],['issue','发行'],['export','导出'],['revoke','撤销']] as const).map(([value,label]) => <label key={value}>
+              <details><summary>{t("siteText.compatibility")}</summary>
+              <label>{t("siteText.compatibilityProducts")}<input name="cdkProductIds" defaultValue={(key.cdkProductIds ?? []).join(',')} placeholder="gpt.plus,x.premium_3m,tg.premium_3m" /></label>
+              <p>{t("siteText.compatibilityHint")}</p>
+              {([[t("siteText.readOnly"), ['cdk:read']], [t("siteText.issue"), ['cdk:read','cdk:configure','cdk:issue']], [t("siteText.fullManagement"), ['cdk:read','cdk:configure','cdk:issue','cdk:export','cdk:revoke']]] as const).map(([label, selected]) => <button key={label} type="button" onClick={event => { const form = event.currentTarget.closest('form'); form?.querySelectorAll<HTMLInputElement>('input[name="scopes"]').forEach(input => { if (input.value.startsWith('cdk:') && input.value !== 'cdk:purchase') input.checked = (selected as readonly string[]).includes(input.value); }); }}>{label}</button>)}
+              <div className="developer-scopes">{([['configure',t("siteText.configure")],['issue',t("siteText.issue")],['export',t("siteText.export")],['revoke',t("siteText.revoke")]] as const).map(([value,label]) => <label key={value}>
                 <input name="scopes" type="checkbox" value={`cdk:${value}`} defaultChecked={key.scopes.includes(`cdk:${value}`)} />
                 <span>{label}</span><code>{`cdk:${value}`}</code>
               </label>)}</div>

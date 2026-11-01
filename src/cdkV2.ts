@@ -1,3 +1,4 @@
+import i18n from './i18n';
 export async function cdkRequest<T>(path: string, input?: unknown, token?: string, method = input === undefined ? 'GET' : 'POST', idempotencyKey?: string): Promise<T> {
   const response = await fetch(`/api/${token !== undefined ? 'cdk-v2' : 'public/v2/cdk'}/${path}`, {
     credentials: 'same-origin',
@@ -5,6 +6,6 @@ export async function cdkRequest<T>(path: string, input?: unknown, token?: strin
     ...(input === undefined ? {} : { body: JSON.stringify(input) }),
   });
   const body = await response.json();
-  if (!response.ok) throw new Error(`${body.error?.message ?? '请求失败'} (${body.requestId ?? response.status})`);
+  if (!response.ok) throw new Error(`${body.error?.message ?? i18n.t('cdkText.requestFailed')} (${body.requestId ?? response.status})`);
   return body.data;
 }

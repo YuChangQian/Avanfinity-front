@@ -10,7 +10,7 @@ const targetServer = {
   env: { VITE_STYLE_PREVIEW: "1" }, url: "http://127.0.0.1:15185", reuseExistingServer: false,
 };
 export default defineConfig({
-  testDir: "./tests", testMatch: ["ui-style.spec.ts", "ui-refinement.spec.ts", "floating-notices.spec.ts"],
+  testDir: "./tests", testMatch: ["ui-style.spec.ts", "ui-refinement.spec.ts", "floating-notices.spec.ts", "i18n-coverage.spec.ts"],
   outputDir: "./test-results/ui-style",
   use: { baseURL: "http://127.0.0.1:15185", trace: "retain-on-failure" },
   webServer: preview ? [fixtureServer, targetServer] : targetServer,

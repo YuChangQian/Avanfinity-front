@@ -1,3 +1,4 @@
+import ledgerI18n, { t as ledgerT } from "i18next";
 import { Notice, NoticeScope } from "../components/ui/notice";
 import { formatDecimal, formatRateAsPercent } from "../decimal";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -283,7 +284,7 @@ export function CardDetailPage() {
       </div>
       {flags.gptDirect && <section className="transaction-panel"><div className="section-title"><div><h2>{t("paymentPerformanceTitle")}</h2><p>{t("paymentPerformanceCardHint")}</p></div></div><div className="payment-risk-metrics"><DataSkeleton /><DataSkeleton /><DataSkeleton /></div></section>}
       <section className="transaction-panel card-operations-panel"><div className="section-title"><div><h2><CreditCard /> {t("cardOperations")}</h2><p>{t("cardOperationsDesc")}</p></div><DataSkeleton /></div><div className="card-operation-body"><dl>{["rechargeAmountRangeLabel", "rechargeRate", "transactionRefundRate", "refundableAmount"].map((label) => <div key={label}><dt>{t(label)}</dt><dd><DataSkeleton /></dd></div>)}</dl><div className="card-operation-actions"><Button disabled>{t("recharge")}</Button><Button variant="secondary" disabled>{t("refund")}</Button><Button variant="outline" disabled>{t("freeze")}</Button></div></div></section>
-      <section className="transaction-panel"><div className="section-title"><div><h2><ReceiptText />统一卡流水</h2><p>开卡、充值、退款、销卡退款、费用和消费按时间合并展示。</p></div><DataSkeleton /></div>{[0, 1, 2].map((item) => <article className="transaction-row" key={item}><div className="transaction-icon"><WalletCards /></div><div><strong><DataSkeleton /></strong><small><DataSkeleton /></small><small><DataSkeleton /></small></div><span><DataSkeleton /></span></article>)}</section>
+      <section className="transaction-panel"><div className="section-title"><div><h2><ReceiptText />{ledgerT("ledgerText.unifiedCardLedger")}</h2><p>{ledgerT("ledgerText.cardOpeningFundingRefundsClosureRefundsFees")}</p></div><DataSkeleton /></div>{[0, 1, 2].map((item) => <article className="transaction-row" key={item}><div className="transaction-icon"><WalletCards /></div><div><strong><DataSkeleton /></strong><small><DataSkeleton /></small><small><DataSkeleton /></small></div><span><DataSkeleton /></span></article>)}</section>
     </div>
   </PageShell>;
   const loadedDetail = card.data.data;
@@ -378,7 +379,7 @@ export function CardDetailPage() {
         <div className="section-title"><h2><ShieldCheck /> {t("cardSecurityDetails")}</h2><div className="card-detail-actions"><Button variant="outline" onClick={() => { setSyncNotice(null); sync.mutate(); }} disabled={sync.isPending}><RefreshCw className={sync.isPending ? "is-spinning" : undefined} /><StableSwap state={sync.isPending ? "busy" : "idle"} labels={{ idle: t("refreshCardData"), busy: t("refreshing") }} /></Button>{!readOnlyCard && <Button variant="outline" onClick={toggleSensitive}>{visible ? <EyeOff /> : <Eye />}<StableSwap state={visible ? "alt" : "idle"} labels={{ idle: t("showDetails"), alt: t("hideDetails") }} /></Button>}</div></div>
         <p>{t(cardClosing ? "cardClosingHint" : cardClosed ? "cardClosedHint" : "sensitiveCardHint")}</p>
         {syncNotice && <Notice role={syncNotice.kind === "error" ? "alert" : "status"} className={syncNotice.kind === "error" ? "error" : "card-sync-status"}>{syncNotice.message}</Notice>}
-        <div className="card-holder-summary"><UserRound /><div><span>{t("cardholder")}</span><strong>{holderName}</strong></div><div><span>{t("cardOpenedAt")}</span><strong>{new Date(loadedDetail.createdAt).toLocaleDateString()}</strong></div></div>
+        <div className="card-holder-summary"><UserRound /><div><span>{t("cardholder")}</span><strong>{holderName}</strong></div><div><span>{t("cardOpenedAt")}</span><strong>{new Date(loadedDetail.createdAt).toLocaleDateString(ledgerI18n.language === "en" ? "en-US" : "zh-CN")}</strong></div></div>
         <div className="stats compact-stats"><article><span>{t("expiry")}</span><strong>{revealed?.expire ?? (visible ? loadedDetail.expiry : "**/**")}</strong></article><article><span>CVV</span><strong>{revealed?.cvv ?? "***"}</strong></article><article><span>{t("status")}</span><strong>{statusLabel}</strong></article></div>
         {visible && sensitive.isFetching && <p role="status" className="card-sensitive-status loading-skeleton loading-skeleton-inline">{t("loadingCardDetails")}</p>}
         {visible && sensitive.isError && <Notice role="alert" className="card-sensitive-error"><span>{t(recentAuthRequired ? "cardRecentAuthRequired" : "cardDetailsLoadFailed")}</span><Button size="sm" variant="outline" onClick={() => {
@@ -404,18 +405,18 @@ export function CardDetailPage() {
         : <div className="empty-state">{t("paymentNoSample")}</div>}
     </section>}
     {loadedDetail.financialSummary && <section className="transaction-panel card-financial-summary" data-testid="card-financial-summary">
-      <div className="section-title"><div><h2><WalletCards />卡片财务汇总</h2><p>本金、费用、钱包影响和商户消费分别统计。</p></div>{loadedDetail.upstreamSyncedAt && <span>同步于 {new Date(loadedDetail.upstreamSyncedAt).toLocaleString()}</span>}</div>
+      <div className="section-title"><div><h2><WalletCards />{ledgerT("ledgerText.cardFinancialSummary")}</h2><p>{ledgerT("ledgerText.principalFeesWalletImpactAndMerchantSpending")}</p></div>{loadedDetail.upstreamSyncedAt && <span>{ledgerT("ledgerText.syncedAt", { time: new Date(loadedDetail.upstreamSyncedAt).toLocaleString(ledgerI18n.language === "en" ? "en-US" : "zh-CN") })}</span>}</div>
       <dl className="card-financial-summary-grid">
-        <div><dt>可用余额</dt><dd>${formatDecimal(loadedDetail.financialSummary.availableBalance)}</dd></div>
-        <div><dt>累计本金</dt><dd>${formatDecimal(loadedDetail.financialSummary.totalPrincipalIn)}</dd><small>开卡 ${formatDecimal(loadedDetail.financialSummary.openingPrincipal)} · 充值 ${formatDecimal(loadedDetail.financialSummary.rechargePrincipal)}</small></div>
-        <div><dt>钱包实际扣款</dt><dd>${formatDecimal(loadedDetail.financialSummary.walletDebited)}</dd></div>
-        <div><dt>退回钱包</dt><dd>${formatDecimal(loadedDetail.financialSummary.walletRefunded)}</dd></div>
-        <div><dt>平台费用</dt><dd>${formatDecimal(loadedDetail.financialSummary.platformFees)}</dd></div>
-        <div><dt>成功消费</dt><dd>${formatDecimal(loadedDetail.financialSummary.settledSpend)}</dd></div>
-        <div><dt>商户退款</dt><dd>${formatDecimal(loadedDetail.financialSummary.merchantRefunds)}</dd></div>
-        <div><dt>冻结授权</dt><dd>${formatDecimal(loadedDetail.financialSummary.heldAmount)}</dd></div>
-        <div><dt>有效授权</dt><dd>{loadedDetail.financialSummary.transactionCount}</dd></div>
-        <div><dt>拒付率</dt><dd>{loadedDetail.financialSummary.declineRateBps === null ? "—" : `${formatDecimal((loadedDetail.financialSummary.declineRateBps / 100).toFixed(2))}%`}</dd><small>{loadedDetail.financialSummary.declineCount} 笔失败</small></div>
+        <div><dt>{ledgerT("ledgerText.availableBalance")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.availableBalance)}</dd></div>
+        <div><dt>{ledgerT("ledgerText.totalPrincipal")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.totalPrincipalIn)}</dd><small>{ledgerT("ledgerText.principalBreakdown", { opening: formatDecimal(loadedDetail.financialSummary.openingPrincipal), funding: formatDecimal(loadedDetail.financialSummary.rechargePrincipal) })}</small></div>
+        <div><dt>{ledgerT("ledgerText.actualWalletDebits")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.walletDebited)}</dd></div>
+        <div><dt>{ledgerT("ledgerText.returnedToWallet")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.walletRefunded)}</dd></div>
+        <div><dt>{ledgerT("ledgerText.platformFees")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.platformFees)}</dd></div>
+        <div><dt>{ledgerT("ledgerText.settledSpending")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.settledSpend)}</dd></div>
+        <div><dt>{ledgerT("ledgerText.merchantRefunds")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.merchantRefunds)}</dd></div>
+        <div><dt>{ledgerT("ledgerText.heldAuthorizations")}</dt><dd>${formatDecimal(loadedDetail.financialSummary.heldAmount)}</dd></div>
+        <div><dt>{ledgerT("ledgerText.validAuthorizations")}</dt><dd>{loadedDetail.financialSummary.transactionCount}</dd></div>
+        <div><dt>{ledgerT("ledgerText.declineRate")}</dt><dd>{loadedDetail.financialSummary.declineRateBps === null ? "—" : `${formatDecimal((loadedDetail.financialSummary.declineRateBps / 100).toFixed(2))}%`}</dd><small>{ledgerT("ledgerText.failedTransactionCount", { count: loadedDetail.financialSummary.declineCount })}</small></div>
       </dl>
     </section>}
     <section className="transaction-panel card-operations-panel">
@@ -424,9 +425,9 @@ export function CardDetailPage() {
       {operationPending && <div className={`card-pending-operation ${operation.data?.data.status === "RECONCILE_REQUIRED" ? "is-warning" : ""}`} role="status">
         <span className="card-pending-operation-icon"><Clock3 /></span>
         {gptOrderPending ? <div>
-          <strong>直充订单占用此卡</strong>
-          <small>请到直充订单详情查看进度或处理提示。订单资金处理完成后，充值与退款将恢复。</small>
-          <Link to="/gpt-direct/orders/$orderId" params={{ orderId: trackedOperationId! }}>查看直充订单</Link>
+          <strong>{ledgerT("ledgerText.thisCardIsInUseByA")}</strong>
+          <small>{ledgerT("ledgerText.checkTheDirectOrderDetailsForProgress")}</small>
+          <Link to="/gpt-direct/orders/$orderId" params={{ orderId: trackedOperationId! }}>{ledgerT("ledgerText.viewDirectOrder")}</Link>
         </div> : <>
           <div><strong>{pendingStatus}</strong><small>{pendingOperationCopy}</small></div>
           {operation.data?.data.type !== "REFUND" && <span className="card-pending-operation-state">{operation.data?.data.status ?? t("processing")}</span>}
@@ -447,8 +448,8 @@ export function CardDetailPage() {
       {actionError && !dialogAction && <Notice role="alert" className="error">{actionError}</Notice>}
     </section>
     <section className="transaction-panel" data-testid="card-funds-activities">
-      <div className="section-title"><div><h2><ReceiptText />统一卡流水</h2><p>开卡、充值、退款、销卡退款、费用和消费按时间合并展示。</p></div><span>{unifiedLedger.length}</span></div>
-      {unifiedLedger.length === 0 ? <div className="empty-state">暂无卡片流水</div> : unifiedLedger.map((entry) => {
+      <div className="section-title"><div><h2><ReceiptText />{ledgerT("ledgerText.unifiedCardLedger")}</h2><p>{ledgerT("ledgerText.cardOpeningFundingRefundsClosureRefundsFees")}</p></div><span>{unifiedLedger.length}</span></div>
+      {unifiedLedger.length === 0 ? <div className="empty-state">{ledgerT("ledgerText.noCardLedgerEntriesYet")}</div> : unifiedLedger.map((entry) => {
         if (entry.kind === "activity") {
           const displayType = entry.item.displayType || entry.item.type;
           const title = displayType === "DELETED_CARD_RETURN" ? t("cardDeletedReturn")
@@ -458,7 +459,7 @@ export function CardDetailPage() {
           const credit = displayType === "REFUND" || displayType === "DELETE" || displayType === "DELETED_CARD_RETURN";
           return <article className="transaction-row card-ledger-row" key={`activity-${entry.item.id}`}>
           <div className="transaction-icon"><WalletCards /></div>
-          <div><strong>{title}</strong><small>{entry.item.status} · {new Date(entry.occurredAt).toLocaleString()}</small><small>影响：{entry.item.balanceImpact === "WALLET" ? "钱包余额" : "卡余额与钱包余额"} · 手续费 ${formatDecimal(entry.item.fee)} · 钱包金额 ${formatDecimal(entry.item.totalAmount)}</small>{entry.item.remark && displayType !== "DECLINE_FEE" ? <small>{entry.item.remark}</small> : null}</div>
+          <div><strong>{title}</strong><small>{entry.item.status} · {new Date(entry.occurredAt).toLocaleString(ledgerI18n.language === "en" ? "en-US" : "zh-CN")}</small><small>{ledgerT("ledgerText.balanceImpactDetails", { impact: entry.item.balanceImpact === "WALLET" ? ledgerT("ledgerText.walletBalance") : ledgerT("ledgerText.cardAndWalletBalances"), fee: formatDecimal(entry.item.fee), amount: formatDecimal(entry.item.totalAmount) })}</small>{entry.item.remark && displayType !== "DECLINE_FEE" ? <small>{entry.item.remark}</small> : null}</div>
           <span className={credit ? "positive" : "negative"}>{credit ? "+" : "-"}${formatDecimal(entry.item.amount)}</span>
         </article>;
         }
@@ -470,18 +471,18 @@ export function CardDetailPage() {
         return <div className="card-ledger-transaction" key={`transaction-${entry.item.providerId}-${entry.item.authId}`}>
           <button type="button" className="transaction-row" onClick={() => setExpandedTransaction((current) => current === entry.item.authId ? null : entry.item.authId)} aria-expanded={expandedTransaction === entry.item.authId}>
             <div className="transaction-icon"><ReceiptText /></div>
-            <div><strong>{entry.item.merchantName || entry.item.description || "未知商户"}</strong><small>{entry.item.authId} · {entry.item.status} · {new Date(entry.occurredAt).toLocaleString()}</small><small>{[entry.item.merchantLocation, entry.item.merchantRegion, entry.item.merchantCountry, entry.item.failedReason].filter(Boolean).join(" · ") || "商户消费"}</small></div>
+            <div><strong>{entry.item.merchantName || entry.item.description || ledgerT("unknownMerchant")}</strong><small>{entry.item.authId} · {entry.item.status} · {new Date(entry.occurredAt).toLocaleString(ledgerI18n.language === "en" ? "en-US" : "zh-CN")}</small><small>{[entry.item.merchantLocation, entry.item.merchantRegion, entry.item.merchantCountry, entry.item.failedReason].filter(Boolean).join(" · ") || ledgerT("ledgerText.merchantSpending")}</small></div>
             <span className={refunded ? "positive" : entry.item.status === "SETTLED" ? "negative" : undefined}>{formatDecimal(amount)}</span>
           </button>
-          <div className="card-ledger-disclosure" data-open={expandedTransaction === entry.item.authId} aria-hidden={expandedTransaction !== entry.item.authId}><div><div className="card-ledger-lifecycle">{entry.item.events.map((event) => <div key={event.id}><strong>{event.type} · {event.status}</strong><span>{new Date(event.authTime).toLocaleString()}</span><small>{formatDecimal(event.type === "Authorization" ? event.authAmount : event.settleAmount)} {event.type === "Authorization" ? event.authCurrency : event.settleCurrency}{event.failedReason ? ` · ${event.failedReason}` : ""}</small></div>)}</div></div></div>
+          <div className="card-ledger-disclosure" data-open={expandedTransaction === entry.item.authId} aria-hidden={expandedTransaction !== entry.item.authId}><div><div className="card-ledger-lifecycle">{entry.item.events.map((event) => <div key={event.id}><strong>{event.type} · {event.status}</strong><span>{new Date(event.authTime).toLocaleString(ledgerI18n.language === "en" ? "en-US" : "zh-CN")}</span><small>{formatDecimal(event.type === "Authorization" ? event.authAmount : event.settleAmount)} {event.type === "Authorization" ? event.authCurrency : event.settleCurrency}{event.failedReason ? ` · ${event.failedReason}` : ""}</small></div>)}</div></div></div>
         </div>;
       })}
     </section>
     {Boolean(transactions.data?.data.upstreamRecharges?.length) && <section className="transaction-panel" data-testid="card-upstream-recharges">
-      <div className="section-title"><div><h2><WalletCards />上游充值记录</h2><p>直接读取已同步的上游记录，包含在上游操作的充值。可能与本站流水重复，不重复计入钱包扣款；部分产品不含开卡初始入金。</p></div><span>最近 {transactions.data!.data.upstreamRecharges!.length} / {transactions.data!.data.upstreamRechargeTotal ?? transactions.data!.data.upstreamRecharges!.length} 笔</span></div>
+      <div className="section-title"><div><h2><WalletCards />{ledgerT("ledgerText.upstreamFundingRecords")}</h2><p>{ledgerT("ledgerText.syncedUpstreamRecordsIncludingFundingPerformedDirectly")}</p></div><span>{ledgerT("ledgerText.recentEntryCount", { shown: transactions.data!.data.upstreamRecharges!.length, total: transactions.data!.data.upstreamRechargeTotal ?? transactions.data!.data.upstreamRecharges!.length })}</span></div>
       {transactions.data!.data.upstreamRecharges!.map((recharge) => <article className="transaction-row" key={recharge.id}>
         <div className="transaction-icon"><WalletCards /></div>
-        <div><strong>卡充值 · #{recharge.id}</strong><small>{recharge.status} · {new Date(recharge.occurredAt).toLocaleString()}</small><small>上游手续费 ${formatDecimal(recharge.fee)} · 同步于 {new Date(recharge.syncedAt).toLocaleString()}</small></div>
+        <div><strong>{ledgerT("ledgerText.cardFundingRecord", { id: recharge.id })}</strong><small>{recharge.status} · {new Date(recharge.occurredAt).toLocaleString(ledgerI18n.language === "en" ? "en-US" : "zh-CN")}</small><small>{ledgerT("ledgerText.upstreamFeeAndSync", { fee: formatDecimal(recharge.fee), time: new Date(recharge.syncedAt).toLocaleString(ledgerI18n.language === "en" ? "en-US" : "zh-CN") })}</small></div>
         <span>${formatDecimal(recharge.amount)}</span>
       </article>)}
     </section>}

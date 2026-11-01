@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { BrandIcon } from "@/components/BrandIcon";
 import { DataSkeleton } from "../components/PageShell";
 import { register } from "../api";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
 import { useFeatures } from "../features";
 import { clearEmailVerificationState, saveEmailVerificationState } from "../emailVerificationState";
 import { referralAttributionAtom } from "../state";
@@ -52,7 +52,7 @@ export function RegisterPage() {
       {attributedCode
         ? <Notice className="success-note" role="note" data-testid="invite-attribution-locked">{t("inviteAttributionLocked")}</Notice>
         : <label>{t("optionalInvite")}<input name="inviteCode" placeholder="e.g. INVITE2026" value={manualInviteCode} onChange={(event) => setManualInviteCode(event.target.value)} /></label>}
-      <label className="legal-consent"><input name="legalConsent" type="checkbox" required /><span>我已年满 18 周岁，确认不在中国大陆地区，且已阅读并同意 <Link to="/terms" target="_blank">服务条款</Link> 和 <Link to="/user-agreement" target="_blank">用户协议</Link>。</span></label>
+      <label className="legal-consent"><input name="legalConsent" type="checkbox" required /><span><Trans i18nKey="siteText.registerConsent" components={{ terms: <Link to="/terms" target="_blank" />, agreement: <Link to="/user-agreement" target="_blank" /> }} /></span></label>
       {error && <Notice role="alert" className="error">{error}</Notice>}
       <Button size="lg" disabled={loading}>{loading ? t("creatingAccount") : t("createAccount")}</Button>
       <Button asChild variant="ghost"><Link to="/login">{t("haveAccount")}</Link></Button>

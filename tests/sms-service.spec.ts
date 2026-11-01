@@ -171,8 +171,8 @@ test('SMS service Full rent selects an available duration and binds the quote on
   });
   await page.route('**/api/sms/orders*', r => r.request().method() === 'POST' ? r.abort() : r.fulfill({ json: { code: 200, data: { list: [], page: 1, hasMore: false } } }));
   await page.goto('/sms');
-  await expect(page.getByRole('button', { name: '选择服务 Full rent', exact: true })).toContainText('全租');
-  await page.getByRole('button', { name: '选择服务 Full rent', exact: true }).click();
+  await expect(page.getByRole('button', { name: '选择服务 全租', exact: true })).toContainText('全租');
+  await page.getByRole('button', { name: '选择服务 全租', exact: true }).click();
   const duration = page.getByLabel('租期', { exact: true });
   await expect(duration.locator('option')).toHaveText(['3 天', '7 天']);
   await expect(page.locator('.sms-sort')).toContainText('暂无质量/热度数据');
@@ -195,7 +195,7 @@ test('SMS service Full rent selects an available duration and binds the quote on
 
 test('SMS service Full rent distinguishes price failure from no stock and retries', async ({ page }) => {
   await setupFullRent(page, true); await page.goto('/sms');
-  const service = page.getByRole('button', { name: '选择服务 Full rent', exact: true });
+  const service = page.getByRole('button', { name: '选择服务 全租', exact: true });
   await expect(service).toContainText('价格暂不可获取'); await expect(service).not.toContainText('暂无库存'); await service.click();
   await expect(page.getByRole('alert').filter({ hasText: '国家价格' })).toContainText('价格暂不可获取');
   await expect(page.getByRole('button', { name: '重试国家价格' })).toBeVisible();

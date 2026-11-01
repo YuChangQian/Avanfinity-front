@@ -16,7 +16,7 @@ function messageText(content: ReactNode): string {
 }
 
 function NotificationCard({ notice, dismiss }: { notice: Notification; dismiss: (id: string) => void }) {
-  const { i18n } = useTranslation();
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const remaining = useRef(notice.tone === "success" || notice.tone === "info" ? 6000 : 10000);
@@ -33,11 +33,12 @@ function NotificationCard({ notice, dismiss }: { notice: Notification; dismiss: 
     onFocusCapture={() => setFocused(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
     <Icon className="notification-icon" aria-hidden="true" />
     <div className="notification-content">{notice.content}</div>
-    <button className="notification-close" type="button" aria-label={i18n.language.startsWith("zh") ? "关闭提示" : "Dismiss notification"} onClick={() => dismiss(notice.id)}><X size={16} aria-hidden="true" /></button>
+    <button className="notification-close" type="button" aria-label={t("siteText.dismissNotification")} onClick={() => dismiss(notice.id)}><X size={16} aria-hidden="true" /></button>
   </div>;
 }
 
 export function NoticeProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const [notices, setNotices] = useState<Notification[]>([]);
   const [hosts, setHosts] = useState<HTMLElement[]>([]);
   const attach = useCallback((host: HTMLElement) => {
@@ -59,7 +60,7 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
   const detach = useCallback((id: string) => setNotices(current => current.map(item => item.id === id ? { ...item, content: item.text } : item)), []);
   const context = useMemo(() => ({ publish, detach, attach }), [publish, detach, attach]);
   return <NoticeContext.Provider value={context}>{children}{createPortal(
-    <section className="notification-stack" aria-label="Notifications" aria-live="polite" tabIndex={-1} popover="manual"
+    <section className="notification-stack" aria-label={t("siteText.notifications")} aria-live="polite" tabIndex={-1} popover="manual"
       ref={element => { if (element?.showPopover && !element.matches(":popover-open")) element.showPopover(); }}>
       {notices.map(notice => <NotificationCard key={`${notice.id}:${notice.tone}:${notice.text}`} notice={notice} dismiss={dismiss} />)}
     </section>, hosts.at(-1) ?? document.body,

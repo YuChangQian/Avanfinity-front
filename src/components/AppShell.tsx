@@ -168,11 +168,11 @@ export function AppShell() {
         <Link to="/cards" {...linkProps(t("openCardCenter"))} activeOptions={{ exact: true }} aria-current={pathname === "/cards" || pathname.startsWith("/cards/open/") ? "page" : undefined}><Plus /><span>{t("openCardCenter")}</span></Link>
         <Link to="/cards/owned" {...linkProps(t("ownedCards"))} aria-current={pathname === "/cards/owned" || /^\/cards\/\d+$/.test(pathname) ? "page" : undefined}><CreditCard /><span>{t("ownedCards")}</span></Link>
         <Link to="/card-transactions" {...linkProps(t("cardTransactions"))}><ReceiptText /><span>{t("cardTransactions")}</span></Link>
-        <Link to="/sms" {...linkProps("收取验证码服务")}><MessageSquare /><span>收取验证码服务</span></Link>
-        <Link to="/tg-direct" className="sidebar-link" aria-label="TG 直充" aria-current={pathname.startsWith("/tg-direct") ? "page" : undefined} onClick={() => setMobileNavOpen(false)}><Sparkles /><span>TG 直充</span></Link>
+        <Link to="/sms" {...linkProps(t("siteText.smsNavigation"))}><MessageSquare /><span>{t("siteText.smsNavigation")}</span></Link>
+        <Link to="/tg-direct" className="sidebar-link" aria-label={t("siteText.tgNavigation")} aria-current={pathname.startsWith("/tg-direct") ? "page" : undefined} onClick={() => setMobileNavOpen(false)}><Sparkles /><span>{t("siteText.tgNavigation")}</span></Link>
         <Link to="/gpt-direct" className="sidebar-link" aria-label={t("gptDirectNavigation")} aria-current={pathname.startsWith("/gpt-direct") ? "page" : undefined} onClick={() => setMobileNavOpen(false)}><Sparkles /><span>{t("gptDirectNavigation")}</span></Link>
         <Link to="/cdk/redeem" {...linkProps(t("cdkRedeemNavigation"))}><KeyRound /><span>{t("cdkRedeemNavigation")}</span></Link>
-        <Link to="/tg-cdk/redeem" {...linkProps("TG CDK 兑换")}><KeyRound /><span>TG CDK 兑换</span></Link>
+        <Link to="/tg-cdk/redeem" {...linkProps(t("siteText.tgCdkNavigation"))}><KeyRound /><span>{t("siteText.tgCdkNavigation")}</span></Link>
         <Link to="/finance" {...linkProps(t("finance"))}><WalletCards /><span>{t("finance")}</span></Link>
         <Link to="/deposit" {...linkProps(t("deposit"))}><Landmark /><span>{t("deposit")}</span></Link>
         <Link to="/rewards" {...linkProps(t("rewards"))}><Gift /><span>{t("rewards")}</span></Link>

@@ -1,3 +1,5 @@
+import { t as ledgerT } from "i18next";
+import { useTranslation } from "react-i18next";
 import { Notice } from "../components/ui/notice";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -7,20 +9,21 @@ import { Button } from "../components/ui/button";
 import { getLegalDocuments } from "../api";
 
 function LegalDocumentPage({ kind }: { kind: "terms" | "userAgreement" }) {
+  useTranslation();
   const documents = useQuery({ queryKey: ["legal-documents"], queryFn: getLegalDocuments, retry: false });
-  const title = kind === "terms" ? "服务条款" : "用户协议";
+  const title = kind === "terms" ? ledgerT("ledgerText.termsOfService") : ledgerT("userAgreementLabel");
   const content = documents.data?.data[kind] ?? "";
 
   return <main className="legal-page">
     <header className="legal-header">
-      <Link className="landing-brand" to="/" aria-label="Avanfinity 首页"><span><BrandIcon /></span><strong>AVANFINITY</strong></Link>
-      <Button asChild variant="ghost"><Link to="/"><ArrowLeft />返回首页</Link></Button>
+      <Link className="landing-brand" to="/" aria-label={ledgerT("ledgerText.avanfinityHome")}><span><BrandIcon /></span><strong>AVANFINITY</strong></Link>
+      <Button asChild variant="ghost"><Link to="/"><ArrowLeft />{ledgerT("backToHome")}</Link></Button>
     </header>
     <article className="legal-document">
-      <div className="legal-title"><span><ShieldCheck /> LEGAL</span><h1>{title}</h1><p>使用本服务前，请仔细阅读并确认您理解以下内容。</p></div>
-      <nav aria-label="法律文件"><Link to="/terms" aria-current={kind === "terms" ? "page" : undefined}>服务条款</Link><Link to="/user-agreement" aria-current={kind === "userAgreement" ? "page" : undefined}>用户协议</Link></nav>
-      {documents.isLoading && <p className="legal-status" aria-busy="true">正在加载…</p>}
-      {documents.isError && <Notice className="legal-status is-error" role="alert"><p>暂时无法加载协议内容。</p><Button size="sm" variant="outline" onClick={() => void documents.refetch()}>重试</Button></Notice>}
+      <div className="legal-title"><span><ShieldCheck /> LEGAL</span><h1>{title}</h1><p>{ledgerT("ledgerText.pleaseReadTheFollowingCarefullyAndConfirm")}</p></div>
+      <nav aria-label={ledgerT("ledgerText.legalDocuments")}><Link to="/terms" aria-current={kind === "terms" ? "page" : undefined}>{ledgerT("ledgerText.termsOfService")}</Link><Link to="/user-agreement" aria-current={kind === "userAgreement" ? "page" : undefined}>{ledgerT("userAgreementLabel")}</Link></nav>
+      {documents.isLoading && <p className="legal-status" aria-busy="true">{ledgerT("loading")}</p>}
+      {documents.isError && <Notice className="legal-status is-error" role="alert"><p>{ledgerT("ledgerText.legalDocumentsAreTemporarilyUnavailable")}</p><Button size="sm" variant="outline" onClick={() => void documents.refetch()}>{ledgerT("retry")}</Button></Notice>}
       {content && <div className="legal-content">{content.split(/\n\s*\n/).map((paragraph, index) => {
         const heading = /^(重要提示|[一二三四五六七八九十]+、)/.test(paragraph);
         return heading ? <h2 key={index}>{paragraph}</h2> : <p key={index}>{paragraph}</p>;

@@ -1,8 +1,19 @@
+import { ledgerMessages } from "./locales/ledger";
+import { adminMessages } from "./locales/admin";
+import { serviceMessages } from "./locales/services";
+import { cdkMessages } from "./locales/cdk";
+import { siteMessages } from "./locales/site";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 const resources = {
   zh: { translation: {
+    ...adminMessages.zh,
+    ...serviceMessages.zh,
+    ...cdkMessages.zh,
+    ...siteMessages.zh,
+    ...ledgerMessages.zh,
+
     cardTools: {
   "closeAll": "一键销卡",
   "resume": "恢复销卡任务",
@@ -354,7 +365,7 @@ const resources = {
     announcementHistory: "公告中心", announcementHistoryDesc: "查看系统发布的历史公告与未读消息。", adminAnnouncementHistoryHint: "撤回后用户将不再看到，管理员历史和审计记录仍会保留。",
     unreadAnnouncements: "{{count}} 条未读", noAnnouncements: "暂无公告", read: "已读", unread: "未读", markAsRead: "标为已读", announcementHistoryLoadFailed: "公告历史加载失败，请稍后重试。",
     published: "已发布", withdrawn: "已撤回", withdrawAnnouncement: "撤回", withdrawAnnouncementConfirm: "撤回后所有用户将不再看到此公告，确认撤回？", announcementWithdrawn: "公告已撤回", announcementWithdrawFailed: "公告撤回失败", announcementReadCount: "{{count}} 人已读",
-    announcementStripCount: "{{count}} 条通知", announcementStripDismiss: "收起全部通知",
+    announcementStripCount: "{{count}} 条通知", announcementStripCount_one: "{{count}} 条通知", announcementStripCount_other: "{{count}} 条通知", announcementStripDismiss: "收起全部通知",
     acknowledgeAnnouncement: "我知道了", remindNextLogin: "下次登录提醒", announcementReadFailed: "确认失败，请稍后重试。",
     supportTickets: "工单中心", supportTicketsDesc: "提交问题并在同一工单中持续查看客服回复。", createSupportTicket: "提交新工单", createSupportTicketHint: "请描述具体问题，客服会在工单中回复。",
     supportSubject: "工单标题", supportCategoryLabel: "反馈类型", supportRelatedCard: "关联卡片（可选）", supportNoRelatedCard: "不关联卡片", supportProblemDescription: "问题描述", submitSupportTicket: "提交工单", mySupportTickets: "我的工单", noSupportTickets: "暂无工单", selectSupportTicket: "选择一个工单查看对话", supportLoadFailed: "工单加载失败，请稍后重试。", unreadSupportMessages: "{{count}} 条未读工单消息",
@@ -731,6 +742,12 @@ const resources = {
     developerKeysLoadFailed: "API 密钥加载失败，请稍后重试。",
   }},
   en: { translation: {
+    ...adminMessages.en,
+    ...serviceMessages.en,
+    ...cdkMessages.en,
+    ...siteMessages.en,
+    ...ledgerMessages.en,
+
     cardTools: {
   "closeAll": "Close all cards",
   "resume": "Resume card closure",
@@ -843,7 +860,7 @@ const resources = {
     recoveryCodesTitle: "Save one-time recovery codes", recoveryCodesOnce: "These high-entropy recovery codes are shown once. Store them offline; each code can sign in only once.", savedCodesLogin: "I saved them securely — sign in again",
     login: "Sign in", loggingIn: "Signing in…", telegramLogin: "Continue with Telegram", telegramLoginApp: "Open Telegram App", backToHome: "Back to home", loginLegalPrefix: "By signing in, you acknowledge the", loginLegalConnector: "and", loginLegalSuffix: ".", userAgreementLabel: "User Agreement", privacyTermsLabel: "Terms (including Privacy Notice)", welcome: "Welcome back", balance: "Wallet balance",
     cardBalance: "Card balance (estimated)", cards: "Cards", inviteCode: "Invite code",
-    activeCards: "Active cards", available: "Available", language: "中文",
+    activeCards: "Active cards", available: "Available", language: "Chinese",
     overview: "Overview", finance: "Finance", deposit: "Deposit", rewards: "Rewards", referral: "Agent", membership: "Membership",
     cardManagement: "Cards", privateBanking: "Digital banking", mainNavigation: "Main navigation", openNavigation: "Open main navigation", closeNavigation: "Close main navigation",
     bankingServices: "Banking", accountTools: "Account", skipToContent: "Skip to content",

@@ -153,7 +153,7 @@ export function LandingPage() {
     <footer className="landing-footer">
       <div className="landing-brand"><span><BrandIcon /></span><strong>AVANFINITY</strong></div>
       <p>{t("landing.footer")}</p>
-      <div><Link to="/terms">服务条款</Link><Link to="/user-agreement">用户协议</Link>{session ? <Link to="/dashboard">{t("landing.dashboard")}</Link> : <><Link to="/login">{t("login")}</Link><Link to="/register">{t("landing.startNow")}</Link></>}</div>
+      <div><Link to="/terms">{t("siteText.terms")}</Link><Link to="/user-agreement">{t("siteText.agreement")}</Link>{session ? <Link to="/dashboard">{t("landing.dashboard")}</Link> : <><Link to="/login">{t("login")}</Link><Link to="/register">{t("landing.startNow")}</Link></>}</div>
     </footer>
   </main>;
 }

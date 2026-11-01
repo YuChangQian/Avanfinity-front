@@ -1,0 +1,10 @@
+.admin-sms-table { min-width: 1000px; }
+.admin-sms-table td:nth-child(2) small { max-width: 240px; overflow-wrap: anywhere; }
+.admin-sms-drawer .admin-drawer-facts dd { overflow-wrap: anywhere; }
+.admin-sms-drawer .admin-table { min-width: 640px; }
+.admin-sms-drawer .admin-table-wrap { max-width: 100%; }
+.admin-sms-messages { display: grid; gap: 12px; }
+.admin-sms-messages article { border-bottom: 1px solid var(--border); padding-bottom: 12px; overflow-wrap: anywhere; }
+.admin-sms-messages strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+.admin-sms-messages p { white-space: pre-wrap; }
+.admin-sms-drawer .admin-gpt-order-detail-body { flex-shrink: 0; }
